@@ -6,7 +6,7 @@ building and shipping code, both defined in `.github/workflows/`:
 | Workflow | File | Trigger | Purpose |
 | --- | --- | --- | --- |
 | CI Pipeline | `ci.yml` | PRs, pushes to `develop`/`master`, manual dispatch | Lint and test every change |
-| Build & Publish All-in-One Image | `build-publish-image.yml` | `v*` tags | Build and publish the release container |
+| Build & Publish All-in-One Image | `build-publish-image.yml` | pushes to `master`, manual dispatch | Build and publish the release container |
 
 ## CI Pipeline (`ci.yml`)
 
@@ -34,8 +34,9 @@ publishing is handled entirely by the workflow below.
 
 ## Build & Publish All-in-One Image (`build-publish-image.yml`)
 
-This is how the fork ships a container. On any `v*` tag it builds, in one `linux/amd64`
-job, using only the built-in `GITHUB_TOKEN` (no external secrets):
+This is how the fork ships a container. On every push to `master` (and on manual
+dispatch) it builds, in one `linux/amd64` job, using only the built-in `GITHUB_TOKEN`
+(no external secrets):
 
 1. the backend image from `backend/Dockerfile` (`prod` target),
 2. the web-frontend image from `web-frontend/Dockerfile` (`prod` target),
@@ -47,39 +48,31 @@ image contains the fork's changes.
 
 The results are pushed to this repo's GitHub Container Registry as
 `ghcr.io/<owner>/<repo>/{baserow,backend,web-frontend,caddy}`, tagged by
-`docker/metadata-action` with the full version, `major.minor`, `major`, and `latest`.
+`docker/metadata-action` with `sha-<short-sha>` (the commit that triggered the build)
+and `latest`. There is no manual version-tag step — merging to `master` is the release.
 Steps 1 and 2 also push short-lived `backend:build-<sha>` / `web-frontend:build-<sha>`
 intermediates that the all-in-one build consumes. Every published image is CVE-scanned
-after the push. `publish-helm-chart.yml` publishes the chart on the same tag as
-`oci://ghcr.io/<owner>/<repo>/charts/saveroom:<Chart.yaml version>`.
+after the push.
 
-The GHCR packages are public, so the images and chart pull anonymously. A newly created
+The GHCR packages are public, so the images pull anonymously. A newly created
 package starts private: make it public once under its package settings (**Danger Zone →
 Change visibility**). That change cannot be undone.
 
-## Cutting a release
+## Shipping a change
 
-1. On `develop`, bump the release version everywhere it is pinned:
-   * the `BASEROW_VERSION` defaults in `docker-compose.yml` and
-     `deploy/all-in-one/docker-compose.yml`;
-   * `appVersion` in `deploy/helm/saveroom/Chart.yaml`, plus `version` if the chart
-     changed since its last publish;
-   * the `ghcr.io/carneirofc/baserow/*:<version>` image tags in `docs/installation/`,
-     `docs/plugins/` and `deploy/all-in-one/README.md`, and the version heading in
-     `docs/installation/supported.md`
-     (`grep -rn 'baserow/.*:<old version>' docs deploy README.md` finds them).
-2. Cut the changelog release: `just changelog release v1.2.3`.
-3. Commit (`chore(release): cut release v1.2.3`), push, and wait for CI to pass.
-4. Tag and push:
+Every push to `master` builds and publishes fresh images automatically — there is no
+separate tagging/release step. To ship a change:
 
-   ```bash
-   git tag -a v1.2.3 -m v1.2.3
-   git push origin v1.2.3
-   ```
-
-5. Once `build-publish-image.yml` and `publish-helm-chart.yml` succeed, create the GitHub
-   Release with the version's `changelog.md` section as notes:
-   `gh release create v1.2.3 --title v1.2.3 --notes-file <notes> --latest`.
+1. Merge/push to `master` (CI on `ci.yml` must pass first).
+2. `build-publish-image.yml` picks up the push and publishes
+   `ghcr.io/<owner>/<repo>/{baserow,backend,web-frontend,caddy}:sha-<short-sha>` and
+   `:latest`.
+3. Pin deployments to a specific `sha-<short-sha>` tag for reproducibility, or track
+   `:latest` to always run the newest `master` build.
+4. `publish-helm-chart.yml` still publishes the chart on `v*` tags
+   (`oci://ghcr.io/<owner>/<repo>/charts/saveroom:<Chart.yaml version>`) — cut one of
+   those only when the chart's templates/values themselves change, independent of image
+   releases.
 
 ## Reproducing CI locally
 

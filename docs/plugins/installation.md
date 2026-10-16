@@ -36,7 +36,7 @@ build your own image based off the Saveroom all-in-one image.
 4. Next copy the contents shown into your `Dockerfile`
 
 ```dockerfile
-FROM ghcr.io/carneirofc/baserow:0.6.0
+FROM ghcr.io/carneirofc/baserow:latest
 
 # You can install a plugin found in a git repo:
 RUN /baserow/plugins/install_plugin.sh \
@@ -111,7 +111,7 @@ docker run \
   -v baserow_data:/baserow/data \ 
   # ...  All your normal launch args go here
   -e BASEROW_PLUGIN_GIT_REPOS=https://example.com/example/plugin1.git,https://example.com/example/plugin2.git
-  ghcr.io/carneirofc/baserow:0.6.0
+  ghcr.io/carneirofc/baserow:latest
 ```
 
 These variables will only trigger and installation when found on startup of the
@@ -120,7 +120,7 @@ container. To uninstall a plugin you must still manually follow the instructions
 ### Caveats when installing into an existing container
 
 If you ever delete the container you've installed plugins into at runtime and re-create
-it, the new container is created from the `ghcr.io/carneirofc/baserow:0.6.0` image which does not
+it, the new container is created from the `ghcr.io/carneirofc/baserow:latest` image which does not
 have any plugins installed.
 
 However, when a plugin is installed at runtime or build time it is stored in the
@@ -135,7 +135,7 @@ scratch.
 
 ### Installing into standalone Saveroom service images
 
-Saveroom also provides `ghcr.io/carneirofc/baserow/backend:0.6.0` and `ghcr.io/carneirofc/baserow/web-frontend:0.6.0` images
+Saveroom also provides `ghcr.io/carneirofc/baserow/backend:latest` and `ghcr.io/carneirofc/baserow/web-frontend:latest` images
 which only run the respective backend/celery/web-frontend services. These images are
 used for more advanced self-hosted deployments like a multi-service docker-compose, k8s
 etc.
@@ -145,8 +145,8 @@ used with docker run and a specified command and the plugin env vars shown above
 example:
 
 ```
-docker run --rm ghcr.io/carneirofc/baserow/backend:0.6.0 install-plugin ... 
-docker run -e BASEROW_PLUGIN_GIT_REPOS=https://example.com/example/plugin1.git,https://example.com/example/plugin2.git --rm ghcr.io/carneirofc/baserow/backend:0.6.0
+docker run --rm ghcr.io/carneirofc/baserow/backend:latest install-plugin ... 
+docker run -e BASEROW_PLUGIN_GIT_REPOS=https://example.com/example/plugin1.git,https://example.com/example/plugin2.git --rm ghcr.io/carneirofc/baserow/backend:latest
 ```
 
 You can use these scripts exactly as you would in the sections above to install a plugin
@@ -169,7 +169,7 @@ associated data permanently.
    [Docker install guide backup section](../installation/install-with-docker.md)
    for more details on how to do this.
 2. Stop your Saveroom server first - `docker stop baserow`
-3. `docker run --rm -v baserow_data:/baserow/data ghcr.io/carneirofc/baserow:0.6.0 uninstall-plugin plugin_name`
+3. `docker run --rm -v baserow_data:/baserow/data ghcr.io/carneirofc/baserow:latest uninstall-plugin plugin_name`
 4. Now the plugin has uninstalled itself and all associated data has been removed.
 5. Edit your custom `Dockerfile` and remove the plugin.
 6. Rebuild your image - `docker build -t my-customized-baserow:0.6.0 .`
@@ -207,7 +207,7 @@ associated data permanently.
    restart as the environment variable will still contain the old plugin. To do this you
    must:
     1. `docker stop baserow`
-    2. `docker run --rm -v baserow_data:/baserow/data ghcr.io/carneirofc/baserow:0.6.0 uninstall-plugin plugin_name`
+    2. `docker run --rm -v baserow_data:/baserow/data ghcr.io/carneirofc/baserow:latest uninstall-plugin plugin_name`
     3. Now the plugin has uninstalled itself and all associated data has been removed.
     4. Finally, recreate your Saveroom container by using the same `docker run` command
        you launched it with, just make sure the plugin you uninstalled has been removed
@@ -222,7 +222,7 @@ check what plugins are currently installed.
 docker run \
   --rm \
   -v baserow_data:/baserow/data \ 
-  ghcr.io/carneirofc/baserow:0.6.0 list-plugins 
+  ghcr.io/carneirofc/baserow:latest list-plugins 
 
 # or on a running container
 

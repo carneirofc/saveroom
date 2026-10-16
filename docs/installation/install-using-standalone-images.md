@@ -10,9 +10,9 @@
 
 Saveroom consists of a number of services, two of which are built and provided as 
 separate standalone images by us:
-* `ghcr.io/carneirofc/baserow/backend:0.6.0` which by default starts the Gunicorn Django backend server 
+* `ghcr.io/carneirofc/baserow/backend:latest` which by default starts the Gunicorn Django backend server 
   for Saveroom but is also used to start the celery workers and celery beat services.
-* `ghcr.io/carneirofc/baserow/web-frontend:0.6.0` which is a Nuxt server providing Server Side rendering 
+* `ghcr.io/carneirofc/baserow/web-frontend:latest` which is a Nuxt server providing Server Side rendering 
   for the website.
 
 If you want to use your own container orchestration software like Kubernetes then these
@@ -27,11 +27,11 @@ in the root of our repository.
 These are all the services you need to set up to run a Saveroom using the standalone 
 images:
 
-* `ghcr.io/carneirofc/baserow/backend:0.6.0` (default command is `gunicorn`)
-* `ghcr.io/carneirofc/baserow/backend:0.6.0` with command `celery-worker`
-* `ghcr.io/carneirofc/baserow/backend:0.6.0` with command `celery-exportworker`
-* `ghcr.io/carneirofc/baserow/backend:0.6.0` with command `celery-beat`
-* `ghcr.io/carneirofc/baserow/web-frontend:0.6.0` (default command is `nuxt-prod`)
+* `ghcr.io/carneirofc/baserow/backend:latest` (default command is `gunicorn`)
+* `ghcr.io/carneirofc/baserow/backend:latest` with command `celery-worker`
+* `ghcr.io/carneirofc/baserow/backend:latest` with command `celery-exportworker`
+* `ghcr.io/carneirofc/baserow/backend:latest` with command `celery-beat`
+* `ghcr.io/carneirofc/baserow/web-frontend:latest` (default command is `nuxt-prod`)
 * A postgres database 
 * A redis server
 

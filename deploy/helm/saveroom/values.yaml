@@ -25,11 +25,11 @@ image:
   # unprivileged ports 8000/3000). Do NOT use the all-in-one image on OpenShift.
   backend:
     repository: carneirofc/baserow/backend
-    tag: "" # defaults to Chart.appVersion
+    tag: "latest" # images are now tagged by commit (sha-<short-sha>) + latest; pin a sha-<short-sha> tag for reproducible deploys
     pullPolicy: IfNotPresent
   webFrontend:
     repository: carneirofc/baserow/web-frontend
-    tag: "" # defaults to Chart.appVersion
+    tag: "latest" # images are now tagged by commit (sha-<short-sha>) + latest; pin a sha-<short-sha> tag for reproducible deploys
     pullPolicy: IfNotPresent
 imagePullSecrets: []
 

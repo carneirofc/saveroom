@@ -5,16 +5,20 @@ name: Build & Publish All-in-One Image
 # deploy/all-in-one image and publishes it to this repo's GitHub Container
 # Registry. Uses only the built-in GITHUB_TOKEN — no external secrets required.
 #
+# Triggered on every push to master (no manual version tag needed) and tagged
+# by commit instead of a semver git tag.
+#
 # Results (each + :latest):
-#   ghcr.io/<owner>/<repo>:<version>               (all-in-one; compose/simple deploys)
-#   ghcr.io/<owner>/<repo>/backend:<version>       (Helm chart)
-#   ghcr.io/<owner>/<repo>/web-frontend:<version>  (Helm chart)
-#   ghcr.io/<owner>/<repo>/caddy:<version>         (split-services compose)
+#   ghcr.io/<owner>/<repo>:sha-<short-sha>               (all-in-one; compose/simple deploys)
+#   ghcr.io/<owner>/<repo>/backend:sha-<short-sha>       (Helm chart)
+#   ghcr.io/<owner>/<repo>/web-frontend:sha-<short-sha>  (Helm chart)
+#   ghcr.io/<owner>/<repo>/caddy:sha-<short-sha>         (split-services compose)
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - master
+  workflow_dispatch: {}
 
 env:
   REGISTRY: ghcr.io
@@ -55,16 +59,17 @@ jobs:
         id: buildmeta
         run: |
           echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          echo "version=sha-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
+      # Commit-based tags everywhere (no manual semver git tag required):
+      # sha-<short-sha> + latest.
       - name: Docker metadata for all-in-one image
         id: meta
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=sha,format=short,prefix=sha-
             type=raw,value=latest
 
       # Stable tags for the standalone backend / web-frontend images so the
@@ -75,9 +80,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}/backend
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=sha,format=short,prefix=sha-
             type=raw,value=latest
 
       - name: Docker metadata for web-frontend image
@@ -86,9 +89,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}/web-frontend
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=sha,format=short,prefix=sha-
             type=raw,value=latest
 
       # Caddy reverse proxy for the split-services compose stack. Built from
@@ -100,9 +101,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}/caddy
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=sha,format=short,prefix=sha-
             type=raw,value=latest
 
       - name: Build & push backend image
@@ -117,11 +116,11 @@ jobs:
           # a tag cut picks up upstream security rebuilds instead of a stale cache hit.
           pull: true
           build-args: |
-            BASEROW_BUILD_VERSION=${{ github.ref_name }}
+            BASEROW_BUILD_VERSION=${{ steps.buildmeta.outputs.version }}
             BASEROW_BUILD_COMMIT=${{ github.sha }}
             BASEROW_BUILD_DATE=${{ steps.buildmeta.outputs.date }}
           # Intermediate pinned tag (consumed by the all-in-one build) plus the
-          # stable semver/latest tags used by the Helm chart.
+          # stable commit-sha/latest tags used by the Helm chart.
           tags: |
             ${{ steps.refs.outputs.backend }}
             ${{ steps.meta-backend.outputs.tags }}
@@ -139,7 +138,7 @@ jobs:
           push: true
           pull: true
           build-args: |
-            BASEROW_BUILD_VERSION=${{ github.ref_name }}
+            BASEROW_BUILD_VERSION=${{ steps.buildmeta.outputs.version }}
             BASEROW_BUILD_COMMIT=${{ github.sha }}
             BASEROW_BUILD_DATE=${{ steps.buildmeta.outputs.date }}
           tags: |
@@ -173,7 +172,7 @@ jobs:
           build-args: |
             BACKEND_IMAGE=${{ steps.refs.outputs.backend }}
             WEBFRONTEND_IMAGE=${{ steps.refs.outputs.webfrontend }}
-            BASEROW_BUILD_VERSION=${{ github.ref_name }}
+            BASEROW_BUILD_VERSION=${{ steps.buildmeta.outputs.version }}
             BASEROW_BUILD_COMMIT=${{ github.sha }}
             BASEROW_BUILD_DATE=${{ steps.buildmeta.outputs.date }}
           tags: ${{ steps.meta.outputs.tags }}
