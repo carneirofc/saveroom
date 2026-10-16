@@ -375,6 +375,7 @@ jobs:
           platforms: linux/amd64
           push: false
           load: true
+          pull: true
           tags: saveroom/caddy:ci
           cache-from: type=gha,scope=caddy-ci
           cache-to: type=gha,scope=caddy-ci,mode=max
@@ -444,6 +445,7 @@ jobs:
           platforms: linux/amd64
           push: false
           load: true
+          pull: true
           tags: saveroom/web-frontend:ci-prod
           cache-from: type=gha,scope=frontend-prod-ci
           cache-to: type=gha,scope=frontend-prod-ci,mode=max
