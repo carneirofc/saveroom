@@ -305,7 +305,7 @@ docker run -d --name baserow \
   -e BASEROW_PUBLIC_URL=https://baserow.example.com \
   --env-file baserow-sso.env \
   -v baserow_data:/baserow/data -p 80:80 -p 443:443 \
-  ghcr.io/carneirofc/baserow:latest
+  ghcr.io/carneirofc/saveroom:latest
 ```
 
 Compact a pretty-printed file with `jq -c . providers.json`.

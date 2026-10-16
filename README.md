@@ -168,7 +168,7 @@ docker run -d \
   -p 80:80 \
   -p 443:443 \
   --restart unless-stopped \
-  ghcr.io/carneirofc/baserow:latest
+  ghcr.io/carneirofc/saveroom:latest
 ```
 
 Then open [http://localhost](http://localhost). Saveroom stores everything (Postgres,
@@ -176,10 +176,12 @@ Redis, uploads) inside the `baserow_data` volume.
 
 * Set `BASEROW_PUBLIC_URL` to `https://YOUR_DOMAIN` or `http://YOUR_IP` for external
   access — it must match the address you use in the browser.
-* Pin a specific release instead of `latest` with a version tag, e.g.
-  `ghcr.io/carneirofc/baserow:0.16.0`. Releases up to 0.15.0 were published before
-  the rename and stay at the old paths: `ghcr.io/carneirofc/baserow/baserow` for the
-  all-in-one image, `ghcr.io/carneirofc/baserow/{backend,web-frontend,caddy}`, and
+* Pin a specific build instead of `latest` with a commit tag, e.g.
+  `ghcr.io/carneirofc/saveroom:sha-<short-sha>` (the short commit SHA of the `master`
+  commit you want). Releases up to 0.15.0 were published before the rename and before
+  the switch to commit-based tags, and stay at the old paths:
+  `ghcr.io/carneirofc/baserow/baserow` for the all-in-one image,
+  `ghcr.io/carneirofc/baserow/{backend,web-frontend,caddy}`, and
   `oci://ghcr.io/carneirofc/baserow/charts/baserow` for the chart. Switching an
   existing install to the new paths needs no data migration: the volumes, database
   and environment variables keep their names.
@@ -189,9 +191,9 @@ Redis, uploads) inside the `baserow_data` volume.
 
 Images are published automatically by the
 [`build-publish-image`](.github/workflows/build-publish-image.yml) GitHub Actions
-workflow whenever a `v*` version tag is pushed; the `latest` tag always points at the
-most recent release. The images and the Helm chart are public on GHCR, so they pull
-without `docker login`.
+workflow on every push to `master`; each push produces a `sha-<short-sha>` tag plus a
+`latest` tag that always points at the most recent `master` build. The images and the
+Helm chart are public on GHCR, so they pull without `docker login`.
 
 ## Installation
 
@@ -211,7 +213,7 @@ This fork supports two deployment paths:
   as an OCI artifact:
 
   ```bash
-  helm install baserow oci://ghcr.io/carneirofc/baserow/charts/saveroom \
+  helm install baserow oci://ghcr.io/carneirofc/saveroom/charts/saveroom \
     -n baserow --create-namespace --set publicURL=https://baserow.example.com
   ```
 
@@ -223,7 +225,7 @@ This fork supports two deployment paths:
   [Installing on Amazon EKS](docs/installation/install-on-eks.md).
 
 For a single-container deployment, the all-in-one image
-`ghcr.io/carneirofc/baserow` (embedded PostgreSQL + Redis) is published by CI and
+`ghcr.io/carneirofc/saveroom` (embedded PostgreSQL + Redis) is published by CI and
 covered by the generic [Docker](docs/installation/install-with-docker.md) guide.
 
 ## Documentation

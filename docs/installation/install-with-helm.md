@@ -9,7 +9,7 @@ For the EKS-specific deployment shape (internal ALB behind a CloudFront VPC orig
 IRSA, S3 media) see [Installing on Amazon EKS](install-on-eks.md).
 
 - Chart source: [`deploy/helm/saveroom`](../../deploy/helm/saveroom)
-- Published as: `oci://ghcr.io/carneirofc/baserow/charts/saveroom`
+- Published as: `oci://ghcr.io/carneirofc/saveroom/charts/saveroom`
 
 ## Prerequisites
 
@@ -21,7 +21,7 @@ IRSA, S3 media) see [Installing on Amazon EKS](install-on-eks.md).
 ## Install
 
 ```sh
-helm install baserow oci://ghcr.io/carneirofc/baserow/charts/saveroom \
+helm install baserow oci://ghcr.io/carneirofc/saveroom/charts/saveroom \
   --namespace baserow --create-namespace \
   --set publicURL=https://baserow.example.com \
   --set ingress.enabled=true \
@@ -294,8 +294,8 @@ silently leaving them on the old values.
 
 ```sh
 helm repo update                    # or re-pull the OCI chart
-helm diff upgrade baserow oci://ghcr.io/carneirofc/baserow/charts/saveroom -f my-values.yaml
-helm upgrade baserow oci://ghcr.io/carneirofc/baserow/charts/saveroom -f my-values.yaml
+helm diff upgrade baserow oci://ghcr.io/carneirofc/saveroom/charts/saveroom -f my-values.yaml
+helm upgrade baserow oci://ghcr.io/carneirofc/saveroom/charts/saveroom -f my-values.yaml
 ```
 
 `migrateOnStartup: true` (the default) runs Django migrations from the backend pod on

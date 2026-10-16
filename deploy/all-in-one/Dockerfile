@@ -1,8 +1,8 @@
 ARG UID="9999"
 ARG GID="9999"
 
-ARG BACKEND_IMAGE=ghcr.io/carneirofc/baserow/backend
-ARG WEBFRONTEND_IMAGE=ghcr.io/carneirofc/baserow/web-frontend
+ARG BACKEND_IMAGE=ghcr.io/carneirofc/saveroom/backend
+ARG WEBFRONTEND_IMAGE=ghcr.io/carneirofc/saveroom/web-frontend
 ARG CADDY_VERSION=2.11.7
 ARG GO_VERSION=1.27.2
 # hadolint ignore=DL3006
@@ -105,7 +105,7 @@ COPY --from=caddy_image /usr/bin/caddy /usr/bin/caddy
 ENV NODE_VERSION=v24.21.0 \
     NODE_SHA256_amd64=fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6 \
     NODE_SHA256_arm64=6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2 \
-    NPM_VERSION=12.2.0 \
+    NPM_VERSION=12.2.1 \
     YARN_VERSION=1.22.22
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \

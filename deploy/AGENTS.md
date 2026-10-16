@@ -17,7 +17,7 @@ The root `docker-compose*.y*ml` and `Caddyfile*` stay owned by the root.
 
 ### Images
 
-- Every image reference points at this fork (`ghcr.io/carneirofc/baserow` and `…/baserow/{backend,web-frontend,caddy}`), including defaults in `all-in-one/Dockerfile`. Never Docker Hub `baserow/*`.
+- Every image reference points at this fork (`ghcr.io/carneirofc/saveroom` and `…/baserow/{backend,web-frontend,caddy}`), including defaults in `all-in-one/Dockerfile`. Never Docker Hub `baserow/*`.
 - Images build on `ubuntu:26.04` with PostgreSQL 18 and Redis from the Ubuntu archive (no third-party apt repos). The all-in-one copies the backend venv, so its `python3` must match.
 - Every `ubuntu:26.04` stage deletes `/usr/bin/pebble` and `/var/lib/pebble` in its first `RUN` (unowned binary with CVEs); CI asserts it.
 - Node comes from the SHA256-pinned nodejs.org tarball in `web-frontend/Dockerfile` and `all-in-one/Dockerfile`: keep `NODE_VERSION`, SHA256s, `NPM_VERSION`, `YARN_VERSION` identical. Raise `NPM_VERSION` when scans flag npm's own deps.

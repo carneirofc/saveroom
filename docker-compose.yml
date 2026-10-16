@@ -259,7 +259,7 @@ services:
     # official caddy image lags behind Go security releases. It is tagged with
     # this fork's release versions like the other images, but keeps its own
     # variable so it can be pinned independently of BASEROW_VERSION.
-    image: ghcr.io/carneirofc/baserow/caddy:${BASEROW_CADDY_VERSION:-latest}
+    image: ghcr.io/carneirofc/saveroom/caddy:${BASEROW_CADDY_VERSION:-latest}
     restart: unless-stopped
     environment:
       # Controls what port the Caddy server binds to inside its container.
@@ -280,7 +280,7 @@ services:
       local:
 
   backend:
-    image: ghcr.io/carneirofc/baserow/backend:${BASEROW_VERSION:-latest}
+    image: ghcr.io/carneirofc/saveroom/backend:${BASEROW_VERSION:-latest}
     restart: unless-stopped
 
     environment:
@@ -294,7 +294,7 @@ services:
       local:
 
   web-frontend:
-    image: ghcr.io/carneirofc/baserow/web-frontend:${BASEROW_VERSION:-latest}
+    image: ghcr.io/carneirofc/saveroom/web-frontend:${BASEROW_VERSION:-latest}
     restart: unless-stopped
     environment:
       BASEROW_PUBLIC_URL: ${BASEROW_PUBLIC_URL-http://localhost}
@@ -358,7 +358,7 @@ services:
       local:
 
   celery:
-    image: ghcr.io/carneirofc/baserow/backend:${BASEROW_VERSION:-latest}
+    image: ghcr.io/carneirofc/saveroom/backend:${BASEROW_VERSION:-latest}
     restart: unless-stopped
     environment:
       <<: *backend-variables
@@ -380,7 +380,7 @@ services:
       local:
 
   celery-export-worker:
-    image: ghcr.io/carneirofc/baserow/backend:${BASEROW_VERSION:-latest}
+    image: ghcr.io/carneirofc/saveroom/backend:${BASEROW_VERSION:-latest}
     restart: unless-stopped
     command: celery-exportworker
     environment:
@@ -402,7 +402,7 @@ services:
       local:
 
   celery-beat-worker:
-    image: ghcr.io/carneirofc/baserow/backend:${BASEROW_VERSION:-latest}
+    image: ghcr.io/carneirofc/saveroom/backend:${BASEROW_VERSION:-latest}
     restart: unless-stopped
     command: celery-beat
     healthcheck:

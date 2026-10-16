@@ -279,7 +279,7 @@ both services must admit the pod subnets.
 ## 6. Install
 
 ```sh
-helm install baserow oci://ghcr.io/carneirofc/baserow/charts/saveroom \
+helm install baserow oci://ghcr.io/carneirofc/saveroom/charts/saveroom \
   --namespace baserow --create-namespace \
   -f values-eks.yaml
 ```

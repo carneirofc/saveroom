@@ -15,7 +15,7 @@ tool gives you the powers of a developer without leaving your browser.
   [Vue.js](https://vuejs.org/) and [PostgreSQL](https://www.postgresql.org/).
 
 ```bash
-docker run -v baserow_data:/baserow/data -p 80:80 -p 443:443 ghcr.io/carneirofc/baserow:latest
+docker run -v baserow_data:/baserow/data -p 80:80 -p 443:443 ghcr.io/carneirofc/saveroom:latest
 ```
 
 ## Quick Reference
@@ -52,7 +52,7 @@ docker run \
   -p 80:80 \
   -p 443:443 \
   --restart unless-stopped \
-  ghcr.io/carneirofc/baserow:latest
+  ghcr.io/carneirofc/saveroom:latest
 ```
 
 * Change `BASEROW_PUBLIC_URL` to `https://YOUR_DOMAIN` or `http://YOUR_IP` to enable
@@ -75,7 +75,7 @@ docker run \
 
 ## Image Feature Overview
 
-The `ghcr.io/carneirofc/baserow:latest` image by default runs all of Saveroom's various services in
+The `ghcr.io/carneirofc/saveroom:latest` image by default runs all of Saveroom's various services in
 a single container for maximum ease of use.
 
 > This image is designed for simple single server deployments or simple container
@@ -83,7 +83,7 @@ a single container for maximum ease of use.
 >
 > If you are instead looking for images which are better suited for horizontal
 > scaling (e.g. when using [Kubernetes](../../docs/installation/install-with-helm.md)) then please instead use our
-> [ghcr.io/carneirofc/baserow/backend and ghcr.io/carneirofc/baserow/web-frontend](./install-with-docker-compose.md) images
+> [ghcr.io/carneirofc/saveroom/backend and ghcr.io/carneirofc/saveroom/web-frontend](./install-with-docker-compose.md) images
 > instead which deploy each Saveroom service in its own container independently.
 
 A quick summary of its features are:
@@ -127,7 +127,7 @@ docker run \
   -d \
   --name baserow_version_REPLACE_WITH_NEW_VERSION \
   # YOUR STANDARD ARGS HERE
-  ghcr.io/carneirofc/baserow:latest
+  ghcr.io/carneirofc/saveroom:latest
 ```
 
 5. Saveroom will automatically upgrade itself on startup, follow the logs to monitor it:
@@ -193,7 +193,7 @@ docker run \
   -p 80:80 \
   -p 443:443 \
   --restart unless-stopped \
-  ghcr.io/carneirofc/baserow:latest
+  ghcr.io/carneirofc/saveroom:latest
 ```
 
 ### Behind a reverse proxy already handling ssl
@@ -206,7 +206,7 @@ docker run \
   -v baserow_data:/baserow/data \
   -p 80:80 \
   --restart unless-stopped \
-  ghcr.io/carneirofc/baserow:latest
+  ghcr.io/carneirofc/saveroom:latest
 ```
 
 ### On a nonstandard HTTP port
@@ -219,7 +219,7 @@ docker run \
   -v baserow_data:/baserow/data \
   -p 3001:80 \
   --restart unless-stopped \
-  ghcr.io/carneirofc/baserow:latest
+  ghcr.io/carneirofc/saveroom:latest
 ```
 
 ### With an external PostgresSQL server
@@ -238,7 +238,7 @@ docker run \
   -p 80:80 \
   -p 443:443 \
   --restart unless-stopped \
-  ghcr.io/carneirofc/baserow:latest
+  ghcr.io/carneirofc/saveroom:latest
 ```
 
 ### With an external Redis server
@@ -259,7 +259,7 @@ docker run \
   -p 80:80 \
   -p 443:443 \
   --restart unless-stopped \
-  ghcr.io/carneirofc/baserow:latest
+  ghcr.io/carneirofc/saveroom:latest
 ```
 
 ### With an external email server
@@ -279,7 +279,7 @@ docker run \
   -p 80:80 \
   -p 443:443 \
   --restart unless-stopped \
-  ghcr.io/carneirofc/baserow:latest
+  ghcr.io/carneirofc/saveroom:latest
 ```
 
 ### With a Postgresql server running on the same host as the Saveroom docker container
@@ -317,7 +317,7 @@ docker run \
   -v baserow_data:/baserow/data \
   -p 80:80 \
   -p 443:443 \
-  ghcr.io/carneirofc/baserow:latest
+  ghcr.io/carneirofc/saveroom:latest
 ```
 
 ### Supply secrets using files
@@ -344,7 +344,7 @@ docker run \
   -v baserow_data:/baserow/data \
   -p 80:80 \
   -p 443:443 \
-  ghcr.io/carneirofc/baserow:latest
+  ghcr.io/carneirofc/saveroom:latest
 ```
 
 ### Start just the embedded database
@@ -357,7 +357,7 @@ docker run -it \
   --name baserow \
   -p 5432:5432 \
   -v baserow_data:/baserow/data \
-  ghcr.io/carneirofc/baserow:latest \
+  ghcr.io/carneirofc/saveroom:latest \
   start-only-db
 # Now get the password from
 docker exec -it baserow cat /baserow/data/.pgpass
@@ -389,18 +389,18 @@ docker run -it \
   --rm \
   --name baserow \
   -v baserow_data:/baserow/data \
-  ghcr.io/carneirofc/baserow:latest \
+  ghcr.io/carneirofc/saveroom:latest \
   backend-cmd-with-db manage dbshell
 ```
 
 ## Stateless Deployment for Horizontal Scaling
 
 This image can also be configured to deploy Saveroom in a horizontally scalable way.
-We recommend you first consider using our `ghcr.io/carneirofc/baserow/backend` and `ghcr.io/carneirofc/baserow/web-frontend`
+We recommend you first consider using our `ghcr.io/carneirofc/saveroom/backend` and `ghcr.io/carneirofc/saveroom/web-frontend`
 single service per container images
 on [Kubernetes](../../docs/installation/install-with-helm.md).
 However, if you just want to easily horizontally scale Saveroom on something like
-AWS ECS or Google Cloud Run then the `ghcr.io/carneirofc/baserow` can be used.
+AWS ECS or Google Cloud Run then the `ghcr.io/carneirofc/saveroom` can be used.
 
 ### Prerequisites
 
@@ -512,19 +512,19 @@ the command below.
 
 ```bash
 # First read the help message for this command
-docker run -it --rm -v baserow_data:/baserow/data ghcr.io/carneirofc/baserow:latest \
+docker run -it --rm -v baserow_data:/baserow/data ghcr.io/carneirofc/saveroom:latest \
    backend-cmd-with-db backup --help
 
 # Stop Saveroom instance
 docker stop baserow
 
 # The command below backs up Saveroom to the backups folder in the baserow_data volume:
-docker run -it --rm -v baserow_data:/baserow/data ghcr.io/carneirofc/baserow:latest \
+docker run -it --rm -v baserow_data:/baserow/data ghcr.io/carneirofc/saveroom:latest \
    backend-cmd-with-db backup -f /baserow/data/backups/backup.tar.gz
 
 # Or backup to a file on your host instead run something like:
 docker run -it --rm -v baserow_data:/baserow/data -v $PWD:/baserow/host \
-   ghcr.io/carneirofc/baserow:latest backend-cmd-with-db backup -f /baserow/host/backup.tar.gz
+   ghcr.io/carneirofc/saveroom:latest backend-cmd-with-db backup -f /baserow/host/backup.tar.gz
 ```
 
 ### Restore only Saveroom's Postgres Database
@@ -540,13 +540,13 @@ docker stop baserow
 docker run -it --rm \
   -v old_baserow_data_volume_containing_the_backup_tar_gz:/baserow/old_data \
   -v new_baserow_data_volume_to_restore_into:/baserow/data \
-  ghcr.io/carneirofc/baserow:latest backend-cmd-with-db restore -f /baserow/old_data/backup.tar.gz
+  ghcr.io/carneirofc/saveroom:latest backend-cmd-with-db restore -f /baserow/old_data/backup.tar.gz
 
 # Or to restore from a file on your host instead run something like:
 docker run -it --rm \
   -v baserow_data:/baserow/data -v \
   $(pwd):/baserow/host \
-  ghcr.io/carneirofc/baserow:latest backend-cmd-with-db restore -f /baserow/host/backup.tar.gz
+  ghcr.io/carneirofc/saveroom:latest backend-cmd-with-db restore -f /baserow/host/backup.tar.gz
 ```
 
 ## Running healthchecks on Saveroom
@@ -597,7 +597,7 @@ docker run \
   -p 80:80 \
   -p 443:443 \
   --restart unless-stopped \
-  ghcr.io/carneirofc/baserow:latest
+  ghcr.io/carneirofc/saveroom:latest
 ```
 
 Or you can just store it directly in the volume at `baserow_data/env` meaning it will be
@@ -606,7 +606,7 @@ loaded whenever you mount in this data volume.
 ### Building your own image from Saveroom
 
 ```dockerfile
-FROM ghcr.io/carneirofc/baserow:latest
+FROM ghcr.io/carneirofc/saveroom:latest
 
 # Any .sh files found in /baserow/supervisor/env/ will be sourced and loaded at startup
 # useful for storing your own environment variable overrides.
