@@ -42,7 +42,6 @@
                 v-for="(fieldType, type) in fieldTypes"
                 :key="type"
                 v-tooltip="
-                  !fieldType.isDeactivated(workspace.id) &&
                   !fieldType.isEnabled(workspace)
                     ? fieldType.getDisabledTooltip(workspace)
                     : null
@@ -54,8 +53,7 @@
                 :value="fieldType.type"
                 :disabled="
                   (primary && !fieldType.canBePrimaryField) ||
-                  !fieldType.isEnabled(workspace) ||
-                  fieldType.isDeactivated(workspace.id)
+                  !fieldType.isEnabled(workspace)
                 "
                 @click="clickOnItem($event, fieldType)"
               >
@@ -65,28 +63,6 @@
                   :title="fieldType.getName()"
                   >{{ fieldType.getName() }}</span
                 >
-                <i
-                  v-if="fieldType.isDeactivated(workspace.id)"
-                  class="iconoir-lock"
-                ></i>
-                <component
-                  :is="
-                    fieldType.getDeactivatedClickModal(workspace.id)
-                      ? fieldType.getDeactivatedClickModal(workspace.id)[0]
-                      : null
-                  "
-                  :ref="'deactivatedClickModal-' + fieldType.type"
-                  :v-if="
-                    fieldType.isDeactivated(workspace.id) &&
-                    fieldType.getDeactivatedClickModal(workspace.id)
-                  "
-                  v-bind="
-                    fieldType.getDeactivatedClickModal(workspace.id)
-                      ? fieldType.getDeactivatedClickModal(workspace.id)[1]
-                      : null
-                  "
-                  :workspace="workspace"
-                ></component>
                 <component
                   :is="
                     fieldType.getDisabledClickModal(workspace)
@@ -421,9 +397,7 @@ export default {
       this.submit()
     },
     clickOnItem(event, fieldType) {
-      if (fieldType.isDeactivated(this.workspace.id)) {
-        this.$refs[`deactivatedClickModal-${fieldType.type}`][0].show()
-      } else if (!fieldType.isEnabled(this.workspace)) {
+      if (!fieldType.isEnabled(this.workspace)) {
         this.$refs[`disabledClickModal-${fieldType.type}`][0].show()
       }
     },

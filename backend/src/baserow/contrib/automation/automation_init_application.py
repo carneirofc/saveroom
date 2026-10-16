@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from django.conf import settings
 from django.utils import translation
 from django.utils.translation import gettext as _
 
@@ -27,7 +28,9 @@ class AutomationApplicationTypeInitApplication:
 
         with translation.override(user.profile.language):
             self.workflow_name = _("Workflow")
-            self.integration_name = _("Local Baserow")
+            self.integration_name = _("Local %(app_name)s") % {
+                "app_name": settings.BRANDING_APP_NAME
+            }
 
     def create_workflow(self, name: str) -> "AutomationWorkflow":
         return AutomationWorkflowService().create_workflow(

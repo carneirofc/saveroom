@@ -21,7 +21,7 @@ def load_test_data():
 
     for i in range(3):
         # Create main admin
-        email = f"admin{i + 1}@baserow.io" if i > 0 else "admin@baserow.io"
+        email = f"admin{i + 1}@example.com" if i > 0 else "admin@example.com"
         try:
             admin = user_handler.create_user(f"Admin {i}", email, "password")
         except UserAlreadyExist:
@@ -51,7 +51,7 @@ def load_test_data():
             )
 
         # Create a second admin for the workspace
-        email = f"admin{i + 1}_bis@baserow.io" if i > 0 else "admin_bis@baserow.io"
+        email = f"admin{i + 1}_bis@example.com" if i > 0 else "admin_bis@example.com"
         try:
             admin_bis = user_handler.create_user(
                 f"Admin {i + 1} bis", email, "password"
@@ -69,7 +69,7 @@ def load_test_data():
             member_email_prefix = (
                 f"{member_email_prefix}_{j + 1}" if i > 0 else member_email_prefix
             )
-            member_email = f"{member_email_prefix}@baserow.io"
+            member_email = f"{member_email_prefix}@example.com"
             try:
                 member = user_handler.create_user(
                     f"Member {i + 1} {j + 1}", member_email, "password"

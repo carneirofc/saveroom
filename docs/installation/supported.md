@@ -2,13 +2,13 @@
 
 Software versions are divided into the following groups:
 
-* `Supported`: Baserow should run with this software without any issues, submit bug
+* `Supported`: Saveroom should run with this software without any issues, submit bug
   reports if it is not the case.
-* `Tested`: The specific Baserow version was tested on this version 
+* `Tested`: The specific Saveroom version was tested on this version 
   before the release.
 * `Recommended`: Recommended software for the best experience.  
 
-## Baserow 2.3.2
+## Saveroom 0.6.0
 
 
 | Dependency     | Supported versions | Tested versions | Recommended versions | 
@@ -20,6 +20,6 @@ Software versions are divided into the following groups:
 | Node.js        | >= 24.0.0          | 24.0.0          | >= 24.0.0            |
 | Docker         | >= 19.03           | Latest          | Latest               |
 | docker-compose | >= 1.19.0          | Latest          | Latest               |
-| PostgreSQL     | >= 14              | 14              | 15+                  |
+| PostgreSQL     | >= 14              | 14              | 18                   |
 | pgvector       | >= 0.8.1           | 0.8.1           | Latest               |
 | Redis          | >= 6.2.7           | 6.2.7           | Latest               |

@@ -26,9 +26,12 @@ from baserow.api.exceptions import (
 from baserow.api.mixins import SearchableViewMixin, SortableViewMixin
 from baserow.api.schemas import get_error_schema
 from baserow.api.user.registries import member_data_registry
+from baserow.api.utils import validate_data
+from baserow.api.workspaces.teams.errors import ERROR_TEAM_DOES_NOT_EXIST
 from baserow.api.workspaces.users.errors import (
     ERROR_CANNOT_DELETE_YOURSELF_FROM_GROUP,
     ERROR_GROUP_USER_DOES_NOT_EXIST,
+    ERROR_USERS_CANNOT_BE_ADDED,
 )
 from baserow.core.db import specific_queryset
 from baserow.core.exceptions import (
@@ -41,13 +44,20 @@ from baserow.core.exceptions import (
 from baserow.core.handler import CoreHandler
 from baserow.core.models import WorkspaceUser
 from baserow.core.operations import ListWorkspaceUsersWorkspaceOperationType
+from baserow.core.registries import workspace_users_add_option_registry
+from baserow.core.teams.exceptions import TeamDoesNotExist
 from baserow.core.two_factor_auth.models import TwoFactorAuthProviderModel
+from baserow.core.workspace_users import UsersNotFound, WorkspaceUsersService
 
 from .generated_serializers import ListWorkspaceUsersWithMemberDataSerializer
 from .serializers import (
+    AddWorkspaceUsersSerializer,
     GetWorkspaceUsersViewParamsSerializer,
     UpdateWorkspaceUserSerializer,
+    WorkspaceUserCandidateSerializer,
+    WorkspaceUserCandidatesQuerySerializer,
     WorkspaceUserSerializer,
+    get_add_workspace_users_serializer,
 )
 
 
@@ -85,8 +95,7 @@ class WorkspaceUsersView(APIView, SearchableViewMixin, SortableViewMixin):
         operation_id="list_workspace_users",
         description=(
             "Lists all the users that are in a workspace if the authorized user has admin "
-            "permissions to the related workspace. To add a user to a workspace an invitation "
-            "must be sent first."
+            "permissions to the related workspace."
         ),
         responses={
             200: ListWorkspaceUsersWithMemberDataSerializer(many=True),
@@ -151,6 +160,120 @@ class WorkspaceUsersView(APIView, SearchableViewMixin, SortableViewMixin):
             )
 
         return Response(serializer.data)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="workspace_id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.INT,
+                description="Adds users to this workspace.",
+            ),
+        ],
+        tags=["Workspaces"],
+        operation_id="add_workspace_users",
+        description=(
+            "Adds users that already have an account to the workspace, optionally "
+            "straight into teams of the workspace and with a default access level. "
+            "Users that are already members keep their permissions but still join "
+            "the teams. Requires workspace admin."
+        ),
+        request=AddWorkspaceUsersSerializer,
+        responses={
+            200: WorkspaceUserSerializer(many=True),
+            400: get_error_schema(
+                [
+                    "ERROR_USER_NOT_IN_GROUP",
+                    "ERROR_USER_INVALID_GROUP_PERMISSIONS",
+                    "ERROR_USERS_CANNOT_BE_ADDED",
+                    "ERROR_REQUEST_BODY_VALIDATION",
+                ]
+            ),
+            404: get_error_schema(
+                ["ERROR_GROUP_DOES_NOT_EXIST", "ERROR_TEAM_DOES_NOT_EXIST"]
+            ),
+        },
+    )
+    @transaction.atomic
+    @map_exceptions(
+        {
+            WorkspaceDoesNotExist: ERROR_GROUP_DOES_NOT_EXIST,
+            UserNotInWorkspace: ERROR_USER_NOT_IN_GROUP,
+            UserInvalidWorkspacePermissionsError: ERROR_USER_INVALID_GROUP_PERMISSIONS,
+            UsersNotFound: ERROR_USERS_CANNOT_BE_ADDED,
+            TeamDoesNotExist: ERROR_TEAM_DOES_NOT_EXIST,
+        }
+    )
+    def post(self, request, workspace_id):
+        data = validate_data(
+            get_add_workspace_users_serializer(), request.data, return_validated=True
+        )
+        workspace = CoreHandler().get_workspace(workspace_id)
+        options = {
+            option_type.type: data.get(option_type.type)
+            for option_type in workspace_users_add_option_registry.get_all()
+        }
+        workspace_users = WorkspaceUsersService().add_users(
+            request.user,
+            workspace,
+            data["user_ids"],
+            data["permissions"],
+            team_ids=data["team_ids"],
+            options=options,
+        )
+        return Response(WorkspaceUserSerializer(workspace_users, many=True).data)
+
+
+class WorkspaceUserCandidatesView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="workspace_id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.INT,
+                description="The workspace to find users to add for.",
+            ),
+            OpenApiParameter(
+                name="search",
+                location=OpenApiParameter.QUERY,
+                type=OpenApiTypes.STR,
+                description="At least 3 characters of the name or email.",
+            ),
+        ],
+        tags=["Workspaces"],
+        operation_id="list_workspace_user_candidates",
+        description=(
+            "Finds active accounts, not yet members of the workspace, whose name or "
+            "email contains the search. Returns at most 20. Requires workspace admin."
+        ),
+        responses={
+            200: WorkspaceUserCandidateSerializer(many=True),
+            400: get_error_schema(
+                [
+                    "ERROR_USER_NOT_IN_GROUP",
+                    "ERROR_USER_INVALID_GROUP_PERMISSIONS",
+                    "ERROR_QUERY_PARAMETER_VALIDATION",
+                ]
+            ),
+            404: get_error_schema(["ERROR_GROUP_DOES_NOT_EXIST"]),
+        },
+    )
+    @map_exceptions(
+        {
+            WorkspaceDoesNotExist: ERROR_GROUP_DOES_NOT_EXIST,
+            UserNotInWorkspace: ERROR_USER_NOT_IN_GROUP,
+            UserInvalidWorkspacePermissionsError: ERROR_USER_INVALID_GROUP_PERMISSIONS,
+        }
+    )
+    @validate_query_parameters(WorkspaceUserCandidatesQuerySerializer)
+    def get(self, request, workspace_id, query_params):
+        workspace = CoreHandler().get_workspace(workspace_id)
+        users = WorkspaceUsersService().search_candidates(
+            request.user, workspace, query_params["search"]
+        )
+        return Response(WorkspaceUserCandidateSerializer(users, many=True).data)
 
 
 class WorkspaceUserView(APIView):
@@ -228,7 +351,7 @@ class WorkspaceUserView(APIView):
             400: get_error_schema(
                 ["ERROR_USER_NOT_IN_GROUP", "ERROR_USER_INVALID_GROUP_PERMISSIONS"]
             ),
-            404: get_error_schema(["ERROR_GROUP_INVITATION_DOES_NOT_EXIST"]),
+            404: get_error_schema(["ERROR_GROUP_USER_DOES_NOT_EXIST"]),
         },
     )
     @transaction.atomic

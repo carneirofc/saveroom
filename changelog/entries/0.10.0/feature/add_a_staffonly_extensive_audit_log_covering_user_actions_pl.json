@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Add a staff-only extensive audit log covering user actions plus sign-in, sign-out and failed sign-in events.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-15"
+}

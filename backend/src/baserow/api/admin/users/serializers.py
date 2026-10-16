@@ -20,7 +20,7 @@ _USER_ADMIN_SERIALIZER_API_DOC_KWARGS = {
     },
     "is_staff": {
         "help_text": "Designates whether this user is an admin and has access to all "
-        "workspaces and Baserow's admin areas. "
+        "workspaces and Saveroom's admin areas. "
     },
 }
 

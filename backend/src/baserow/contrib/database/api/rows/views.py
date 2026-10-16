@@ -308,7 +308,7 @@ class RowsView(APIView):
                     "A flag query parameter that, if provided with one of the "
                     "following values: `y`, `yes`, `true`, `t`, `on`, `1`, or an "
                     "empty value, will cause the returned JSON to use the "
-                    "user-specified field names instead of the internal Baserow "
+                    "user-specified field names instead of the internal Saveroom "
                     "field names (e.g., field_123)."
                 ),
             ),
@@ -442,7 +442,7 @@ class RowsView(APIView):
             model = table.get_model()
             queryset = model.objects.all().enhance_by_fields(**field_kwargs)
             queryset = view_handler.apply_filters(view, queryset)
-            queryset = view_handler.apply_sorting(view, queryset)
+            queryset = view_handler.apply_ordering(view, queryset)
         else:
             model = table.get_model(
                 fields=fields,
@@ -508,7 +508,7 @@ class RowsView(APIView):
                     "A flag query parameter that, if provided with one of the "
                     "following values: `y`, `yes`, `true`, `t`, `on`, `1`, or an "
                     "empty value, will cause this endpoint to expect and return the "
-                    "user-specified field names instead of the internal Baserow "
+                    "user-specified field names instead of the internal Saveroom "
                     "field names (e.g., field_123)."
                 ),
             ),
@@ -788,7 +788,7 @@ class RowView(APIView):
                     "A flag query parameter that, if provided with one of the "
                     "following values: `y`, `yes`, `true`, `t`, `on`, `1`, or an "
                     "empty value, will cause the returned JSON to use the "
-                    "user-specified field names instead of the internal Baserow "
+                    "user-specified field names instead of the internal Saveroom "
                     "field names (e.g., field_123)."
                 ),
             ),
@@ -918,7 +918,7 @@ class RowView(APIView):
                     "A flag query parameter that, if provided with one of the "
                     "following values: `y`, `yes`, `true`, `t`, `on`, `1`, or an "
                     "empty value, will cause this endpoint to expect and return the "
-                    "user-specified field names instead of the internal Baserow "
+                    "user-specified field names instead of the internal Saveroom "
                     "field names (e.g., field_123)."
                 ),
             ),
@@ -1191,7 +1191,7 @@ class RowMoveView(APIView):
                     "A flag query parameter that, if provided with one of the "
                     "following values: `y`, `yes`, `true`, `t`, `on`, `1`, or an "
                     "empty value, will cause the returned JSON to use the "
-                    "user-specified field names instead of the internal Baserow "
+                    "user-specified field names instead of the internal Saveroom "
                     "field names (e.g., field_123)."
                 ),
             ),
@@ -1319,7 +1319,7 @@ class BatchRowsView(APIView):
                     "A flag query parameter that, if provided with one of the "
                     "following values: `y`, `yes`, `true`, `t`, `on`, `1`, or an "
                     "empty value, will cause this endpoint to expect and return the "
-                    "user-specified field names instead of the internal Baserow "
+                    "user-specified field names instead of the internal Saveroom "
                     "field names (e.g., field_123)."
                 ),
             ),
@@ -1485,7 +1485,7 @@ class BatchRowsView(APIView):
                     "A flag query parameter that, if provided with one of the "
                     "following values: `y`, `yes`, `true`, `t`, `on`, `1`, or an "
                     "empty value, will cause this endpoint to expect and return the "
-                    "user-specified field names instead of the internal Baserow "
+                    "user-specified field names instead of the internal Saveroom "
                     "field names (e.g., field_123)."
                 ),
             ),
@@ -1763,7 +1763,7 @@ class RowAdjacentView(APIView):
                     "A flag query parameter that, if provided with one of the "
                     "following values: `y`, `yes`, `true`, `t`, `on`, `1`, or an "
                     "empty value, will cause the returned JSON to use the "
-                    "user-specified field names instead of the internal Baserow "
+                    "user-specified field names instead of the internal Saveroom "
                     "field names (e.g., field_123)."
                 ),
             ),

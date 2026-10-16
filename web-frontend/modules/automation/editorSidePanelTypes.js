@@ -11,10 +11,6 @@ export class editorSidePanelType extends Registerable {
     return ''
   }
 
-  isDeactivated() {
-    return false
-  }
-
   getOrder() {
     return this.order
   }

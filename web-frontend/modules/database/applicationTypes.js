@@ -1,7 +1,5 @@
 import { ApplicationType } from '@baserow/modules/core/applicationTypes'
 import Sidebar from '@baserow/modules/database/components/sidebar/Sidebar'
-import TemplateSidebar from '@baserow/modules/database/components/sidebar/TemplateSidebar'
-import TableTemplate from '@baserow/modules/database/components/table/TableTemplate'
 import { populateTable } from '@baserow/modules/database/store/table'
 import GridViewRowExpandButton from '@baserow/modules/database/components/view/grid/GridViewRowExpandButton'
 import DatabaseForm from '@baserow/modules/database/components/form/DatabaseForm'
@@ -24,7 +22,7 @@ export class DatabaseApplicationType extends ApplicationType {
   }
 
   getIconClass() {
-    return 'iconoir-db'
+    return 'iconoir-database'
   }
 
   getName() {
@@ -53,24 +51,6 @@ export class DatabaseApplicationType extends ApplicationType {
 
   getApplicationContextComponent() {
     return ApplicationContext
-  }
-
-  getTemplateSidebarComponent() {
-    return TemplateSidebar
-  }
-
-  getTemplatesPageComponent() {
-    return TableTemplate
-  }
-
-  getTemplatePage(application) {
-    if (application.tables.length === 0) {
-      return null
-    }
-    return {
-      database: application,
-      table: application.tables[0],
-    }
   }
 
   getDependentsName() {

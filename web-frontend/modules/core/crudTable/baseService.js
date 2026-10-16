@@ -1,3 +1,13 @@
+/**
+ * Serializes CrudTable's `columnSorts` into the `sorts` query parameter. Exported so
+ * anything that has to reproduce a CrudTable request (such as exporting exactly what
+ * is on screen) cannot drift from what `fetch` sends.
+ */
+export const serializeSorts = (sorts) =>
+  (sorts || [])
+    .map((s) => `${s.direction === 'asc' ? '-' : '+'}${s.key}`)
+    .join(',')
+
 export default (client, baseUrl, isPaginated = true) => {
   return {
     /**
@@ -31,12 +41,7 @@ export default (client, baseUrl, isPaginated = true) => {
         params.search = searchQuery
       }
       if (sorts.length > 0) {
-        params.sorts = sorts
-          .map((s) => {
-            const direction = s.direction === 'asc' ? '-' : '+'
-            return `${direction}${s.key}`
-          })
-          .join(',')
+        params.sorts = serializeSorts(sorts)
       }
 
       return client.get(baseUrl, { params })

@@ -308,7 +308,6 @@ class BuilderConfig(AppConfig):
 
         from .workflow_actions.registries import builder_workflow_action_type_registry
         from .workflow_actions.workflow_action_types import (
-            AIAgentWorkflowActionType,
             CoreCSVFileReaderActionType,
             CoreHttpRequestActionType,
             CoreSMTPEmailActionType,
@@ -344,7 +343,6 @@ class BuilderConfig(AppConfig):
         builder_workflow_action_type_registry.register(CoreSMTPEmailActionType())
         builder_workflow_action_type_registry.register(CoreCSVFileReaderActionType())
         builder_workflow_action_type_registry.register(CoreStartWorkflowActionType())
-        builder_workflow_action_type_registry.register(AIAgentWorkflowActionType())
         builder_workflow_action_type_registry.register(
             SlackWriteMessageWorkflowActionType()
         )

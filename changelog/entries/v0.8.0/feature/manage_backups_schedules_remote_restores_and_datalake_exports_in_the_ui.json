@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Manage backups from the workspace menu: back up now (optionally to external storage), restore or delete backups, schedule recurring backups and restore backups kept on external storage. Manage a database's datalake export schedules, run them and follow their runs from the database menu.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-13"
+}

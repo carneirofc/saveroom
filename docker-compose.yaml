@@ -1,0 +1,195 @@
+# Simple, self-contained local stack for this Baserow fork.
+#
+#   cp .env.compose.example .env && docker compose up -d --build
+#   open http://localhost
+#
+# Builds the backend and web-frontend from source (so your local changes run),
+# with PostgreSQL and Redis as separate services and a Caddy reverse proxy that
+# serves the whole app on a single origin (http://localhost).
+#
+# For the contributor hot-reload harness use `just dev` / `just dc-dev` instead.
+# For OpenShift use the Helm chart in deploy/helm/saveroom/.
+
+x-backend-env: &backend-env
+  SECRET_KEY: ${SECRET_KEY:?}
+  BASEROW_JWT_SIGNING_KEY: ${BASEROW_JWT_SIGNING_KEY:-}
+  DATABASE_HOST: db
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: ${DATABASE_NAME:-baserow}
+  DATABASE_USER: ${DATABASE_USER:-baserow}
+  DATABASE_PASSWORD: ${DATABASE_PASSWORD:?}
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: ${REDIS_PASSWORD:?}
+  BASEROW_PUBLIC_URL: ${BASEROW_PUBLIC_URL:-http://localhost}
+  PRIVATE_BACKEND_URL: http://backend:8000
+  MIGRATE_ON_STARTUP: "true"
+  # Built-in templates are stripped in this fork, so never try to sync them.
+  SYNC_TEMPLATES_ON_STARTUP: "false"
+  # Single sign-on. See .env.example and docs/installation/sso-oidc.md.
+  BASEROW_OIDC_PROVIDERS: ${BASEROW_OIDC_PROVIDERS:-}
+  BASEROW_OIDC_ONLY: ${BASEROW_OIDC_ONLY:-}
+  # External storage for backups and datalake exports. Secrets referenced through
+  # `*_file` keys must be mounted into the backend and celery containers. See
+  # docs/installation/data-destinations.md.
+  BASEROW_DATA_DESTINATIONS: ${BASEROW_DATA_DESTINATIONS:-}
+  # Product name in emails and the API docs; the web-frontend reads it too.
+  BASEROW_BRANDING_APP_NAME: ${BASEROW_BRANDING_APP_NAME:-}
+
+services:
+  db:
+    image: pgvector/pgvector:pg18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-baserow}
+      POSTGRES_USER: ${DATABASE_USER:-baserow}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?}
+      # postgres 18+ defaults PGDATA to /var/lib/postgresql/<major>/docker and
+      # refuses to start with a volume on the old path. Pin the old layout so
+      # the pgdata volume keeps working.
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-baserow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:?}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: prod
+    restart: unless-stopped
+    environment: *backend-env
+    volumes:
+      - media:/baserow/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: prod
+    restart: unless-stopped
+    command: celery-worker
+    environment: *backend-env
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/baserow/backend/docker/docker-entrypoint.sh celery-worker-healthcheck",
+        ]
+    volumes:
+      - media:/baserow/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Runs the `export` queue: jobs (imports, exports, duplication, snapshots),
+  # webhooks, search indexing, notification emails, backups and cleanup.
+  celery-export-worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: prod
+    restart: unless-stopped
+    command: celery-exportworker
+    environment: *backend-env
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/baserow/backend/docker/docker-entrypoint.sh celery-exportworker-healthcheck",
+        ]
+    volumes:
+      - media:/baserow/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: prod
+    restart: unless-stopped
+    command: celery-beat
+    stop_signal: SIGQUIT
+    environment: *backend-env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web-frontend:
+    build:
+      context: .
+      dockerfile: web-frontend/Dockerfile
+      target: prod
+    restart: unless-stopped
+    environment:
+      BASEROW_PUBLIC_URL: ${BASEROW_PUBLIC_URL:-http://localhost}
+      PRIVATE_BACKEND_URL: http://backend:8000
+      # Runtime branding (docs/installation/branding.md): no rebuild needed.
+      BASEROW_BRANDING_APP_NAME: ${BASEROW_BRANDING_APP_NAME:-}
+      BASEROW_BRANDING_COLORS: ${BASEROW_BRANDING_COLORS:-}
+      BASEROW_BRANDING_SITE_URL: ${BASEROW_BRANDING_SITE_URL:-}
+      BASEROW_BRANDING_DOCS_URL: ${BASEROW_BRANDING_DOCS_URL:-}
+      BASEROW_BRANDING_SITE_TITLE: ${BASEROW_BRANDING_SITE_TITLE:-}
+      BASEROW_BRANDING_SHOW_ATTRIBUTION: ${BASEROW_BRANDING_SHOW_ATTRIBUTION:-}
+    # To customize logos, colors, icons and CSS, mount a branding directory
+    # (start from deploy/branding-example) read-only at /baserow/branding:
+    # volumes:
+    #   - ./branding:/baserow/branding:ro
+    depends_on:
+      - backend
+
+  caddy:
+    # Built from source against a pinned Go toolchain; the official caddy image
+    # lags behind Go security releases. See deploy/caddy/Dockerfile.
+    build:
+      context: .
+      dockerfile: deploy/caddy/Dockerfile
+    restart: unless-stopped
+    environment:
+      BASEROW_CADDY_ADDRESSES: ":80"
+      BASEROW_PUBLIC_URL: ${BASEROW_PUBLIC_URL:-http://localhost}
+      PRIVATE_BACKEND_URL: http://backend:8000
+      PRIVATE_WEB_FRONTEND_URL: http://web-frontend:3000
+    ports:
+      - "${WEB_FRONTEND_PORT:-80}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - media:/baserow/media
+      - caddy_config:/config
+      - caddy_data:/data
+    depends_on:
+      - backend
+      - web-frontend
+
+volumes:
+  pgdata:
+  media:
+  caddy_config:
+  caddy_data:

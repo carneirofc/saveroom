@@ -10,6 +10,11 @@ ERROR_GROUP_USER_ALREADY_EXISTS = (
     HTTP_400_BAD_REQUEST,
     "The user is already a member of the group.",
 )
+ERROR_USERS_CANNOT_BE_ADDED = (
+    "ERROR_USERS_CANNOT_BE_ADDED",
+    HTTP_400_BAD_REQUEST,
+    "Some of the users don't exist, are deactivated or are being deleted.",
+)
 ERROR_CANNOT_DELETE_YOURSELF_FROM_GROUP = (
     "ERROR_CANNOT_DELETE_YOURSELF_FROM_GROUP",
     HTTP_400_BAD_REQUEST,

@@ -19,7 +19,7 @@
           ref="fieldsButton"
           size="tiny"
           type="secondary"
-          icon="iconoir-eye-off"
+          icon="iconoir-eye-closed"
           @click="toggleFieldsContext"
         >
           {{ $t('selectRowContent.hideFields') }}
@@ -473,7 +473,14 @@ export default {
           {},
           'page/'
         )
-        this.select(populateRow(rowCreated))
+        const populated = populateRow(rowCreated)
+        if (!this.selectedRows.includes(populated.id)) {
+          this.$emit('selected', {
+            row: populated,
+            primary: this.primary,
+            fields: this.fields,
+          })
+        }
       }
     },
     toggleFieldsContext() {

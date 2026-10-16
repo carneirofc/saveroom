@@ -458,14 +458,24 @@ def get_example_multiple_rows_metadata_serializer() -> serializers.Serializer:
     :return: A serializer containing a dictionary of row id to row metadata.
     """
 
+    help_text = (
+        "An object keyed by row id with a value being an object containing "
+        "additional metadata about that row. A row might not have metadata and will "
+        "not be present as a key if so."
+    )
+
+    if not row_metadata_registry.get_all():
+        # Without a registered metadata type the per row serializer has no fields at
+        # all, which the schema generator can't turn into a component. Fall back to an
+        # unconstrained object instead.
+        return serializers.DictField(required=False, help_text=help_text)
+
     per_row_serializer = get_example_row_metadata_serializer()
 
     return serializers.DictField(
         child=per_row_serializer(),
         required=False,
-        help_text="An object keyed by row id with a value being an object containing "
-        "additional metadata about that row. A row might not have metadata and will "
-        "not be present as a key if so.",
+        help_text=help_text,
     )
 
 

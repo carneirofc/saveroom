@@ -12,7 +12,7 @@ just b test tests/path/        # Run specific tests
 
 # With ramdisk database (2-5x faster)
 just test-db start             # Start PostgreSQL with tmpfs
-DATABASE_URL=postgres://baserow:baserow@localhost:5433/baserow just b test -n=auto
+DATABASE_URL=postgres://baserow:baserow@localhost:5431/baserow just b test -n=auto
 ```
 
 ### Test Settings
@@ -84,11 +84,11 @@ TEST_ENV_FILE=.env.testing-local just b test
 Use a PostgreSQL container with tmpfs (in-memory storage) for 2-5x faster tests:
 
 ```bash
-# Start ramdisk database on port 5433
+# Start ramdisk database on port 5431
 just test-db up
 
 # Run tests against it
-DATABASE_URL=postgres://baserow:baserow@localhost:5433/baserow just b test -n=auto
+DATABASE_URL=postgres://baserow:baserow@localhost:5431/baserow just b test -n=auto
 
 # Stop when done
 just test-db down
@@ -97,9 +97,9 @@ just test-db down
 just test-db ps
 ```
 
-**Configuration**: Set `TEST_DB_PORT` environment variable to use a different port (default: 5433).
+**Configuration**: Set `TEST_DB_PORT` environment variable to use a different port (default: 5431).
 
-The ramdisk database (`baserow-test-db` container using `pgvector/pgvector:pg14`) runs with optimized settings:
+The ramdisk database (`baserow-test-db` container using `pgvector/pgvector:pg18`) runs with optimized settings:
 - **tmpfs storage**: All data in RAM (8GB allocated)
 - **Large shared_buffers**: 512MB for better caching
 - **Disabled fsync/WAL**: No durability overhead

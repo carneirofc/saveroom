@@ -1,0 +1,9 @@
+{
+    "type": "refactor",
+    "message": "Remaining hard-coded interface colors now use the theme palette, so they follow custom branding.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-25"
+}

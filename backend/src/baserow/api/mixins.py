@@ -172,7 +172,10 @@ class FilterableViewMixin:
         q = Q()
 
         for key, field in self.filters_field_mapping.items():
-            if (value := query_params.get(key)) is None:
+            # An omitted filter and a filter left blank by the client mean the same
+            # thing. Comparing against "" rather than testing falsiness keeps a
+            # legitimate "0" filtering.
+            if (value := query_params.get(key)) in (None, ""):
                 continue
 
             q.add(Q(**{f"{field}": Value(value)}), Q.AND)

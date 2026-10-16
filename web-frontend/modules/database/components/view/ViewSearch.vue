@@ -17,7 +17,7 @@
       :aria-label="$t('viewSearch.clearSearch')"
       @click.stop.prevent="clear"
     >
-      <i class="iconoir-cancel"></i>
+      <i class="iconoir-xmark"></i>
     </a>
     <ViewSearchContext
       ref="context"

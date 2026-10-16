@@ -571,8 +571,9 @@ msgid "User \"%(user_email)s\" (%(user_id)s) reset password"
 msgstr ""
 
 #: src/baserow/core/user/emails.py:16
-msgid "Reset password - Baserow"
-msgstr "Resetar senha - Baserow"
+#, python-format
+msgid "Reset password - %(app_name)s"
+msgstr "Resetar senha - %(app_name)s"
 
 #: src/baserow/core/user/emails.py:37
 msgid "Account deletion scheduled - Baserow"

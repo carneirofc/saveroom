@@ -14,7 +14,7 @@ class Command(MigrateCommand):
         "or processes running migrations at the same time. "
         "You should pretty much always use this command rather than the default "
         "migrate but it is critical to always use this command in any deployment of "
-        "Baserow which has multiple Baserow containers or backend services running to "
+        "Saveroom which has multiple Saveroom containers or backend services running to "
         "prevent concurrency related migrations bugs."
     )
 

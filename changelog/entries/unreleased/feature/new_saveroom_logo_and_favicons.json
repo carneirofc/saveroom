@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Replaced the upstream Baserow logo, favicons and \"Local\" integration icon with Saveroom's own: an arched save-room door whose panels form a table grid. Logos set through runtime branding still take precedence.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-09"
+}

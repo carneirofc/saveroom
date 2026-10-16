@@ -1,11 +1,7 @@
 import { Registerable } from '@baserow/modules/core/registry'
 import AirtableImportForm from '@baserow/modules/database/components/airtable/AirtableImportForm'
-import TemplateImportForm from '@baserow/modules/database/components/onboarding/TemplateImportForm'
-import DatabaseTemplatePreview from '@baserow/modules/database/components/onboarding/DatabaseTemplatePreview'
 import { DatabaseOnboardingType } from '@baserow/modules/database/onboardingTypes'
-import { DatabaseApplicationType } from '@baserow/modules/database/applicationTypes'
 import AirtableService from '@baserow/modules/database/services/airtable'
-import TemplateService from '@baserow/modules/core/services/template'
 
 /**
  * Base class for database onboarding step types. Each type represents a different
@@ -30,8 +26,8 @@ export class DatabaseOnboardingStepType extends Registerable {
 
   /**
    * The Vue component to render for this step type's form, or null if using the
-   * default name input. Components like AirtableImportForm or TemplateImportForm
-   * should be returned here.
+   * default name input. Components like AirtableImportForm should be returned
+   * here.
    */
   getComponent() {
     return null
@@ -212,75 +208,6 @@ export class AirtableDatabaseOnboardingStepType extends DatabaseOnboardingStepTy
     // original response)
     const completedJob = responses[DatabaseOnboardingType.getType()]
     const database = completedJob?.database
-    if (database) {
-      const firstTableId = database.tables[0]?.id || 0
-      return {
-        name: 'database-table',
-        params: {
-          databaseId: database.id,
-          tableId: firstTableId,
-        },
-      }
-    }
-    return null
-  }
-}
-
-export class TemplateDatabaseOnboardingStepType extends DatabaseOnboardingStepType {
-  static getType() {
-    return 'template'
-  }
-
-  getOrder() {
-    return 400
-  }
-
-  getLabel() {
-    return this.app.$i18n.t('databaseStep.template')
-  }
-
-  getComponent() {
-    return TemplateImportForm
-  }
-
-  hasNameInput() {
-    return false
-  }
-
-  isValid(data, vuelidate, refs) {
-    const template = data[DatabaseOnboardingType.getType()].template
-    return !!template
-  }
-
-  getPreviewComponent(data) {
-    const template = data[DatabaseOnboardingType.getType()]?.template
-    if (template) {
-      return DatabaseTemplatePreview
-    }
-    return null
-  }
-
-  async completeAfterWorkspace(workspace, stepData) {
-    const template = stepData.template
-    const { data: job } = await TemplateService(this.app.$client).asyncInstall(
-      workspace.id,
-      template.id
-    )
-    return { job }
-  }
-
-  getJobForPolling(data, responses) {
-    return responses[DatabaseOnboardingType.getType()]?.job
-  }
-
-  getCompletedRoute(data, responses) {
-    // After job completion, the response is the completed job (it overwrites the
-    // original response)
-    const completedJob = responses[DatabaseOnboardingType.getType()]
-    const database = completedJob?.installed_applications?.find(
-      (application) => application.type === DatabaseApplicationType.getType()
-    )
-
     if (database) {
       const firstTableId = database.tables[0]?.id || 0
       return {

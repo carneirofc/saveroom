@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
 from django.db import connection, router
+from django.utils import timezone
 
 from baserow.contrib.database.db.schema import safe_django_schema_editor
 from baserow.contrib.database.fields.dependencies.handler import (
@@ -349,7 +350,11 @@ class RowTrashableItemType(TrashableItemType):
 
     def restore(self, trashed_item, trash_entry: TrashEntry):
         try:
-            super().restore(trashed_item, trash_entry)
+            # Restoring changes the row, so `updated_on` is bumped: incremental
+            # consumers of the table, like datalake exports, must see it come back.
+            trashed_item.trashed = False
+            trashed_item.updated_on = timezone.now()
+            trashed_item.save(update_fields=["trashed", "updated_on"])
         except Exception:
             raise FieldDataConstraintException()
 
@@ -380,6 +385,17 @@ class RowTrashableItemType(TrashableItemType):
             dependant_fields=dependant_fields,
         )
         RowHandler().send_dependant_rows_updated(None, table, dependant_rows_updates)
+
+    def trash(self, item_to_trash, requesting_user, trash_entry: TrashEntry):
+        """
+        Sets trashed=True on the row and bumps `updated_on`, because the base
+        implementation only saves `trashed` and incremental consumers of the table,
+        like datalake exports, would otherwise never see the row disappear.
+        """
+
+        item_to_trash.trashed = True
+        item_to_trash.updated_on = timezone.now()
+        item_to_trash.save(update_fields=["trashed", "updated_on"])
 
     def permanently_delete_item(self, row, trash_item_lookup_cache=None):
         RichTextFieldMention.objects.filter(
@@ -478,7 +494,8 @@ class RowsTrashableItemType(TrashableItemType):
         rows_to_restore_queryset = model.objects_and_trash.filter(
             id__in=trashed_item.row_ids
         )
-        rows_to_restore_queryset.update(trashed=False)
+        # `update()` skips `auto_now`, so `updated_on` is set explicitly.
+        rows_to_restore_queryset.update(trashed=False, updated_on=timezone.now())
         rows_to_restore = rows_to_restore_queryset.enhance_by_fields()
         trashed_item.delete()
 
@@ -514,11 +531,14 @@ class RowsTrashableItemType(TrashableItemType):
 
     def trash(self, item_to_trash, requesting_user, trash_entry: TrashEntry):
         """
-        Sets trashed=True for all the rows
+        Sets trashed=True for all the rows. `update()` skips `auto_now`, so
+        `updated_on` is bumped explicitly for incremental consumers of the table.
         """
 
         table_model = self._get_table_model(item_to_trash.table_id)
-        table_model.objects.filter(id__in=item_to_trash.row_ids).update(trashed=True)
+        table_model.objects.filter(id__in=item_to_trash.row_ids).update(
+            trashed=True, updated_on=timezone.now()
+        )
 
     def permanently_delete_item(self, trashed_item, trash_item_lookup_cache=None):
         table_model = self._get_table_model(trashed_item.table_id)

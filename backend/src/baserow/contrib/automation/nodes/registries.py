@@ -3,8 +3,6 @@ from typing import Any, Dict, Optional
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
 
-from rest_framework.exceptions import PermissionDenied
-
 from baserow.contrib.automation.automation_dispatch_context import (
     AutomationDispatchContext,
 )
@@ -17,7 +15,6 @@ from baserow.contrib.automation.nodes.types import AutomationNodeDict
 from baserow.contrib.automation.workflows.models import AutomationWorkflow
 from baserow.core.graph.types import GraphPointPositionType
 from baserow.core.integrations.models import Integration
-from baserow.core.models import Workspace
 from baserow.core.registry import (
     CustomFieldsRegistryMixin,
     EasyImportExportMixin,
@@ -28,16 +25,15 @@ from baserow.core.registry import (
     PublicCustomFieldsInstanceMixin,
     Registry,
 )
-from baserow.core.services.exceptions import (
-    ServiceImproperlyConfiguredDispatchException,
-)
 from baserow.core.services.handler import ServiceHandler
+from baserow.core.services.mixins import ServiceBackedTypeMixin
 from baserow.core.services.registries import ServiceTypeSubClass, service_type_registry
 from baserow.core.services.types import DispatchResult
 from baserow.core.trash.registries import TrashOperationType
 
 
 class AutomationNodeType(
+    ServiceBackedTypeMixin,
     PublicCustomFieldsInstanceMixin,
     InstanceWithFormulaMixin,
     EasyImportExportMixin,
@@ -47,6 +43,7 @@ class AutomationNodeType(
     display_name = _("Unnamed node")
 
     service_type = None
+    service_field_help_text = "The service associated with this automation node."
     parent_property_name = "workflow"
     id_mapping_name = "automation_workflow_nodes"
 
@@ -60,17 +57,6 @@ class AutomationNodeType(
     is_container = False
 
     class SerializedDict(AutomationNodeDict): ...
-
-    def is_deactivated(self, workspace: Workspace) -> bool:
-        """
-        Returns whether this automation node type is deactivated for the workspace.
-        """
-
-        return False
-
-    def raise_if_deactivated(self, workspace: Workspace) -> None:
-        if self.is_deactivated(workspace):
-            raise PermissionDenied("This automation node type is deactivated.")
 
     @property
     def allowed_fields(self):
@@ -341,18 +327,20 @@ class AutomationNodeType(
 
     def get_pytest_params(self, pytest_data_fixture) -> Dict[str, Any]: ...
 
+    def raise_if_misconfigured(self, automation_node: AutomationNode) -> None:
+        """
+        Refuses a node whose saved configuration cannot run. Nothing to refuse by
+        default.
+
+        :param automation_node: The node to check.
+        :raises ServiceImproperlyConfiguredDispatchException: When it cannot run.
+        """
+
     def dispatch(
         self,
         automation_node: AutomationNode,
         dispatch_context: AutomationDispatchContext,
     ) -> DispatchResult:
-        if self.is_deactivated(
-            automation_node.workflow.get_original().automation.workspace
-        ):
-            raise ServiceImproperlyConfiguredDispatchException(
-                "This node type is not available for this workspace."
-            )
-
         return ServiceHandler().dispatch_service(
             automation_node.service.specific, dispatch_context
         )

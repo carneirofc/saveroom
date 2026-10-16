@@ -1,7 +1,7 @@
 // @ts-check
 import withNuxt from "./web-frontend/.nuxt/eslint.config.mjs";
 import globals from "./web-frontend/node_modules/globals/index.js";
-import vitest from "./web-frontend/node_modules/eslint-plugin-vitest/dist/index.mjs";
+import vitest from "./web-frontend/node_modules/@vitest/eslint-plugin/dist/index.mjs";
 import eslintConfigPrettier from "./web-frontend/node_modules/eslint-config-prettier/index.js";
 
 // Export factory function for reusability in plugins
@@ -24,8 +24,6 @@ export const createBaserowConfig = ({ extraSourceFiles = [] } = {}) => {
     {
       files: [
         "web-frontend/**/*.{js,ts,mjs,mts,jsx,tsx,vue}",
-        "premium/web-frontend/**/*.{js,ts,mjs,mts,jsx,tsx,vue}",
-        "enterprise/web-frontend/**/*.{js,ts,mjs,mts,jsx,tsx,vue}",
         ...extraSourceFiles,
       ],
       languageOptions: {
@@ -52,16 +50,16 @@ export const createBaserowConfig = ({ extraSourceFiles = [] } = {}) => {
       },
     },
     // Plugin specific overrides
-    {
-      files: [
-        "premium/web-frontend/**/*.{js,ts,mjs,mts,jsx,tsx,vue}",
-        "enterprise/web-frontend/**/*.{js,ts,mjs,mts,jsx,tsx,vue}",
-        ...extraSourceFiles, // Apply these rules to plugins too
-      ],
-      rules: {
-        "vue/order-in-components": "off",
-      },
-    },
+    ...(extraSourceFiles.length > 0
+      ? [
+          {
+            files: extraSourceFiles, // Apply these rules to plugins too
+            rules: {
+              "vue/order-in-components": "off",
+            },
+          },
+        ]
+      : []),
     // Test files configuration
     {
       files: [
@@ -76,6 +74,11 @@ export const createBaserowConfig = ({ extraSourceFiles = [] } = {}) => {
       },
       rules: {
         ...vitest.configs.recommended.rules,
+        // Not part of the recommended set of the deprecated eslint-plugin-vitest
+        // this plugin replaced; existing specs predate them. See #30.
+        "vitest/no-conditional-expect": "off",
+        "vitest/no-standalone-expect": "off",
+        "vitest/prefer-called-exactly-once-with": "off",
       },
     },
   ]);

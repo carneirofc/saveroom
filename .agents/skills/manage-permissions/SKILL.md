@@ -30,23 +30,22 @@ Then inspect the nearest existing implementation in the same product area:
 - Default manager order: `backend/src/baserow/config/settings/base.py`
 - Core frontend managers: `web-frontend/modules/core/permissionManagerTypes.js`
 - Core frontend registration: `web-frontend/modules/core/plugin.js`
-- Premium examples: `premium/backend/src/baserow_premium/permission_manager.py`,
-  `premium/web-frontend/modules/baserow_premium/permissionManagerTypes.js`,
-  `premium/web-frontend/modules/baserow_premium/plugin.js`
-- Enterprise examples: `enterprise/backend/src/baserow_enterprise/role/permission_manager.py`,
-  `enterprise/backend/src/baserow_enterprise/apps.py`,
-  `enterprise/web-frontend/modules/baserow_enterprise/permissionManagerTypes.js`,
-  `enterprise/web-frontend/modules/baserow_enterprise/plugin.js`
+- Builder examples: `backend/src/baserow/contrib/builder/permission_manager.py`,
+  `backend/src/baserow/contrib/builder/elements/permission_manager.py`,
+  `backend/src/baserow/contrib/builder/apps.py`
+- Automation examples: `backend/src/baserow/contrib/automation/workflows/permission_manager.py`,
+  `backend/src/baserow/contrib/automation/nodes/permission_manager.py`,
+  `backend/src/baserow/contrib/automation/apps.py`
 
 Useful searches:
 
 Use `rg -n "<pattern>" <paths>` as a faster equivalent when `rg` is available.
 
-- `grep -RInE "class .*OperationType" backend/src premium/backend enterprise/backend`
-- `grep -RInE "operation_type_registry.register" backend/src premium/backend enterprise/backend`
-- `grep -RInE "class .*PermissionManagerType" backend/src premium/backend enterprise/backend`
-- `grep -RInE "permission_manager_type_registry.register|PERMISSION_MANAGERS" backend/src premium/backend enterprise/backend`
-- `grep -RInE "PermissionManagerType|permissionManager|\\$hasPermission|hasPermission\\(" web-frontend premium/web-frontend enterprise/web-frontend`
+- `grep -RInE "class .*OperationType" backend/src`
+- `grep -RInE "operation_type_registry.register" backend/src`
+- `grep -RInE "class .*PermissionManagerType" backend/src`
+- `grep -RInE "permission_manager_type_registry.register|PERMISSION_MANAGERS" backend/src`
+- `grep -RInE "PermissionManagerType|permissionManager|\\$hasPermission|hasPermission\\(" web-frontend`
 
 ## Permission Model
 
@@ -131,8 +130,8 @@ decision. Do not make the frontend manager fetch extra permission data.
 For backend changes, prefer focused pytest tests near the manager or feature:
 
 - Core manager behavior: `backend/tests/baserow/core/**`
-- Premium manager behavior: `premium/backend/tests/baserow_premium_tests/**`
-- Enterprise manager behavior: `enterprise/backend/tests/baserow_enterprise_tests/**`
+- Builder manager behavior: `backend/tests/baserow/contrib/builder/**`
+- Automation manager behavior: `backend/tests/baserow/contrib/automation/**`
 
 Use `@override_settings(PERMISSION_MANAGERS=[...])` when the tested decision
 depends on manager order or enablement. Use the registry fixtures from
@@ -146,8 +145,7 @@ around registry setup, permission manager classes, or UI components calling
 Validation commands:
 
 - Backend: `just b test path/to/test_file.py`
-- Frontend core: `just f yarn test:core path/to/test_file`
-- Frontend enterprise: `just f yarn test:enterprise path/to/test_file`
+- Frontend: `just f yarn test:core path/to/test_file`
 
 ## Guardrails
 
@@ -161,5 +159,8 @@ Validation commands:
 - Do not add per-object database queries inside `check_multiple_permissions`.
 - Do not rename operation or manager type strings casually; other code and saved
   data may depend on them.
+- A new database operation is `builder`-only for members restricted by in-app access
+  grants; add it to `VIEWER_OPERATIONS`/`EDITOR_OPERATIONS` in
+  `backend/src/baserow/contrib/database/access/levels.py` when lower levels need it.
 - Do not duplicate the full permission guide here; read
   `docs/technical/permissions-guide.md` for deeper conceptual background.

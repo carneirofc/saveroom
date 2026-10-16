@@ -728,7 +728,7 @@ class DateEqualsDayOfMonthViewFilterType(TimezoneAwareDateViewFilterType):
             if day_of_month < 1 or day_of_month > 31:
                 raise ValueError
 
-        except (ValueError, zoneinfo.ZoneInfoNotFoundError):
+        except ValueError, zoneinfo.ZoneInfoNotFoundError:
             return Q(pk__in=[])
 
         if field.date_include_time:  # filter on a datetime field
@@ -1144,7 +1144,7 @@ class SingleSelectEqualViewFilterType(ViewFilterType):
         filter_function = self.filter_functions[effective_field_type.type]
         return filter_function(field_name, value, model_field, field)
 
-    def set_import_serialized_value(self, value, id_mapping):
+    def set_import_serialized_value(self, value, id_mapping, field=None):
         mapping = id_mapping["database_field_select_options"]
         try:
             return map_ids_from_csv_string(value, mapping)[0]
@@ -1201,7 +1201,9 @@ class SingleSelectIsAnyOfViewFilterType(ViewFilterType):
         filter_function = self.filter_functions[effective_field_type.type]
         return filter_function(field_name, option_ids, model_field, field)
 
-    def set_import_serialized_value(self, value: str | None, id_mapping: dict) -> str:
+    def set_import_serialized_value(
+        self, value: str | None, id_mapping: dict, field=None
+    ) -> str:
         select_option_map = id_mapping["database_field_select_options"]
         new_values = map_ids_from_csv_string(value or "", select_option_map)
         return ",".join(new_values)
@@ -1281,7 +1283,7 @@ class ManyToManyHasBaseViewFilter(ViewFilterType):
 
         try:
             val = int(value.strip())
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             return Q()
 
         field_type = field_type_registry.get_by_model(field)
@@ -1334,7 +1336,7 @@ class LinkRowHasViewFilterType(ManyToManyHasBaseViewFilter):
                 )
 
                 name = str(model.objects.get(pk=related_row_id))
-            except (Field.DoesNotExist, model.DoesNotExist):
+            except Field.DoesNotExist, model.DoesNotExist:
                 pass
 
         return {"display_name": name}
@@ -1391,7 +1393,7 @@ class LinkRowContainsViewFilterType(ViewFilterType):
                 .apply_to_queryset(model.objects)
                 .values_list("id", flat=True)
             )
-        except (ValueError, ValidationError):
+        except ValueError, ValidationError:
             subquery = []
 
         return Q(
@@ -1461,7 +1463,9 @@ class MultipleSelectHasViewFilterType(ManyToManyHasBaseViewFilter):
         filter_function = self.filter_functions[effective_field_type.type]
         return filter_function(field_name, option_ids, model_field, field)
 
-    def set_import_serialized_value(self, value: str | None, id_mapping: dict) -> str:
+    def set_import_serialized_value(
+        self, value: str | None, id_mapping: dict, field=None
+    ) -> str:
         select_option_map = id_mapping["database_field_select_options"]
         new_values = map_ids_from_csv_string(value or "", select_option_map)
         return ",".join(new_values)
@@ -1516,7 +1520,7 @@ class MultipleCollaboratorsHasViewFilterType(ManyToManyHasBaseViewFilter):
 
         return id_mapping[self.COLLABORATORS_KEY].get(value, "")
 
-    def set_import_serialized_value(self, value, id_mapping):
+    def set_import_serialized_value(self, value, id_mapping, field=None):
         workspace_id = id_mapping.get("workspace_id", None)
         if workspace_id is None:
             return ""
@@ -1585,7 +1589,7 @@ class UserIsViewFilterType(ViewFilterType):
 
         return id_mapping[self.USER_KEY].get(value, "")
 
-    def set_import_serialized_value(self, value, id_mapping):
+    def set_import_serialized_value(self, value, id_mapping, field=None):
         workspace_id = id_mapping.get("workspace_id", None)
         if workspace_id is None:
             return ""

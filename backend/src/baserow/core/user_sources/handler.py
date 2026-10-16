@@ -357,7 +357,7 @@ class UserSourceHandler:
         """
 
         batch_per_hour = (
-            60 // settings.BASEROW_ENTERPRISE_USER_SOURCE_COUNTING_TASK_INTERVAL_MINUTES
+            60 // settings.BASEROW_USER_SOURCE_COUNTING_TASK_INTERVAL_MINUTES
         )
 
         return user_source_type.model_class.objects.annotate(

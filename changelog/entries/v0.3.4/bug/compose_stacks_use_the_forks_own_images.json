@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Pointed the Compose stacks and the all-in-one image build at this fork's registry. `docker-compose.yml` pulled `baserow/backend` and `baserow/web-frontend` from Docker Hub — Baserow B.V.'s images, not this fork's — and `deploy/all-in-one/Dockerfile` defaulted its `BACKEND_IMAGE`/`WEBFRONTEND_IMAGE` build args to the same, so a local build assembled the all-in-one from upstream images. Everything now resolves to `ghcr.io/carneirofc/baserow/*` and defaults to this fork's release versions instead of the upstream 2.3.2 / 2.0.3 tags.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-08-28"
+}

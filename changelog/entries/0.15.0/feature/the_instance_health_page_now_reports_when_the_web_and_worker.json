@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "The instance health page now reports when the web and worker processes no longer share a file storage, which would otherwise only show up as a broken download.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-21"
+}

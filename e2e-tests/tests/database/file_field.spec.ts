@@ -1,35 +1,28 @@
 import { expect, test } from "../baserowTest";
+import { createDatabase } from "../../fixtures/database/database";
+import { createTable } from "../../fixtures/database/table";
 import { TablePage } from "../../pages/database/tablePage";
 
 test.describe("File field tests", () => {
-  test.beforeEach(async ({ workspacePage }) => {
-    await workspacePage.goto();
-  });
-
-  test.skip("User can upload an image and download it again @upload", async ({
+  test("User can upload an image and download it again @upload", async ({
     page,
+    goto,
     workspacePage,
   }) => {
-    // Click "Add new" > "From template".
-    const templateModal =
-      await workspacePage.sidebar.openCreateAppFromTemplateModal();
-    await templateModal.waitUntilLoaded();
+    const user = workspacePage.user;
+    const workspace = workspacePage.workspace;
 
-    const templatesLoadingSpinner = templateModal.getLoadingSpinner();
+    // Seed a database and a table with a single row through the API so the
+    // test does not depend on any bundled application template.
+    const database = await createDatabase(user, "File Field DB", workspace);
+    const table = await createTable(user, "Files", database, [
+      ["Name"],
+      ["Row 1"],
+    ]);
 
-    await expect(
-      templatesLoadingSpinner,
-      "Checking that the templates modal spinner is hidden."
-    ).toBeHidden();
+    const tablePage = new TablePage({ page, goto });
+    await tablePage.goToTable(table);
 
-    await templateModal.clickUseThisTemplateButton();
-
-    await workspacePage.sidebar.selectDatabaseAndTableByName(
-      "Project Tracker",
-      "Projects"
-    );
-
-    const tablePage = new TablePage(page);
     await tablePage.addNewFieldOfType("File");
     const imageWidth =
       await tablePage.uploadImageToFirstFileFieldCellAndGetWidth();

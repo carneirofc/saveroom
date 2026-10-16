@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Disabling an application type in the admin settings now hides it entirely instead of only blocking creation. Applications of a disabled type are left out of the workspace listing and every operation on them, or on anything they contain, is refused. Nothing is deleted, so enabling the type again restores them unchanged.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-04"
+}

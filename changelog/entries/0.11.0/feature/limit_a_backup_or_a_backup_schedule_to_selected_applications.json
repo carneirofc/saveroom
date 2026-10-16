@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Limit a backup or a backup schedule to selected applications instead of the whole workspace.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-16"
+}

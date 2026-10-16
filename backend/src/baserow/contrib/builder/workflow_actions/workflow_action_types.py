@@ -6,7 +6,6 @@ from django.db.models import Prefetch
 from rest_framework import serializers
 
 from baserow.api.services.serializers import (
-    PolymorphicServiceRequestSerializer,
     PolymorphicServiceSerializer,
     PublicPolymorphicServiceSerializer,
 )
@@ -16,7 +15,6 @@ from baserow.contrib.builder.data_sources.builder_dispatch_context import (
 from baserow.contrib.builder.elements.element_types import NavigationElementManager
 from baserow.contrib.builder.formula_importer import import_formula
 from baserow.contrib.builder.workflow_actions.models import (
-    AIAgentWorkflowAction,
     CoreCSVFileReaderWorkflowAction,
     CoreHTTPRequestWorkflowAction,
     CoreSMTPEmailWorkflowAction,
@@ -36,12 +34,14 @@ from baserow.contrib.builder.workflow_actions.registries import (
     BuilderWorkflowActionType,
 )
 from baserow.contrib.builder.workflow_actions.types import BuilderWorkflowActionDict
-from baserow.contrib.integrations.ai.service_types import AIAgentServiceType
 from baserow.contrib.integrations.core.service_types import (
     CoreCSVFileReaderServiceType,
     CoreHTTPRequestServiceType,
     CoreSMTPEmailServiceType,
     CoreStartWorkflowServiceType,
+)
+from baserow.contrib.integrations.local_baserow.mixins import (
+    UpdateRowRequiresRowIdMixin,
 )
 from baserow.contrib.integrations.local_baserow.service_types import (
     LocalBaserowCreateRowsServiceType,
@@ -59,10 +59,17 @@ from baserow.core.formula.types import BASEROW_FORMULA_MODE_SIMPLE, BaserowFormu
 from baserow.core.integrations.models import Integration
 from baserow.core.registry import Instance
 from baserow.core.services.handler import ServiceHandler
+from baserow.core.services.mixins import ServiceBackedTypeMixin
 from baserow.core.services.models import Service
 from baserow.core.services.registries import service_type_registry
 from baserow.core.services.types import DispatchResult
 from baserow.core.workflow_actions.models import WorkflowAction
+
+
+class ActiveDataSourceIdField(serializers.IntegerField):
+    def get_attribute(self, instance: RefreshDataSourceWorkflowAction):
+        data_source = instance.data_source
+        return data_source.id if data_source and not data_source.trashed else None
 
 
 class NotificationWorkflowActionType(BuilderWorkflowActionType):
@@ -201,7 +208,7 @@ class RefreshDataSourceWorkflowActionType(BuilderWorkflowActionType):
     model_class = RefreshDataSourceWorkflowAction
     serializer_field_names = ["data_source_id"]
     serializer_field_overrides = {
-        "data_source_id": serializers.IntegerField(
+        "data_source_id": ActiveDataSourceIdField(
             allow_null=True,
             default=None,
             required=False,
@@ -218,6 +225,9 @@ class RefreshDataSourceWorkflowActionType(BuilderWorkflowActionType):
     @property
     def allowed_fields(self):
         return super().allowed_fields + ["data_source_id"]
+
+    def enhance_queryset(self, queryset):
+        return super().enhance_queryset(queryset).select_related("data_source")
 
     def deserialize_property(
         self,
@@ -244,16 +254,14 @@ class RefreshDataSourceWorkflowActionType(BuilderWorkflowActionType):
         )
 
 
-class BuilderWorkflowServiceActionType(BuilderWorkflowActionType):
+class BuilderWorkflowServiceActionType(
+    ServiceBackedTypeMixin, BuilderWorkflowActionType
+):
     service_type = None  # Must be implemented by subclasses.
+    service_field_help_text = (
+        "The service which this workflow action is associated with."
+    )
     serializer_field_names = ["service"]
-    request_serializer_field_overrides = {
-        "service": PolymorphicServiceRequestSerializer(
-            default=None,
-            required=False,
-            help_text="The service which this workflow action is associated with.",
-        )
-    }
     is_server_workflow = True
     serializer_field_overrides = {
         "service": PolymorphicServiceSerializer(
@@ -423,10 +431,11 @@ class BuilderWorkflowServiceActionType(BuilderWorkflowActionType):
                     queryset=specific_queryset(
                         Service.objects.all(),
                         per_content_type_queryset_hook=(
-                            lambda service,
-                            queryset: service_type_registry.get_by_model(
-                                service
-                            ).enhance_queryset(queryset)
+                            lambda service, queryset: (
+                                service_type_registry.get_by_model(
+                                    service
+                                ).enhance_queryset(queryset)
+                            )
                         ),
                     ),
                 )
@@ -469,7 +478,9 @@ class LocalBaserowCreateRowsWorkflowActionType(LocalBaserowWorkflowActionType):
         return {"service": service}
 
 
-class UpdateRowWorkflowActionType(UpsertRowWorkflowActionType):
+class UpdateRowWorkflowActionType(
+    UpdateRowRequiresRowIdMixin, UpsertRowWorkflowActionType
+):
     type = "update_row"
     model_class = LocalBaserowUpdateRowWorkflowAction
 
@@ -531,16 +542,6 @@ class CoreStartWorkflowActionType(BuilderWorkflowServiceActionType):
 
     def get_pytest_params(self, pytest_data_fixture) -> Dict[str, int]:
         service = pytest_data_fixture.create_core_start_workflow_service()
-        return {"service": service}
-
-
-class AIAgentWorkflowActionType(BuilderWorkflowServiceActionType):
-    type = "ai_agent"
-    model_class = AIAgentWorkflowAction
-    service_type = AIAgentServiceType.type
-
-    def get_pytest_params(self, pytest_data_fixture) -> Dict[str, int]:
-        service = pytest_data_fixture.create_ai_agent_service()
         return {"service": service}
 
 

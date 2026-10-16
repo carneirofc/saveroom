@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "A download that cannot be served now says which of the two happened: the file expired, or the server cannot read back its own file storage. A misconfigured storage is no longer reported as a missing file.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-21"
+}

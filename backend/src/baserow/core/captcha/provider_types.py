@@ -39,7 +39,7 @@ class CloudflareTurnstileCaptchaProviderType(CaptchaProviderType):
             payload["remoteip"] = remote_ip
 
         # Let network errors and unexpected HTTP errors bubble up uncaught so they
-        # surface in Sentry. Only expected captcha failures are caught below.
+        # surface in the logs. Only expected captcha failures are caught below.
         response = requests.post(TURNSTILE_VERIFY_URL, data=payload, timeout=10)
         response.raise_for_status()
         result = response.json()

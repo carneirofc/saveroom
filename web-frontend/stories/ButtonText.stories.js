@@ -74,7 +74,7 @@ export const WithIcon = {
 export const Secondary = {
   args: {
     type: 'secondary',
-    icon: 'iconoir-cancel',
+    icon: 'iconoir-xmark',
   },
   render: (args) => ({
     components: { ButtonText },

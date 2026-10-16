@@ -37,7 +37,7 @@ describe('MenuElement', () => {
     name: 'Page',
     variant: 'link',
     navigation_type: 'custom',
-    navigate_to_url: { formula: '"https://baserow.io"' },
+    navigate_to_url: { formula: '"https://example.com"' },
     parent_menu_item: null,
     children: [],
     ...overrides,

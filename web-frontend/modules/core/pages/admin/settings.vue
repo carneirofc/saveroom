@@ -3,6 +3,15 @@
     <div class="admin-settings">
       <h1>{{ $t('settings.settingsTitle') }}</h1>
       <div class="admin-settings__group">
+        <h2 class="admin-settings__group-title">
+          {{ $t('settings.versionTitle') }}
+        </h2>
+        <p class="admin-settings__group-description">
+          {{ $t('settings.versionDescription') }}
+        </p>
+        <BuildInfo :backend="buildInfo" :error="buildInfoFailed"></BuildInfo>
+      </div>
+      <div class="admin-settings__group">
         <div class="admin-settings__item">
           <div class="admin-settings__label">
             <div class="admin-settings__name">
@@ -12,25 +21,12 @@
               {{ $t('settings.instanceIdDescription') }}
             </div>
           </div>
-          <div class="admin-settings__control">
+          <div class="admin-settings__control admin-settings__control--inline">
             {{ instanceId }}
-            <a class="licenses__instance-id-copy" @click.prevent="handleCopy()">
+            <a class="admin-settings__copy" @click.prevent="handleCopy()">
               {{ $t('action.copy') }}
               <Copied ref="instanceIdCopied" />
             </a>
-          </div>
-        </div>
-        <div class="admin-settings__item">
-          <div class="admin-settings__label">
-            <div class="admin-settings__name">
-              {{ $t('settings.baserowVersion') }}
-            </div>
-            <div class="admin-settings__description">
-              {{ $t('settings.baserowVersionDescription') }}
-            </div>
-          </div>
-          <div class="admin-settings__control">
-            {{ baserowVersion }}
           </div>
         </div>
         <div class="admin-settings__item">
@@ -53,6 +49,79 @@
       </div>
       <div class="admin-settings__group">
         <h2 class="admin-settings__group-title">
+          {{ $t('settings.applicationFeatures') }}
+        </h2>
+        <div class="admin-settings__item">
+          <div class="admin-settings__label">
+            <div class="admin-settings__name">
+              {{ $t('settings.settingEnableDatabaseName') }}
+            </div>
+            <div class="admin-settings__description">
+              {{ $t('settings.settingEnableDatabaseDescription') }}
+            </div>
+          </div>
+          <div class="admin-settings__control">
+            <SwitchInput
+              :value="settings.enable_database"
+              @input="updateSettings({ enable_database: $event })"
+              >{{ $t('settings.enabled') }}</SwitchInput
+            >
+          </div>
+        </div>
+        <div class="admin-settings__item">
+          <div class="admin-settings__label">
+            <div class="admin-settings__name">
+              {{ $t('settings.settingEnableBuilderName') }}
+            </div>
+            <div class="admin-settings__description">
+              {{ $t('settings.settingEnableBuilderDescription') }}
+            </div>
+          </div>
+          <div class="admin-settings__control">
+            <SwitchInput
+              :value="settings.enable_builder"
+              @input="updateSettings({ enable_builder: $event })"
+              >{{ $t('settings.enabled') }}</SwitchInput
+            >
+          </div>
+        </div>
+        <div class="admin-settings__item">
+          <div class="admin-settings__label">
+            <div class="admin-settings__name">
+              {{ $t('settings.settingEnableAutomationName') }}
+            </div>
+            <div class="admin-settings__description">
+              {{ $t('settings.settingEnableAutomationDescription') }}
+            </div>
+          </div>
+          <div class="admin-settings__control">
+            <SwitchInput
+              :value="settings.enable_automation"
+              @input="updateSettings({ enable_automation: $event })"
+              >{{ $t('settings.enabled') }}</SwitchInput
+            >
+          </div>
+        </div>
+        <div class="admin-settings__item">
+          <div class="admin-settings__label">
+            <div class="admin-settings__name">
+              {{ $t('settings.settingEnableDashboardName') }}
+            </div>
+            <div class="admin-settings__description">
+              {{ $t('settings.settingEnableDashboardDescription') }}
+            </div>
+          </div>
+          <div class="admin-settings__control">
+            <SwitchInput
+              :value="settings.enable_dashboard"
+              @input="updateSettings({ enable_dashboard: $event })"
+              >{{ $t('settings.enabled') }}</SwitchInput
+            >
+          </div>
+        </div>
+      </div>
+      <div class="admin-settings__group">
+        <h2 class="admin-settings__group-title">
           {{ $t('settings.accountRestrictions') }}
         </h2>
         <div class="admin-settings__item">
@@ -68,33 +137,6 @@
             <SwitchInput
               :value="settings.allow_new_signups"
               @input="updateSettings({ allow_new_signups: $event })"
-              >{{ $t('settings.enabled') }}</SwitchInput
-            >
-          </div>
-        </div>
-        <div v-if="!settings.allow_new_signups" class="admin-settings__item">
-          <div class="admin-settings__label">
-            <div class="admin-settings__name">
-              {{
-                $t('settings.settingAllowSignupsViaWorkspaceInvitationsName')
-              }}
-            </div>
-            <div class="admin-settings__description">
-              {{
-                $t(
-                  'settings.settingAllowSignupsViaWorkspaceInvitationDescription'
-                )
-              }}
-            </div>
-          </div>
-          <div class="admin-settings__control">
-            <SwitchInput
-              :value="settings.allow_signups_via_workspace_invitations"
-              @input="
-                updateSettings({
-                  allow_signups_via_workspace_invitations: $event,
-                })
-              "
               >{{ $t('settings.enabled') }}</SwitchInput
             >
           </div>
@@ -225,6 +267,24 @@
           </div>
         </div>
       </div>
+      <div v-if="operationalLimits.length > 0" class="admin-settings__group">
+        <h2 class="admin-settings__group-title">
+          {{ $t('settings.operationalLimits') }}
+        </h2>
+        <p class="admin-settings__group-description">
+          {{ $t('settings.operationalLimitsDescription') }}
+        </p>
+        <div
+          v-for="limit in operationalLimits"
+          :key="limit.name"
+          class="admin-settings__item"
+        >
+          <div class="admin-settings__label">
+            <div class="admin-settings__name">{{ limit.name }}</div>
+          </div>
+          <div class="admin-settings__control">{{ limit.value }}</div>
+        </div>
+      </div>
       <component
         :is="component"
         v-for="(component, index) in additionalSettingsComponents"
@@ -249,10 +309,13 @@ import { required, integer, between, helpers } from '@vuelidate/validators'
 
 import { notifyIf } from '@baserow/modules/core/utils/error'
 import SettingsService from '@baserow/modules/core/services/settings'
+import LimitsService from '@baserow/modules/core/services/admin/limits'
+import BuildService from '@baserow/modules/core/services/admin/build'
+import BuildInfo from '@baserow/modules/core/components/version/BuildInfo.vue'
 import { copyToClipboard } from '@baserow/modules/database/utils/clipboard'
 import { EMAIL_VERIFICATION_OPTIONS } from '@baserow/modules/core/enums'
 
-const { $registry, $client, $baserowVersion, $i18n } = useNuxtApp()
+const { $registry, $client, $i18n } = useNuxtApp()
 const { t: $t } = useI18n()
 const store = useStore()
 
@@ -306,7 +369,96 @@ const { data: instanceData } = await useAsyncData('instance-id', async () => {
   return data
 })
 
+// The limits below are read from the environment by the backend, so they are
+// shown but cannot be edited here: changing one means changing the environment
+// and restarting the instance.
+const { data: limitsData } = await useAsyncData(
+  'operational-limits',
+  async () => {
+    const { data } = await LimitsService($client).get()
+    return data
+  }
+)
+
+const operationalLimits = computed(() => {
+  const limits = limitsData.value
+  if (!limits) {
+    return []
+  }
+  return [
+    {
+      name: $t('settings.limitTrash'),
+      value: $t('settings.limitHours', {
+        count: limits.hours_until_trash_permanently_deleted,
+      }),
+    },
+    {
+      name: $t('settings.limitExportFile'),
+      value: $t('settings.limitMinutes', {
+        count: limits.export_file_expire_minutes,
+      }),
+    },
+    {
+      name: $t('settings.limitSnapshotExpiration'),
+      value: $t('settings.limitDays', {
+        count: limits.snapshot_expiration_time_days,
+      }),
+    },
+    {
+      name: $t('settings.limitMaxSnapshots'),
+      value: limits.max_snapshots_per_workspace,
+    },
+    {
+      name: $t('settings.limitAuditLogRetention'),
+      value: $t('settings.limitDays', {
+        count: limits.user_log_entry_retention_days,
+      }),
+    },
+    {
+      name: $t('settings.limitRowHistoryRetention'),
+      value: $t('settings.limitDays', {
+        count: limits.row_history_retention_days,
+      }),
+    },
+    {
+      name: $t('settings.limitJobSoftTimeLimit'),
+      value: $t('settings.limitMinutes', {
+        count: Math.round(limits.job_soft_time_limit_seconds / 60),
+      }),
+    },
+    {
+      name: $t('settings.limitJobExpiration'),
+      value: $t('settings.limitMinutes', {
+        count: limits.job_expiration_time_limit_minutes,
+      }),
+    },
+    {
+      name: $t('settings.limitImportExportRemoval'),
+      value: $t('settings.limitDays', {
+        count: limits.import_export_resource_removal_after_days,
+      }),
+    },
+  ]
+})
+
 const instanceId = computed(() => instanceData.value?.instance_id ?? '')
+
+// The build the backend is running. The web-frontend build needs no request,
+// BuildInfo reads it from the bundle it is served with.
+const { data: buildData, error: buildDataError } = await useAsyncData(
+  'build-info',
+  async () => {
+    const { data } = await BuildService($client).get()
+    return data
+  }
+)
+
+const buildInfo = computed(() => buildData.value ?? null)
+
+// A failing request is itself a finding: a backend older than this web-frontend
+// has no endpoint to answer it, so the panel says that instead of showing an
+// empty version block.
+const buildInfoFailed = computed(() => Boolean(buildDataError.value))
 
 const additionalSettingsComponents = computed(() => {
   return Object.values($registry.getAll('plugin'))
@@ -317,8 +469,6 @@ const additionalSettingsComponents = computed(() => {
     )
     .filter((component) => component !== null)
 })
-
-const baserowVersion = computed(() => $baserowVersion)
 
 function handleCopy() {
   copyToClipboard(instanceId.value)

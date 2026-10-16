@@ -16,7 +16,6 @@ import {
   LocalBaserowUpdateRowsWorkflowServiceType,
   LocalBaserowDeleteRowWorkflowServiceType,
 } from '@baserow/modules/integrations/localBaserow/serviceTypes'
-import { AIAgentServiceType } from '@baserow/modules/integrations/ai/serviceTypes'
 
 import { DataProviderType } from '@baserow/modules/core/dataProviderTypes'
 import resolveElementUrl from '@baserow/modules/builder/utils/urlResolution'
@@ -339,18 +338,6 @@ export class WorkflowActionServiceType extends WorkflowActionType {
   get serviceType() {
     throw new Error('This method must be implemented')
   }
-
-  isDeactivatedReason({ workspace }) {
-    const serviceReason = this.serviceType.isDeactivatedReason({ workspace })
-    if (serviceReason) {
-      return serviceReason
-    }
-    return null
-  }
-
-  getDeactivatedClickModal({ workspace }) {
-    return this.serviceType.getDeactivatedClickModal({ workspace })
-  }
 }
 
 export class CoreHTTPRequestWorkflowActionType extends WorkflowActionServiceType {
@@ -508,20 +495,6 @@ export class DeleteRowWorkflowActionType extends WorkflowActionServiceType {
       'service',
       LocalBaserowDeleteRowWorkflowServiceType.getType()
     )
-  }
-}
-
-export class AIAgentWorkflowActionType extends WorkflowActionServiceType {
-  static getType() {
-    return 'ai_agent'
-  }
-
-  getOrder() {
-    return 70
-  }
-
-  get serviceType() {
-    return this.app.$registry.get('service', AIAgentServiceType.getType())
   }
 }
 

@@ -30,7 +30,6 @@ else:
 # Prefixes for vars that can be overridden via env vars (for DB/Redis configuration)
 ALLOWED_ENV_PREFIXES = (
     "DATABASE_",
-    "BASEROW_EMBEDDINGS_API_URL",
     "BASEROW_BACKEND_LOG_LEVEL",
 )
 
@@ -130,10 +129,6 @@ BUILDER_PUBLICLY_USED_PROPERTIES_CACHE_TTL_SECONDS = 10
 BUILDER_DISPATCH_ACTION_CACHE_TTL_SECONDS = 300
 
 AUTO_INDEX_VIEW_ENABLED = False
-# For ease of testing tests assume this setting is set to this. Set it explicitly to
-# prevent any dev env config from breaking the tests.
-BASEROW_PERSONAL_VIEW_LOWEST_ROLE_ALLOWED = "VIEWER"
-
 # Ensure the tests never run with the concurrent middleware unless they add it in to
 # prevent failures caused by the middleware itself
 if "baserow.middleware.ConcurrentUserRequestsMiddleware" in MIDDLEWARE:
@@ -156,6 +151,7 @@ BASEROW_LOGIN_ACTION_LOG_LIMIT = RateLimit.from_string("1000/s")
 
 BASEROW_WEBHOOKS_ALLOW_PRIVATE_ADDRESS = False
 INTEGRATIONS_ALLOW_PRIVATE_ADDRESS = False
+BASEROW_DATA_SYNC_ALLOW_PRIVATE_ADDRESS = False
 
 CACHALOT_ENABLED = str_to_bool(os.getenv("CACHALOT_ENABLED", "false"))
 if CACHALOT_ENABLED:

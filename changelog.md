@@ -1,5 +1,226 @@
 # Changelog
 
+## Released 0.15.0
+
+### New features
+* [Database] Import modes that move existing rows to the trash now require the new replace rows permission, so an editor can import without being able to wipe a table.
+* [Database] Importing a file into an existing table now shows the changes it will make and asks you to accept them first.
+* [Core] The instance health page now reports when the web and worker processes no longer share a file storage, which would otherwise only show up as a broken download.
+
+### Bug fixes
+* [Core] A download that cannot be served now says which of the two happened: the file expired, or the server cannot read back its own file storage. A misconfigured storage is no longer reported as a missing file.
+* [Database] A table export whose file cannot be read back from the storage now fails with that reason, instead of finishing and handing you a download that does not work.
+* [Core] Exported files and backups are now downloaded through the API, streamed straight from the server's storage, so downloads work when files are on a shared volume or in an object store the browser cannot reach.
+* [Core] Retention notices (row history, audit log) and snapshot limits and expiry now show their number of days, and several icons that rendered blank are visible again.
+
+### Refactors
+* [Core] Remaining hard-coded interface colors now use the theme palette, so they follow custom branding.
+
+
+## Released 0.14.0
+
+### New features
+* [Core] The interface now shows which build of the application is running: the release version and commit appear on the login screen and in the user menu, and the admin settings and health pages list the backend build, its build date and a warning when the backend and web-frontend come from different builds.
+
+
+## Released 0.13.0
+
+### New features
+* Added a read-only "Operational limits" section to the admin settings page, listing the retention, expiry and job time limits the instance runs with.
+* EXPORT_FILE_EXPIRE_MINUTES can now be set from the environment instead of being fixed at 60 minutes.
+* Show the duration of each datalake export run in the schedule's run history.
+* Show how long a job has been running next to its progress bar, for table and workspace exports, imports, snapshots, backups, restores, data syncs and application publishes.
+* State the retention and expiry limits where the affected data is shown.
+  * Exported files now say how long they stay downloadable.
+  * Snapshots now show how long they have left before they are deleted.
+  * The audit log and the row history now state how far back they reach.
+
+### Breaking API changes
+* The interface now ships English and Brazilian Portuguese only. Accounts set to one of the removed languages are migrated to English.
+
+
+## Released 0.12.0
+
+### New features
+* [Database] Admins can set a default database access level when adding workspace members, shown and editable in a new access column on the members table.
+* [Core] Admins can add existing users straight into workspace teams when adding them as members, and manage a member's teams from a new column on the members table.
+* [Core] Configure where the logo and in-app help links point, and hide the attribution footer entirely, at runtime from the branding directory.
+
+### Refactors
+* [Core] Removed the unused billable/deactivated role admin column and menu badges from the members role picker; not applicable to this fork.
+* [Core] Only English and Brazilian Portuguese translations are shipped in the core module now; removed the other locale files, which were never registered and had drifted out of sync.
+
+### Breaking API changes
+* [Core] Workspace invitations are removed: admins add people who already have an account from Members → Add members. Pending invitations, invitation emails and notifications, invite-token signups and the "allow signups via workspace invitations" setting are gone, as are the /api/workspaces/invitations/ and /api/user/dashboard/ endpoints.
+
+
+## Released 0.11.0
+
+### New features
+* [Core] Filter the audit log by user, workspace, action, command and date range, and show the command and IP address columns. Exporting to CSV now exports exactly what the filters and search show instead of the whole log.
+* [Core] Limit a backup or a backup schedule to selected applications instead of the whole workspace.
+* [Core] Manage API clients from the workspace menu: create a client for an external integration, grant it scopes, issue keys with an optional expiry, and revoke or deactivate them. An issued key is shown once, so copy it before closing the dialog.
+
+
+## Released 0.10.0
+
+### New features
+* [Core] Add a staff-only admin UI to manage, schedule, and restore workspace backups across all workspaces, including ones staff do not belong to.
+* [Core] Add a staff-only extensive audit log covering user actions plus sign-in, sign-out and failed sign-in events.
+* [Core] Add a hosted MkDocs Material documentation site built from docs/, published to GitHub Pages on push to develop.
+* [Database] Protected editing for tables: when enabled from the table menu, row edits are kept as unsaved changes until you click Save (or Discard), and creating, pasting, clearing, deleting, moving rows and undo/redo ask for confirmation first. Saved changes are recorded in the audit log with their before and after values.
+
+
+## Released 0.9.1
+
+### Bug fixes
+* [Database] Importing rows with upsert fields but no import mode pairs duplicate match values in order again instead of failing with an ambiguous matches error.
+
+
+## Released 0.9.0
+
+### New features
+* [Database] Import into a table can now update, upsert or replace rows and preview the changes first
+* [Core] Added recovery from errorDifferentProvider OIDC lockouts: a per-provider link_existing_accounts option links an existing non-staff account on sign-in when the IdP verifies its email, and the link_oidc_account management command lists, links, unlinks and carries over account links after a provider rename.
+* [Core] Workspace admins can add existing users directly, group members into teams and set no access, viewer, editor or builder levels per database and table
+
+### Bug fixes
+* [Core] BASEROW_ALLOW_MULTIPLE_SSO_PROVIDERS_FOR_SAME_ACCOUNT is now parsed as a boolean, so values like "false" or "0" no longer enable it.
+
+### Breaking API changes
+* [Core] SSO now only defines who may sign in (new user_roles), staff and superuser. workspace_mappings, strict_membership, BASEROW_ROLES, sync_roles and granular roles were removed and are refused at startup; members that had a granular role become unrestricted members until restricted again with in-app access levels
+
+
+## Released v0.8.0
+
+### New features
+* [Core] Manage backups from the workspace menu: back up now (optionally to external storage), restore or delete backups, schedule recurring backups and restore backups kept on external storage. Manage a database's datalake export schedules, run them and follow their runs from the database menu.
+
+
+## Released v0.7.0
+
+### New features
+* [Core] Declare external data destinations (S3 or S3-compatible, Azure Blob Storage, or a mounted filesystem) with BASEROW_DATA_DESTINATIONS. Credentials stay in the environment and can be read from secret files; GET /api/data-destinations/ lists the names only.
+* [Core] Harden OIDC sign-in with PKCE (S256), callback state verification and a check that the userinfo subject matches the ID token.
+* [Core] The Helm chart adds extraVolumes and extraVolumeMounts to the backend and Celery pods, and Docker Compose forwards BASEROW_DATA_DESTINATIONS, so destination credentials can be mounted as files.
+* [Database] Schedule Parquet exports of database tables to a datalake destination: the first export is full, later ones only hold changed and deleted rows, with a manifest and _SUCCESS marker per run. Manage schedules through /api/database/data-export/ or run them with the export_table_parquet command.
+* [Core] Backups and backup schedules can upload their archives to a data destination, with retention applied there too. Remote backups can be listed and restored through the API or the backup_to_destination, list_destination_backups and restore_from_destination commands, including onto a fresh instance.
+
+### Bug fixes
+* [Core] Hide actions a member's workspace role does not allow instead of showing them and failing when used.
+* [Database] Trashing or restoring rows now updates their last modified time, so incremental consumers of a table, such as datalake exports, see rows disappear and come back.
+
+### Refactors
+* [Core] Update frontend, e2e, email compiler and Zapier dependencies to their latest compatible versions and GitHub Actions to their current major versions.
+
+### Breaking API changes
+* [Core] OIDC sign-in now refuses users whose email the identity provider has not verified, and SSO sessions end after 8 hours by default so role changes in Keycloak apply sooner. Configure with require_verified_email and session_lifetime_minutes.
+
+
+## Released v0.6.0
+
+### New features
+* [Core] Add a CVE gate: `just audit` and CI scan all lockfiles and images with Trivy and fail on fixable HIGH/CRITICAL vulnerabilities.
+* [Core] Customize the app name, colors, font, logos, favicons, icons, translations and CSS at runtime from a mounted branding directory, without rebuilding the frontend.
+
+### Refactors
+* [Core] Upgrade backend, frontend, e2e, email compiler and Zapier dependencies, Node 24.21, Go 1.26.8 and Caddy's bundled Go modules, fixing all fixable HIGH/CRITICAL CVEs.
+
+
+## Released v0.5.2
+
+### New features
+* [Core] The Helm chart now supports Amazon EKS. S3 media can authenticate through IRSA or EKS Pod Identity instead of static access keys, in which case no AWS credentials are stored or handed to the pods at all. A new ALB ingress mode puts the backend and web-frontend behind a single load balancer while giving each its own health check, and a values-eks.yaml preset covers the internal-ALB-behind-CloudFront setup. The chart also validates its values before anything reaches the cluster, and now restarts pods when only the configuration changed.
+
+### Bug fixes
+* [Core] Editing Helm chart configuration and running an upgrade now restarts the affected pods. Previously a configuration-only change updated the ConfigMap but left every pod running on the old values until it happened to be restarted for another reason.
+
+### Refactors
+* [Core] Upgraded TipTap to 3.31.3 to resolve a high-severity CVE in @tiptap/core.
+
+### Breaking API changes
+* [Core] The Helm chart no longer creates OpenShift Routes by default, so it installs on a plain Kubernetes cluster out of the box. Set openshift.route.enabled=true (or use values-openshift.yaml, which already does) to keep the previous behaviour.
+
+
+## Released v0.5.0
+
+### New features
+* [Core] Disabling an application type in the admin settings now hides it entirely instead of only blocking creation. Applications of a disabled type are left out of the workspace listing and every operation on them, or on anything they contain, is refused. Nothing is deleted, so enabling the type again restores them unchanged.
+
+
+## Released v0.4.0
+
+### New features
+* [Core] Added a BASEROW_ROLES environment variable declaring per-workspace roles and the operations they grant, reconciled into the database after every migrate and on demand with the new sync_roles management command. An OIDC workspace mapping can name one of these roles to restrict the member to its operations; an unknown role fails closed and the membership is refused rather than granted unrestricted.
+
+### Breaking API changes
+* [Core] OIDC access is now driven by the identity provider's client roles instead of groups. In BASEROW_OIDC_PROVIDERS, groups_claim, staff_groups and superuser_groups become roles_claim, staff_roles and superuser_roles, and a workspace_mappings entry now takes client_role plus permissions (ADMIN or MEMBER) instead of group and role. roles_claim defaults to Keycloak's resource_access.${client_id}.roles and accepts a dotted path, so nested claims resolve. A provider that maps any client role now refuses to sign in, and refuses to provision, a user holding none of them. The retired keys are rejected at startup with the name of their replacement.
+
+
+## Released v0.3.5
+
+### Bug fixes
+* [Core] Removed Ubuntu's unused `pebble` binary from every image. The `ubuntu:26.04` base layer drops `/usr/bin/pebble` and `/var/lib/pebble` in without a dpkg package owning them, so `apt-get upgrade` could neither patch nor purge the CVEs vendored into it (CVE-2026-39821, from `golang.org/x/net`). Nothing in the backend, web-frontend, all-in-one or caddy images ever ran it — each sets its own entrypoint — so it is now deleted in every stage built on Ubuntu, and CI asserts it stays out.
+
+
+## Released v0.3.4
+
+### Bug fixes
+* [Core] Pointed the Compose stacks and the all-in-one image build at this fork's registry. `docker-compose.yml` pulled `baserow/backend` and `baserow/web-frontend` from Docker Hub — Baserow B.V.'s images, not this fork's — and `deploy/all-in-one/Dockerfile` defaulted its `BACKEND_IMAGE`/`WEBFRONTEND_IMAGE` build args to the same, so a local build assembled the all-in-one from upstream images. Everything now resolves to `ghcr.io/carneirofc/baserow/*` and defaults to this fork's release versions instead of the upstream 2.3.2 / 2.0.3 tags.
+* [Core] Fixed the Helm chart deploying image tags that do not exist. `Chart.yaml` still carried the upstream `appVersion` 2.3.2, and the chart defaults `image.backend.tag` / `image.webFrontend.tag` to it, so a default install pulled `ghcr.io/carneirofc/baserow/backend:2.3.2` from this fork's registry, which only publishes this fork's own release tags. `appVersion` now tracks the fork release.
+
+### Breaking API changes
+* [Core] Aligned every PostgreSQL container on `pgvector/pgvector:pg18`, matching the PostgreSQL 18 the images already target. The Compose stacks ran PostgreSQL 15 and the dev, e2e and CI databases ran PostgreSQL 14. `PGDATA` is pinned to `/var/lib/postgresql/data` everywhere, because the 18 images moved their default to `/var/lib/postgresql/<major>/docker` and refuse to start when a volume sits on the old path. Existing volumes still hold PostgreSQL 14/15 data directories that an 18 server will not start against: dump and restore before upgrading, or remove the volume for a fresh database. Set `POSTGRES_IMAGE_VERSION` to stay on an older major.
+
+
+## Released v0.3.3
+
+### Bug fixes
+* [Core] Rebuilt and republished all container images with `pull: true` on the release build, so the published images carry the Caddy binary compiled from source against Go 1.26.7 and re-resolve the `ubuntu:26.04` base instead of serving a stale build-cache hit. Images published before v0.3.1 (all-in-one) and v0.3.2 (split-services Caddy) still carried the official `caddy:2.11.4` binary with its Go 1.26.5 standard library, which SCA scanners flag for CVE-2026-39821 and the related Go standard library advisories.
+
+
+## Released v0.3.2
+
+### Bug fixes
+* [Core] Replaced the official `caddy` image in the split-services Compose stacks with this fork's own Caddy build, compiled from source against a pinned Go 1.26.7 toolchain. The upstream image still ships a Go 1.26.5 standard library, flagged for CVE-2026-39821, CVE-2026-56865, CVE-2026-56864, CVE-2026-56862, CVE-2026-56859, CVE-2026-56853, CVE-2026-46600 and CVE-2026-33818.
+
+
+## Released v0.3.1
+
+### Refactors
+* [Core] Built Caddy from source against a pinned Go 1.26.7 toolchain in the all-in-one image instead of copying the binary from the official caddy image, resolving the Go standard library CVEs reported against the published image.
+
+
+## Released v0.3.0
+
+### New features
+* [Core] Admins can now enable or disable creating each application type
+* [Core] Added API clients, a credential for external integrations that acts on behalf of the user that created it within a single workspace. A client can hold several keys, each limited to a set of scopes and optionally given an expiry, and keys can be revoked without deleting the client. Only a hash of a key is stored, so the key itself is shown once at creation.
+* [Core] Added a `/api/backups/` API to back up and restore a whole workspace or individual applications. Backups build on the existing signed workspace export archives, so a backup taken here can be downloaded, deleted, and restored into any workspace you have access to.
+* [Core] Backups can now be scheduled. A backup schedule takes a crontab expression and a timezone, and optionally cleans up after itself with `keep_last` and `keep_days` retention. A periodic task starts every schedule that becomes due, and schedules can also be triggered on demand.
+* [Core] Added a `/api/contents/` API that returns the complete contents of a workspace or a single application as JSON in one request, with an `exclude_data` option for structure only. Requests above `BASEROW_CONTENTS_API_MAX_ROWS` are refused so that large reads go through a backup instead.
+* [Core] OIDC sign-in now auto-provisions new users even when the instance has new signups disabled, so operators can turn off self-service signup while still provisioning everyone who authenticates through the IdP. Password-based signup stays governed by the toggle. [#2](https://github.com/baserow/baserow/issues/2)
+* [Core] OIDC providers can now map IdP groups to Baserow global staff and superuser. On every login the user's staff/superuser status is reconciled from their current groups (granted when in a mapped group, revoked when not); a local break-glass admin that never logs in via OIDC is unaffected. [#3](https://github.com/baserow/baserow/issues/3)
+* [Core] OIDC providers can now map IdP groups to workspace memberships. Each mapping declares a group, a workspace and a role (ADMIN or MEMBER); on login the user is added to every mapped workspace they have a group for, or their existing membership is updated to the mapped role. This is additive - memberships are never removed by this mapping. [#4](https://github.com/baserow/baserow/issues/4)
+* [Core] Added env-configured OpenID Connect (OIDC) login. Declare one or more providers in the BASEROW_OIDC_PROVIDERS environment variable to show a sign-in button per provider; first-time users are auto-provisioned from their OIDC email and name. [#1](https://github.com/baserow/baserow/issues/1)
+* [Core] Added an OIDC-only mode (BASEROW_OIDC_ONLY) that makes the instance OIDC-only for normal users: self-service signup is disabled, password login is refused for non-staff accounts, and the login page hides the password form and signup and shows only OIDC buttons. A staff/superuser break-glass admin can still reveal the password form and log in if the IdP is unavailable. [#5](https://github.com/baserow/baserow/issues/5)
+* [Core] OIDC workspace mappings can opt into strict membership reconciliation with a per-provider strict_membership flag. When enabled, memberships the sync granted are recorded and revoked once the user loses the mapped group on their next login; memberships added outside SSO are never revoked. With the flag off, behaviour stays additive. [#6](https://github.com/baserow/baserow/issues/6)
+* Publish the Helm chart from CI: version tags push it as an OCI package to the repo's GitHub Container Registry, and chart changes are linted and packaged on every pull request.
+
+### Bug fixes
+* [Core] Workspace export archives now record the user that created them. Without an owner they could neither be deleted nor imported again, because both look the resource up by its owner.
+* [Database] Writing values to fields is allowed again when no plugin provides field level permissions. Without one, every write permission check was denied, so Local Baserow create/update row services silently stored empty rows.
+* [Core] The OpenAPI schema endpoints no longer fail with a server error when no row metadata type is registered.
+
+### Refactors
+* [Core] Refreshed backend and web-frontend dependencies, including Nuxt, Sentry, TipTap, Vitest and the Node runtime, and pinned resolutions for known transitive vulnerabilities.
+* [Core] Upgraded backend dependencies, resolving reported CVEs in Django (5.2.17), cryptography (50.0.1), sqlparse (0.6.0), tornado (6.5.8), soupsieve (2.9.2) and click (8.5.0), and refreshing the remaining transitive and development packages.
+
+### Breaking API changes
+* [Core] Removed the PostHog product analytics and Sentry error reporting integrations, along with their POSTHOG_* and SENTRY_* environment variables.
+* [Core] The all-in-one Docker image now embeds PostgreSQL 18 instead of 15, and all images are built on Ubuntu 26.04 LTS. Existing embedded databases must be migrated by following docs/runbooks/upgrade-embedded-postgres.md; external PostgreSQL servers are unaffected.
+
+
 ## Released 2.3.2
 
 ### New features

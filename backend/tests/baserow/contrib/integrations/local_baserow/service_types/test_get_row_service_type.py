@@ -436,8 +436,8 @@ def test_local_baserow_get_row_service_dispatch_data_no_row_id(data_fixture):
             ("Email", "text"),
         ],
         rows=[
-            ["Ada Lovelace", "ada@baserow.io"],
-            ["Blaise Pascal", "blaise@baserow.io"],
+            ["Ada Lovelace", "ada@example.com"],
+            ["Blaise Pascal", "blaise@example.com"],
         ],
     )
     integration = data_fixture.create_local_baserow_integration(

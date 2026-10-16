@@ -11,12 +11,12 @@
 }
 
 .dashboard-widget--selected {
-  outline: 1.5px solid #4e5cfe;
+  outline: 1.5px solid $color-primary-500;
   outline-offset: 8px;
 }
 
 .dashboard-widget--selectable {
-  border: 1px dashed #cdcecf;
+  border: 1px dashed $palette-neutral-500;
 
   &:hover {
     cursor: pointer;
@@ -48,7 +48,7 @@
   font-weight: 500;
   line-height: 12px;
   letter-spacing: 0.2px;
-  background-color: #4e5cfe;
+  background-color: $color-primary-500;
   color: $white;
   cursor: default;
   padding: 4px 8px;

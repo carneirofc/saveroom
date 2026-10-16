@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "The backup and datalake export screens show each schedule's last run and what it covers, remote backups with their version, checksum, creator, source instance and schedule, run state and errors as badges and text, the configured storage on the admin backups page, and API clients can have their scopes edited.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-04"
+}

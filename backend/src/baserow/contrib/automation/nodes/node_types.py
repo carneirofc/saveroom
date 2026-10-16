@@ -16,7 +16,6 @@ from baserow.contrib.automation.nodes.exceptions import (
     AutomationNodeTriggerMustBeFirstNode,
 )
 from baserow.contrib.automation.nodes.models import (
-    AIAgentActionNode,
     AutomationNode,
     AutomationTriggerNode,
     CoreCSVFileReaderActionNode,
@@ -45,7 +44,6 @@ from baserow.contrib.automation.nodes.models import (
 from baserow.contrib.automation.nodes.registries import AutomationNodeType
 from baserow.contrib.automation.workflows.constants import WorkflowState
 from baserow.contrib.automation.workflows.models import AutomationWorkflow
-from baserow.contrib.integrations.ai.service_types import AIAgentServiceType
 from baserow.contrib.integrations.core.service_types import (
     CoreCSVFileReaderServiceType,
     CoreHTTPRequestServiceType,
@@ -56,6 +54,9 @@ from baserow.contrib.integrations.core.service_types import (
     CoreRouterServiceType,
     CoreSMTPEmailServiceType,
     CoreStartWorkflowServiceType,
+)
+from baserow.contrib.integrations.local_baserow.mixins import (
+    UpdateRowRequiresRowIdMixin,
 )
 from baserow.contrib.integrations.local_baserow.service_types import (
     LocalBaserowAggregateRowsUserServiceType,
@@ -140,7 +141,7 @@ class LocalBaserowUpsertRowNodeType(AutomationNodeActionNodeType):
 
 
 class LocalBaserowCreateRowNodeType(LocalBaserowUpsertRowNodeType):
-    display_name = _("Local Baserow create row")
+    display_name = _("Create row")
     type = "local_baserow_create_row"
     compat_type = "create_row"
     model_class = LocalBaserowCreateRowActionNode
@@ -156,8 +157,10 @@ class LocalBaserowCreateRowsNodeType(AutomationNodeActionNodeType):
         return {"service": service}
 
 
-class LocalBaserowUpdateRowNodeType(LocalBaserowUpsertRowNodeType):
-    display_name = _("Local Baserow update row")
+class LocalBaserowUpdateRowNodeType(
+    UpdateRowRequiresRowIdMixin, LocalBaserowUpsertRowNodeType
+):
+    display_name = _("Update row")
     type = "local_baserow_update_row"
     compat_type = "update_row"
     model_class = LocalBaserowUpdateRowActionNode
@@ -174,7 +177,7 @@ class LocalBaserowUpdateRowsNodeType(AutomationNodeActionNodeType):
 
 
 class LocalBaserowDeleteRowNodeType(AutomationNodeActionNodeType):
-    display_name = _("Local Baserow delete row")
+    display_name = _("Delete row")
     type = "local_baserow_delete_row"
     compat_type = "delete_row"
     model_class = LocalBaserowDeleteRowActionNode
@@ -182,7 +185,7 @@ class LocalBaserowDeleteRowNodeType(AutomationNodeActionNodeType):
 
 
 class LocalBaserowGetRowNodeType(AutomationNodeActionNodeType):
-    display_name = _("Local Baserow get row")
+    display_name = _("Get row")
     type = "local_baserow_get_row"
     compat_type = "get_row"
     model_class = LocalBaserowGetRowActionNode
@@ -190,7 +193,7 @@ class LocalBaserowGetRowNodeType(AutomationNodeActionNodeType):
 
 
 class LocalBaserowListRowsNodeType(AutomationNodeActionNodeType):
-    display_name = _("Local Baserow list rows")
+    display_name = _("List rows")
     type = "local_baserow_list_rows"
     compat_type = "list_rows"
     model_class = LocalBaserowListRowsActionNode
@@ -198,7 +201,7 @@ class LocalBaserowListRowsNodeType(AutomationNodeActionNodeType):
 
 
 class LocalBaserowAggregateRowsNodeType(AutomationNodeActionNodeType):
-    display_name = _("Local Baserow aggregate rows")
+    display_name = _("Aggregate rows")
     type = "local_baserow_aggregate_rows"
     compat_type = "aggregate_rows"
     model_class = LocalBaserowAggregateRowsActionNode
@@ -236,13 +239,6 @@ class CoreStartWorkflowNodeType(AutomationNodeActionNodeType):
     type = "start_workflow"
     model_class = CoreStartWorkflowActionNode
     service_type = CoreStartWorkflowServiceType.type
-
-
-class AIAgentActionNodeType(AutomationNodeActionNodeType):
-    display_name = _("AI agent")
-    type = "ai_agent"
-    model_class = AIAgentActionNode
-    service_type = AIAgentServiceType.type
 
 
 class CoreRouterActionNodeType(AutomationNodeActionNodeType):
@@ -441,7 +437,7 @@ class AutomationNodeTriggerType(AutomationNodeType):
 
 
 class LocalBaserowRowsCreatedNodeTriggerType(AutomationNodeTriggerType):
-    display_name = _("Local Baserow rows created")
+    display_name = _("Rows created")
     type = "local_baserow_rows_created"
     compat_type = "rows_created"
     model_class = LocalBaserowRowsCreatedTriggerNode
@@ -449,7 +445,7 @@ class LocalBaserowRowsCreatedNodeTriggerType(AutomationNodeTriggerType):
 
 
 class LocalBaserowRowsUpdatedNodeTriggerType(AutomationNodeTriggerType):
-    display_name = _("Local Baserow rows updated")
+    display_name = _("Rows updated")
     type = "local_baserow_rows_updated"
     compat_type = "rows_updated"
     model_class = LocalBaserowRowsUpdatedTriggerNode
@@ -457,7 +453,7 @@ class LocalBaserowRowsUpdatedNodeTriggerType(AutomationNodeTriggerType):
 
 
 class LocalBaserowRowsDeletedNodeTriggerType(AutomationNodeTriggerType):
-    display_name = _("Local Baserow rows deleted")
+    display_name = _("Rows deleted")
     type = "local_baserow_rows_deleted"
     compat_type = "rows_deleted"
     model_class = LocalBaserowRowsDeletedTriggerNode

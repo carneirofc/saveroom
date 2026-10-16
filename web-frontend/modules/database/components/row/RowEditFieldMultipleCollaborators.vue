@@ -18,7 +18,7 @@
               class="field-multiple-collaborators__remove"
               @click.prevent="removeValue($event, value, item.id)"
             >
-              <i class="iconoir-cancel"></i>
+              <i class="iconoir-xmark"></i>
             </a>
           </div>
           <div class="field-multiple-collaborators__initials">

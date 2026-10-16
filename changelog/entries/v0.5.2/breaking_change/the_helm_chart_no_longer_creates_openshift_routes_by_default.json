@@ -1,0 +1,9 @@
+{
+    "type": "breaking_change",
+    "message": "The Helm chart no longer creates OpenShift Routes by default, so it installs on a plain Kubernetes cluster out of the box. Set openshift.route.enabled=true (or use values-openshift.yaml, which already does) to keep the previous behaviour.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-11"
+}

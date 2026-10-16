@@ -176,6 +176,7 @@ import viewHelpers from '@baserow/modules/database/mixins/viewHelpers'
 import viewDecoration from '@baserow/modules/database/mixins/viewDecoration'
 import { populateRow } from '@baserow/modules/database/store/view/grid'
 import { clone } from '@baserow/modules/core/utils/object'
+import { isProtected } from '@baserow/modules/database/utils/editConfirmation'
 
 export default {
   name: 'GalleryView',
@@ -471,6 +472,25 @@ export default {
       }
     },
     async updateValue({ field, row, value, oldValue }) {
+      // Protected editing: show the new value and stage it until the user saves or
+      // discards all pending changes of the table.
+      if (isProtected(this.table) && Number.isInteger(row.id)) {
+        const storeRow = this.allRows.find((r) => r && r.id === row.id)
+        if (storeRow !== undefined) {
+          this.$store.commit(
+            this.storePrefix + 'view/gallery/UPDATE_ROW_VALUES',
+            { row: storeRow, values: { [`field_${field.id}`]: value } }
+          )
+        }
+        this.$store.dispatch('pendingRowChanges/stage', {
+          table: this.table,
+          row: storeRow || row,
+          field,
+          value,
+          oldValue,
+        })
+        return
+      }
       try {
         await this.$store.dispatch(
           this.storePrefix + 'view/gallery/updateRowValue',

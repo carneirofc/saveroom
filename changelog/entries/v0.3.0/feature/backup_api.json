@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Added a `/api/backups/` API to back up and restore a whole workspace or individual applications. Backups build on the existing signed workspace export archives, so a backup taken here can be downloaded, deleted, and restored into any workspace you have access to.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-07-29"
+}

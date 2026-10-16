@@ -4,7 +4,7 @@ import path from "path";
 
 // Resolve relative to this file so paths are correct regardless of cwd
 // (VS Code Playwright extension runs from the workspace root, not e2e-tests/).
-require("dotenv").config({ path: path.join(__dirname, ".env") });
+require("dotenv").config({ path: path.join(__dirname, ".env"), quiet: true });
 
 const defaultBackendPort = process.env.E2E_BACKEND_PORT || "8070";
 const defaultFrontendPort = process.env.E2E_FRONTEND_PORT || "3070";

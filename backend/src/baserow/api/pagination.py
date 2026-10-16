@@ -52,7 +52,7 @@ class Paginator(DjangoPaginator):
             if isinstance(number, float) and not number.is_integer():
                 raise ValueError
             number = int(number)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             number = 1
         return max(number, 1)
 

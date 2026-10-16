@@ -15,7 +15,7 @@
       </div>
     </div>
     <button v-if="closeButton" class="ab-toast__close" @click="$emit('close')">
-      <i class="iconoir-cancel"></i>
+      <i class="iconoir-xmark"></i>
     </button>
   </div>
 </template>

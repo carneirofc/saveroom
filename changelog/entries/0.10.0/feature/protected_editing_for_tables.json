@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Protected editing for tables: when enabled from the table menu, row edits are kept as unsaved changes until you click Save (or Discard), and creating, pasting, clearing, deleting, moving rows and undo/redo ask for confirmation first. Saved changes are recorded in the audit log with their before and after values.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "database",
+    "bullet_points": [],
+    "created_at": "2026-09-15"
+}

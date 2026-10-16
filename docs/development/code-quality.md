@@ -35,11 +35,9 @@ A few things to know when passing paths:
   not `src/baserow/...`), even when you invoke the recipe from inside
   `backend/` or `web-frontend/`. This keeps the behavior identical regardless
   of where you run it from and matches what `pre-commit` passes in.
-- Paths outside the linted trees (`backend/{src,tests}`,
-  `{premium,enterprise}/backend/{src,tests}`, `web-frontend/`,
-  `{premium,enterprise}/web-frontend/`) are silently skipped, as are files with
-  extensions the tools don't handle. This lets you pipe in a mixed file list
-  without filtering it yourself.
+- Paths outside the linted trees (`backend/{src,tests}`, `web-frontend/`) are
+  silently skipped, as are files with extensions the tools don't handle. This
+  lets you pipe in a mixed file list without filtering it yourself.
 - **With no arguments each recipe lints its full component tree** (`just b`
   walks all backend trees, `just f` walks all frontend trees; running both
   covers the monorepo). This matters when you scope to a diff with `$(...)`
@@ -65,7 +63,7 @@ There are also commands to easily run the tests.
 
 ## Git pre-commit hooks
 
-Baserow uses [`pre-commit`](https://pre-commit.com/) to automatically run linters and
+Saveroom uses [`pre-commit`](https://pre-commit.com/) to automatically run linters and
 formatters before commits are created. This ensures your changes comply with repo-wide
 code quality rules without waiting for CI feedback.
 
@@ -148,10 +146,6 @@ integration pipeline that runs every time a branch is pushed. All the commands e
 above will execute in an isolated environment. In order to improve speed
 they are separated by lint and test stages. It is not allowed to merge a branch if
 one of these jobs fails.
-
-The pipeline also has a build job. During this job
-[plugin boilerplate](../plugins/boilerplate.md) Baserow will be installed as a
-dependency to ensure that this still works.
 
 ### Running CI locally
 

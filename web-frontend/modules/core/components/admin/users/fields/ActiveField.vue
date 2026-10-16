@@ -8,7 +8,7 @@
     <i
       v-else
       v-tooltip="$t('user.deactivated')"
-      class="iconoir-cancel user-admin-active__icon user-admin-active__icon--deactivated"
+      class="iconoir-xmark user-admin-active__icon user-admin-active__icon--deactivated"
     ></i>
   </div>
 </template>

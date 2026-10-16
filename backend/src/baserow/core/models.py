@@ -32,12 +32,12 @@ from .mixins import (
 )
 from .notifications.models import Notification
 from .services.models import Service
+from .teams.models import Team, TeamMember
 
 __all__ = [
     "Settings",
     "Workspace",
     "WorkspaceUser",
-    "WorkspaceInvitation",
     "Application",
     "TemplateCategory",
     "Template",
@@ -51,6 +51,8 @@ __all__ = [
     "Integration",
     "Service",
     "Notification",
+    "Team",
+    "TeamMember",
     "BlacklistedToken",
     "ExportApplicationsJob",
     "ImportApplicationsJob",
@@ -104,11 +106,6 @@ class Settings(models.Model):
         help_text="Indicates whether new users can create a new account when signing "
         "up.",
     )
-    allow_signups_via_workspace_invitations = models.BooleanField(
-        default=True,
-        help_text="Indicates whether invited users can create an account when signing "
-        "up, even if allow_new_signups is disabled.",
-    )
     allow_reset_password = models.BooleanField(
         default=True,
         help_text="Indicates whether users can request a password reset link.",
@@ -161,6 +158,30 @@ class Settings(models.Model):
         default=True,
         db_default=True,
         help_text="Indicates whether the signature of imported files should be verified.",
+    )
+    # Per application type feature flags. When disabled, applications of that type
+    # can no longer be created (existing applications remain accessible). The field
+    # name must follow the `enable_<application_type>` convention so it can be
+    # resolved generically from an application type name.
+    enable_database = models.BooleanField(
+        default=True,
+        db_default=True,
+        help_text="Indicates whether database applications can be created.",
+    )
+    enable_builder = models.BooleanField(
+        default=True,
+        db_default=True,
+        help_text="Indicates whether builder applications can be created.",
+    )
+    enable_automation = models.BooleanField(
+        default=True,
+        db_default=True,
+        help_text="Indicates whether automation applications can be created.",
+    )
+    enable_dashboard = models.BooleanField(
+        default=True,
+        db_default=True,
+        help_text="Indicates whether dashboard applications can be created.",
     )
 
 
@@ -355,49 +376,6 @@ class WorkspaceUser(
     def get_last_order(cls, user):
         queryset = cls.objects.filter(user=user)
         return cls.get_highest_order_of_queryset(queryset) + 1
-
-
-class WorkspaceInvitation(
-    HierarchicalModelMixin,
-    ParentWorkspaceTrashableModelMixin,
-    CreatedAndUpdatedOnMixin,
-    models.Model,
-):
-    workspace = models.ForeignKey(
-        Workspace,
-        on_delete=models.CASCADE,
-        help_text="The workspace that the user will get access to once the invitation "
-        "is accepted.",
-    )
-    invited_by = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        help_text="The user that created the invitation.",
-    )
-    email = models.EmailField(
-        db_index=True,
-        help_text="The email address of the user that the invitation is meant for. "
-        "Only a user with that email address can accept it.",
-    )
-    permissions = models.CharField(
-        default=WORKSPACE_USER_PERMISSION_MEMBER,
-        max_length=32,
-        help_text="The permissions that the user is going to get within the workspace "
-        "after accepting the invitation.",
-    )
-    # TODO ZDM: Remove this field in a future migration (no longer used)
-    message = models.TextField(
-        default="",
-        max_length=250,
-        help_text="Deprecated legacy field retained for compatibility. This message is not exposed to invitation recipients.",
-    )
-
-    def get_parent(self):
-        return self.workspace
-
-    class Meta:
-        ordering = ("id",)
-        unique_together = [["workspace", "email"]]
 
 
 class Application(

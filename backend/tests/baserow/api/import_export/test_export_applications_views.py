@@ -129,6 +129,7 @@ def test_exporting_empty_workspace(
         "state": "pending",
         "type": "export_applications",
         "url": None,
+        "download_url": None,
         "workspace_id": workspace.id,
     }
 
@@ -209,6 +210,7 @@ def test_exporting_workspace_with_single_empty_database(
         "state": "pending",
         "type": "export_applications",
         "url": None,
+        "download_url": None,
         "workspace_id": database.workspace.id,
     }
 

@@ -1,0 +1,50 @@
+# Example production overrides for a hardened OpenShift cluster.
+#   helm install baserow deploy/helm/saveroom -f deploy/helm/saveroom/values-openshift.yaml
+#
+# Recommended posture: external managed PostgreSQL + S3 object storage, so the
+# app pods stay stateless and nothing needs elevated SCC.
+
+publicURL: "https://baserow.apps.mycluster.example.com"
+
+openshift:
+  route:
+    enabled: true
+    host: "baserow.apps.mycluster.example.com"
+    tls:
+      enabled: true
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+
+# --- Use an external managed database instead of the bundled subchart ---
+postgresql:
+  enabled: false
+externalDatabase:
+  host: "my-postgres.database.svc"
+  port: 5432
+  user: "baserow"
+  database: "baserow"
+  # Prefer referencing an existing Secret you manage:
+  existingSecret: "baserow-db"
+  existingSecretPasswordKey: "password"
+
+# --- Redis: keep the bundled subchart, or point at a managed instance ---
+redis:
+  enabled: true
+
+# --- Media on S3-compatible object storage ---
+objectStorage:
+  enabled: true
+  bucketName: "baserow-media"
+  endpointURL: "https://s3.us-east-1.amazonaws.com"
+  region: "us-east-1"
+  existingSecret: "baserow-s3" # keys: s3-access-key-id, s3-secret-access-key
+
+# Multiple replicas are safe with S3 media.
+replicaCount:
+  backend: 2
+  webFrontend: 2
+  celery: 2
+
+# Optional runtime favicon override (base64 of your .ico):
+# branding:
+#   faviconBase64: "AAABAAEAEBAAAAEAIABoBAAAF..."

@@ -2,7 +2,6 @@ import { defineNuxtPlugin } from '#app'
 
 import { LocalBaserowIntegrationType } from '@baserow/modules/integrations/localBaserow/integrationTypes'
 import { SMTPIntegrationType } from '@baserow/modules/integrations/core/integrationTypes'
-import { AIIntegrationType } from '@baserow/modules/integrations/ai/integrationTypes'
 import {
   LocalBaserowGetRowServiceType,
   LocalBaserowListRowsServiceType,
@@ -28,7 +27,6 @@ import {
   CoreStartWorkflowServiceType,
   CoreManualTriggerServiceType,
 } from '@baserow/modules/integrations/core/serviceTypes'
-import { AIAgentServiceType } from '@baserow/modules/integrations/ai/serviceTypes'
 import { SlackWriteMessageServiceType } from '@baserow/modules/integrations/slack/serviceTypes'
 import { SlackBotIntegrationType } from '@baserow/modules/integrations/slack/integrationTypes'
 
@@ -41,7 +39,6 @@ export default defineNuxtPlugin({
 
     $registry.register('integration', new LocalBaserowIntegrationType(context))
     $registry.register('integration', new SMTPIntegrationType(context))
-    $registry.register('integration', new AIIntegrationType(context))
     $registry.register('integration', new SlackBotIntegrationType(context))
 
     $registry.register('service', new LocalBaserowGetRowServiceType(context))
@@ -78,7 +75,6 @@ export default defineNuxtPlugin({
     $registry.register('service', new CoreIteratorServiceType(context))
     $registry.register('service', new CoreCSVFileReaderServiceType(context))
     $registry.register('service', new CoreStartWorkflowServiceType(context))
-    $registry.register('service', new AIAgentServiceType(context))
     $registry.register('service', new PeriodicTriggerServiceType(context))
     $registry.register('service', new SlackWriteMessageServiceType(context))
     $registry.register(

@@ -14,7 +14,7 @@ def test_create_webhook_action_type(data_fixture):
     user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
     webhook_data = {
-        "url": "https://baserow.io/endpoint",
+        "url": "https://example.com/endpoint",
         "name": "My Webhook",
         "include_all_events": True,
         "request_method": "POST",
@@ -42,14 +42,14 @@ def test_update_webhook_action_type(data_fixture):
         user=user,
         webhook=webhook,
         name="Test",
-        url="https://baserow.io/endpoint",
+        url="https://example.com/endpoint",
         include_all_events=False,
         request_method="GET",
         use_user_field_names=False,
         active=False,
     )
     assert webhook.name == "Test"
-    assert webhook.url == "https://baserow.io/endpoint"
+    assert webhook.url == "https://example.com/endpoint"
     assert webhook.include_all_events is False
     assert webhook.request_method == "GET"
     assert webhook.use_user_field_names is False

@@ -5,6 +5,7 @@ from rest_framework import serializers
 from baserow.api.applications.serializers import (
     PolymorphicApplicationResponseSerializer,
 )
+from baserow.api.download.tokens import WORKSPACE_EXPORT_DOWNLOAD
 from baserow.api.serializers import FileURLSerializerMixin
 from baserow.core.db import specific_iterator
 from baserow.core.import_export.handler import ImportExportHandler
@@ -40,6 +41,15 @@ class ExportWorkspaceExportedFileURLSerializerMixin(FileURLSerializerMixin):
 
     def get_handler(self):
         return ImportExportHandler()
+
+    def get_download_url_name(self):
+        return "api:workspaces:export_workspace_download"
+
+    def get_download_url_kwargs(self, instance):
+        return {"workspace_id": instance.workspace_id, "job_id": instance.id}
+
+    def get_download_token_scope(self, instance):
+        return WORKSPACE_EXPORT_DOWNLOAD, instance.id
 
 
 class InstalledApplicationsSerializer(serializers.JSONField):

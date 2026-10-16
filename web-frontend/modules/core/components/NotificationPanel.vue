@@ -5,7 +5,6 @@
       v-bind="$attrs"
       class="notification-panel"
       :class="{ 'visibility-hidden': !open }"
-      ph-autocapture="notifications"
     >
       <div class="notification-panel__head">
         <div class="notification-panel__title">

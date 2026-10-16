@@ -2,7 +2,7 @@
   <div class="thumbnail">
     <img v-bind="$attrs" class="thumbnail__image" :src="src" />
     <a v-if="removable" class="thumbnail__remove" @click="$emit('remove')">
-      <i class="iconoir-cancel"></i>
+      <i class="iconoir-xmark"></i>
       {{ $t('action.remove') }}
     </a>
   </div>

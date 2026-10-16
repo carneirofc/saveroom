@@ -27,7 +27,7 @@ class DashboardPageType(PageType):
                 workspace=dashboard.workspace,
                 context=dashboard,
             )
-        except (DashboardDoesNotExist, PermissionException):
+        except DashboardDoesNotExist, PermissionException:
             return False
 
         return True

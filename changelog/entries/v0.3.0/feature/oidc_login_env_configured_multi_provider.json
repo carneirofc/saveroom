@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Added env-configured OpenID Connect (OIDC) login. Declare one or more providers in the BASEROW_OIDC_PROVIDERS environment variable to show a sign-in button per provider; first-time users are auto-provisioned from their OIDC email and name.",
+    "issue_origin": "github",
+    "issue_number": 1,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-07-16"
+}

@@ -69,7 +69,6 @@ def test_local_baserow_service_type_dispatch_types():
         LocalBaserowRowsUpdatedServiceType.type: [DispatchTypes.EVENT],
         LocalBaserowRowsDeletedServiceType.type: [DispatchTypes.EVENT],
         LocalBaserowFieldsUpdatedServiceType.type: [DispatchTypes.EVENT],
-        "local_baserow_grouped_aggregate_rows": [DispatchTypes.DATA],
     }
 
 
@@ -1064,31 +1063,6 @@ def test_local_baserow_table_service_generate_schema_with_interesting_test_table
             "original_type": "form_view_edit_row",
             "metadata": {},
             "type": None,
-        },
-        field_db_column_by_name["ai"]: {
-            "title": "ai",
-            "default": None,
-            "searchable": True,
-            "sortable": True,
-            "filterable": True,
-            "original_type": "ai",
-            "metadata": {},
-            "type": "string",
-        },
-        field_db_column_by_name["ai_choice"]: {
-            "title": "ai_choice",
-            "default": None,
-            "searchable": True,
-            "sortable": True,
-            "filterable": True,
-            "original_type": "ai",
-            "metadata": {},
-            "properties": {
-                "color": {"title": "color", "type": "string"},
-                "id": {"title": "id", "type": "number"},
-                "value": {"title": "value", "type": "string"},
-            },
-            "type": "object",
         },
         "id": {
             "type": "number",

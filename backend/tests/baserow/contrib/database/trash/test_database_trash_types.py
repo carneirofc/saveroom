@@ -22,7 +22,6 @@ from baserow.contrib.database.table.cache import invalidate_table_in_model_cache
 from baserow.contrib.database.table.models import Table
 from baserow.contrib.database.trash.models import TrashedRows
 from baserow.contrib.database.views.handler import ViewHandler
-from baserow.core.exceptions import PermissionDenied
 from baserow.core.models import TrashEntry
 from baserow.core.trash.exceptions import (
     CannotRestoreChildBeforeParent,
@@ -862,7 +861,7 @@ def test_trashing_a_field_with_a_sort_trashes_the_sort(
     )
 
     model = customers_table.get_model()
-    filtered_qs = ViewHandler().apply_sorting(grid_view, model.objects.all())
+    filtered_qs = ViewHandler().apply_ordering(grid_view, model.objects.all())
     assert list(
         filtered_qs.values_list(f"field_{customers_primary_field.id}", flat=True)
     ) == ["1", "2"]
@@ -874,7 +873,7 @@ def test_trashing_a_field_with_a_sort_trashes_the_sort(
     )
 
     model = customers_table.get_model()
-    filtered_qs = ViewHandler().apply_sorting(grid_view, model.objects.all())
+    filtered_qs = ViewHandler().apply_ordering(grid_view, model.objects.all())
     assert list(
         filtered_qs.values_list(f"field_{customers_primary_field.id}", flat=True)
     ) == ["2", "1"]
@@ -1472,20 +1471,6 @@ def test_trash_restore_view(data_fixture):
     view.refresh_from_db()
 
     assert view.trashed is False
-
-    # test view ownership
-
-    view2 = data_fixture.create_grid_view(name="View 1", table=table)
-    view2.ownership_type = "personal"
-    view2.save()
-
-    TrashHandler.trash(user, database.workspace, database, view2)
-
-    with pytest.raises(PermissionDenied):
-        TrashHandler.restore_item(user, "view", view2.id)
-
-    with pytest.raises(PermissionDenied):
-        TrashHandler.restore_item(user2, "view", view2.id)
 
 
 @pytest.mark.django_db

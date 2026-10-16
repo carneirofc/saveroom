@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Declare external data destinations (S3 or S3-compatible, Azure Blob Storage, or a mounted filesystem) with BASEROW_DATA_DESTINATIONS. Credentials stay in the environment and can be read from secret files; GET /api/data-destinations/ lists the names only.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-13"
+}

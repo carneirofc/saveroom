@@ -75,7 +75,7 @@ class PreviousNodeProviderType(AutomationDataProviderType):
         try:
             new_node_id = id_mapping["automation_workflow_nodes"][int(previous_node_id)]
             node = AutomationNodeHandler().get_node(new_node_id)
-        except (KeyError, AutomationNodeDoesNotExist):
+        except KeyError, AutomationNodeDoesNotExist:
             # In the event the `previous_node_id` is not found in the `id_mapping`,
             # or if the previous node does not exist, we return the malformed path.
             return [str(previous_node_id), *rest]
@@ -136,7 +136,7 @@ class CurrentIterationDataProviderType(AutomationDataProviderType):
         try:
             new_node_id = id_mapping["automation_workflow_nodes"][int(parent_node_id)]
             node = AutomationNodeHandler().get_node(new_node_id)
-        except (KeyError, AutomationNodeDoesNotExist):
+        except KeyError, AutomationNodeDoesNotExist:
             # In the event the `previous_node_id` is not found in the `id_mapping`,
             # or if the previous node does not exist, we return the malformed path.
             return [str(parent_node_id), *rest]

@@ -105,6 +105,89 @@ export class BasicPermissionManagerType extends PermissionManagerType {
   }
 }
 
+/**
+ * Mirrors the backend `database_access` manager: the in-app access level of a member
+ * on a table, its database or the workspace default decides database operations.
+ * Returns `null` whenever no grant applies so the other managers decide.
+ */
+export class DatabaseAccessPermissionManagerType extends PermissionManagerType {
+  static getType() {
+    return 'database_access'
+  }
+
+  /**
+   * Returns `{ tableId, databaseId }` for a context living in a database, or `null`.
+   */
+  resolveLocation(context) {
+    if (!context || typeof context !== 'object') {
+      return null
+    }
+    if (context.table_id !== undefined && context.table_id !== null) {
+      return {
+        tableId: context.table_id,
+        databaseId: this.findDatabaseIdOfTable(context.table_id),
+      }
+    }
+    if (context.database_id !== undefined && context.database_id !== null) {
+      return { tableId: context.id, databaseId: context.database_id }
+    }
+    if (context.type === 'database') {
+      return { tableId: null, databaseId: context.id }
+    }
+    return null
+  }
+
+  findDatabaseIdOfTable(tableId) {
+    const store = this.app?.$store
+    if (!store) {
+      return null
+    }
+    const database = store.getters['application/getAll'].find(
+      (application) =>
+        application.type === 'database' &&
+        (application.tables || []).some((table) => table.id === tableId)
+    )
+    return database ? database.id : null
+  }
+
+  hasPermission(permissions, operation, context, workspaceId) {
+    if (!permissions || !permissions.family_operations.includes(operation)) {
+      return null
+    }
+    const location = this.resolveLocation(context)
+    if (location === null) {
+      return null
+    }
+
+    const { tableId, databaseId } = location
+    let level
+    if (tableId !== null && permissions.tables[tableId] !== undefined) {
+      level = permissions.tables[tableId]
+    } else if (
+      databaseId !== null &&
+      permissions.databases[databaseId] !== undefined
+    ) {
+      level = permissions.databases[databaseId]
+    } else {
+      level = permissions.workspace
+    }
+
+    if (level === null || level === undefined) {
+      return null
+    }
+    if (level === 'none') {
+      if (
+        tableId === null &&
+        permissions.databases_with_accessible_tables.includes(databaseId)
+      ) {
+        return permissions.database_passthrough_operations.includes(operation)
+      }
+      return false
+    }
+    return permissions.level_operations[level].includes(operation)
+  }
+}
+
 export class StaffOnlySettingOperationPermissionManagerType extends PermissionManagerType {
   static getType() {
     return 'setting_operation'

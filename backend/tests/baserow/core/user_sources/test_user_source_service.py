@@ -24,6 +24,19 @@ def pytest_generate_tests(metafunc):
         )
 
 
+def _first_user_source_type():
+    """
+    Skips instead of IndexError-ing when no plugin has registered a user
+    source type (e.g. the enterprise-only "local_baserow" type isn't part
+    of this fork).
+    """
+
+    registered_types = list(user_source_type_registry.get_all())
+    if not registered_types:
+        pytest.skip("No user source type is registered (needs a plugin).")
+    return registered_types[0]
+
+
 @pytest.mark.django_db
 @patch("baserow.core.user_sources.service.user_source_created")
 def test_create_user_source(user_source_created_mock, data_fixture, user_source_type):
@@ -56,7 +69,7 @@ def test_create_user_source_w_auth_source(data_fixture):
     user = data_fixture.create_user()
     application = data_fixture.create_builder_application(user=user)
 
-    user_source_type = list(user_source_type_registry.get_all())[0]
+    user_source_type = _first_user_source_type()
     app_auth_provider_type = list(app_auth_provider_type_registry.get_all())[0]
 
     user_source2 = UserSourceService().create_user_source(
@@ -74,7 +87,7 @@ def test_create_user_source_w_incompatible_auth_source(data_fixture):
     user = data_fixture.create_user()
     application = data_fixture.create_builder_application(user=user)
 
-    user_source_type = list(user_source_type_registry.get_all())[0]
+    user_source_type = _first_user_source_type()
     app_auth_provider_type = list(app_auth_provider_type_registry.get_all())[0]
 
     original_compatible = app_auth_provider_type.compatible_user_source_types
@@ -182,7 +195,7 @@ def test_create_user_source_permission_denied(data_fixture, stub_check_permissio
     user = data_fixture.create_user()
     application = data_fixture.create_builder_application(user=user)
 
-    user_source_type = user_source_type_registry.get("local_baserow")
+    user_source_type = _first_user_source_type()
 
     with (
         stub_check_permissions(raise_permission_denied=True),

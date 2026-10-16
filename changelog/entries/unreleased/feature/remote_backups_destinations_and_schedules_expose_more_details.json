@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Remote backups now list who made them and whether this instance did, data destinations tell whether trusting a backup's signing key is allowed, and backup and datalake export schedules expose the user they run as.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-04"
+}

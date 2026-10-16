@@ -48,29 +48,6 @@
           @created="hide"
         ></CreateApplicationModal>
       </li>
-      <li class="context__menu-item">
-        <a
-          class="context__menu-item-link context__menu-item-link--with-desc"
-          :class="{
-            disabled: !canCreateCreateApplication,
-          }"
-          @click="openTemplateModal()"
-        >
-          <span class="context__menu-item-title">
-            <i class="context__menu-item-icon iconoir-page"></i>
-            {{ $t('createApplicationContext.fromTemplate') }}</span
-          >
-          <div
-            class="context__menu-item-description context__menu-item-description--offset"
-          >
-            {{ $t('createApplicationContext.fromTemplateDesc') }}
-          </div>
-        </a>
-        <TemplateModal
-          ref="templateModal"
-          :workspace="workspace"
-        ></TemplateModal>
-      </li>
       <li v-if="canImportWorkspace" class="context__menu-item">
         <a
           class="context__menu-item-link context__menu-item-link--with-desc"
@@ -97,7 +74,6 @@
 
 <script>
 import CreateApplicationModal from '@baserow/modules/core/components/application/CreateApplicationModal'
-import TemplateModal from '@baserow/modules/core/components/template/TemplateModal'
 import ImportWorkspaceModal from '@baserow/modules/core/components/import/ImportWorkspaceModal.vue'
 import context from '@baserow/modules/core/mixins/context'
 import DevelopmentBadge from '@baserow/modules/core/components/DevelopmentBadge'
@@ -108,7 +84,6 @@ export default {
     DevelopmentBadge,
     CreateApplicationModal,
     ImportWorkspaceModal,
-    TemplateModal,
   },
   mixins: [context],
   props: {
@@ -120,9 +95,12 @@ export default {
   computed: {
     applicationTypes() {
       const applicationTypes = this.$registry.getOrderedList('application')
+      const settings = this.$store.getters['settings/get']
 
-      return applicationTypes.filter((applicationType) =>
-        applicationType.canBeCreated()
+      return applicationTypes.filter(
+        (applicationType) =>
+          applicationType.canBeCreated() &&
+          settings[`enable_${applicationType.getType()}`] !== false
       )
     },
     canCreateCreateApplication() {
@@ -144,14 +122,6 @@ export default {
     async fetchRolesAndPermissions() {
       await this.$store.dispatch('workspace/fetchPermissions', this.workspace)
       await this.$store.dispatch('workspace/fetchRoles', this.workspace)
-    },
-    openTemplateModal() {
-      if (!this.canCreateCreateApplication) {
-        return
-      }
-
-      this.$refs.templateModal.show()
-      this.hide()
     },
     openImportWorkspaceModal() {
       if (!this.canImportWorkspace) {

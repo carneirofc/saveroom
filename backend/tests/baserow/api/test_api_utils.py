@@ -427,7 +427,7 @@ def test_api_error_if_url_trailing_slash_is_missing(api_client):
             assert response_json["error"] == "URL_NOT_FOUND"
 
     # get nicer 404 error if the url is valid (even if method is not)
-    url = "/api/user/dashboard"
+    url = "/api/user/account"
     for method in ["get", "post", "patch", "delete"]:
         response = getattr(api_client, method)(url, HTTP_ACCEPT="application/json")
         assert response.status_code == status.HTTP_404_NOT_FOUND

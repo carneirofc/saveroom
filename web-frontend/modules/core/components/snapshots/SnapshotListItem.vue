@@ -8,13 +8,18 @@
         <div class="snapshots-modal__detail">
           {{ snapshot.created_by ? `${snapshot.created_by.username} - ` : '' }}
           {{ $t('snapshotListItem.created') }} {{ timeAgo }}
+          <template v-if="expiresInDays !== null">
+            - {{ $t('snapshotListItem.expiresIn', expiresInDays) }}
+          </template>
         </div>
       </div>
-      <ProgressBar
-        v-else
-        :value="job.progress_percentage"
-        :status="jobHumanReadableState"
-      />
+      <template v-else>
+        <ProgressBar
+          :value="job.progress_percentage"
+          :status="jobHumanReadableState"
+        />
+        <JobDuration :job="job" />
+      </template>
     </div>
     <div class="snapshots-modal__actions">
       <a
@@ -42,8 +47,10 @@
 </template>
 
 <script>
+import moment from '@baserow/modules/core/moment'
 import SnapshotsService from '@baserow/modules/core/services/snapshots'
 import DeleteSnapshotModal from '@baserow/modules/core/components/snapshots/DeleteSnapshotModal'
+import JobDuration from '@baserow/modules/core/components/job/JobDuration'
 import { notifyIf } from '@baserow/modules/core/utils/error'
 import job from '@baserow/modules/core/mixins/job'
 import timeAgo from '@baserow/modules/core/mixins/timeAgo'
@@ -52,6 +59,7 @@ import { RestoreSnapshotJobType } from '@baserow/modules/core/jobTypes'
 export default {
   components: {
     DeleteSnapshotModal,
+    JobDuration,
   },
   mixins: [job, timeAgo],
   props: {
@@ -61,6 +69,27 @@ export default {
     },
   },
   emits: ['snapshot-deleted'],
+  computed: {
+    /**
+     * Whole days left before `SnapshotHandler.delete_expired` picks this snapshot
+     * up. The backend expires on `created_at` plus
+     * BASEROW_SNAPSHOT_EXPIRATION_TIME_DAYS, mirrored into the runtime config.
+     * A non-positive configured value means expiry is switched off.
+     */
+    expiresInDays() {
+      const days = parseInt(
+        this.$config.public.baserowSnapshotExpirationTimeDays
+      )
+      if (!Number.isInteger(days) || days <= 0 || !this.snapshot.created_at) {
+        return null
+      }
+      const expiresAt = moment.utc(this.snapshot.created_at).add(days, 'days')
+      if (!expiresAt.isValid()) {
+        return null
+      }
+      return Math.max(0, expiresAt.diff(moment.utc(), 'days'))
+    },
+  },
   mounted() {
     if (!this.job) {
       this.restoreRunningState()

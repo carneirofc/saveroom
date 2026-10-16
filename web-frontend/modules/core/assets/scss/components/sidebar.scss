@@ -79,7 +79,25 @@
   font-weight: 500;
   font-size: 11px;
   color: $palette-neutral-900;
+}
+
+// Stacks the email and the build under it, while the license badge stays on the
+// row axis next to them.
+.sidebar__user-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
   padding-left: 8px;
+}
+
+.sidebar__user-version {
+  font-size: 10px;
+  line-height: 14px;
+  color: $palette-neutral-700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar__user-info {
@@ -271,7 +289,7 @@
   @include rounded($rounded-md);
 
   &:hover {
-    background-color: rgba($palette-neutral-1300, 0.04);
+    background-color: alpha($palette-neutral-1300, 0.04);
   }
 }
 
@@ -302,7 +320,7 @@
   @include rounded($rounded-md);
 
   &:hover {
-    background-color: rgba($palette-neutral-1300, 0.04);
+    background-color: alpha($palette-neutral-1300, 0.04);
   }
 }
 

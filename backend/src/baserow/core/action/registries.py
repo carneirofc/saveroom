@@ -127,7 +127,12 @@ def render_action_type_description(
     # The action type description translations currently still point to "group"
     # variables. To ensure that existing log entries can be rendered, we'll
     # update `params_dict` with the value of `group_compat_map` if the key exists
-    # in `params_dict`.
+    # in `params_dict`. Work on a copy: `params_dict` is the same dict object
+    # every `action_done` signal receiver gets (e.g. the audit log receiver, via
+    # `get_long_description`), so mutating it here would leak these compat keys
+    # into whatever a later receiver does with the params (see row history's
+    # `serialized_to_params`, which chokes on an unexpected `group_id`).
+    params_dict = dict(params_dict)
     group_compat_map = {  # GroupDeprecation
         "workspace_id": "group_id",
         "workspace_name": "group_name",

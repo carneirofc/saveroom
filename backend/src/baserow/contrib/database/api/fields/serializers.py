@@ -107,7 +107,7 @@ class FieldSerializer(serializers.ModelSerializer):
         try:
             constraints = instance.field_constraints.all()
             return FieldConstraintSerializer(constraints, many=True).data
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             return []
 
 
@@ -233,7 +233,7 @@ class ArrayValueSerializer(serializers.Serializer):
         self.fields["value"] = child
 
     def to_representation(self, instance):
-        # Note this is workaround for https://github.com/baserow/baserow/issues/4424
+        # Note this is workaround for https://github.com/carneirofc/baserow/issues/4424
         # Once we have a proper way to handle this, we can remove this
         # and return the super().to_representation(instance) directly.
         try:
@@ -338,7 +338,10 @@ class FileFieldRequestSerializer(serializers.ListField):
             return []
 
         if isinstance(data, str):
-            data = split_comma_separated_string(data)
+            try:
+                data = split_comma_separated_string(data)
+            except ValueError as e:
+                raise serializers.ValidationError(str(e), code="invalid") from e
 
         if any([not isinstance(i, type(data[0])) for i in data]):
             raise serializers.ValidationError(
@@ -412,7 +415,10 @@ class LinkRowRequestSerializer(serializers.ListField):
                 )
 
         elif isinstance(data, str):
-            data = split_comma_separated_string(data)
+            try:
+                data = split_comma_separated_string(data)
+            except ValueError as e:
+                raise serializers.ValidationError(str(e), code="invalid") from e
 
         elif isinstance(data, int):
             data = [data]
@@ -469,7 +475,7 @@ class CollaboratorField(serializers.Field):
         if isinstance(data, dict):
             try:
                 return int(data["id"])
-            except (KeyError, TypeError, ValueError):
+            except KeyError, TypeError, ValueError:
                 pass
 
         raise serializers.ValidationError(
@@ -537,7 +543,10 @@ class ListOrStringField(serializers.ListField):
 
     def to_internal_value(self, data):
         if isinstance(data, str):
-            data = split_comma_separated_string(data)
+            try:
+                data = split_comma_separated_string(data)
+            except ValueError as e:
+                raise serializers.ValidationError(str(e), code="invalid") from e
 
         return super().to_internal_value(data)
 

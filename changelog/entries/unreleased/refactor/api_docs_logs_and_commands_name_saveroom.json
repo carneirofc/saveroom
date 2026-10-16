@@ -1,0 +1,9 @@
+{
+    "type": "refactor",
+    "message": "The API reference, startup warnings, management command help and output, and the `User-Agent` of outgoing HTTP request automations now say Saveroom instead of Baserow, and three field and table error messages no longer name the product at all.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-09"
+}

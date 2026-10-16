@@ -470,11 +470,14 @@ export class LocalBaserowUpsertRowsWorkflowServiceType extends WorkflowActionSer
   }
 
   getErrorMessage({ service }) {
+    const inherited = super.getErrorMessage({ service })
+    if (inherited) {
+      return inherited
+    }
     if (service?.rows !== undefined && !service.rows?.formula) {
       return this.app.$i18n.t('serviceType.errorNoRowsSelected')
     }
-
-    return super.getErrorMessage({ service })
+    return null
   }
 
   get formComponent() {
@@ -517,6 +520,21 @@ export class LocalBaserowUpdateRowWorkflowServiceType extends WorkflowActionServ
 
   get description() {
     return this.app.$i18n.t('serviceType.localBaserowUpdateRowDescription')
+  }
+
+  /**
+   * The backend service creates a row when the row ID is empty, so an update
+   * without one is misconfigured.
+   */
+  getErrorMessage({ service, application }) {
+    const inherited = super.getErrorMessage({ service, application })
+    if (inherited) {
+      return inherited
+    }
+    if (service?.row_id !== undefined && !service.row_id?.formula?.trim()) {
+      return this.app.$i18n.t('serviceType.errorNoRowIdSelected')
+    }
+    return null
   }
 
   get formComponent() {

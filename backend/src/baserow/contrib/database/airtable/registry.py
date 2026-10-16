@@ -154,7 +154,7 @@ class AirtableColumnType(Instance):
                 raw_airtable_table.get("name", ""),
                 ERROR_TYPE_UNSUPPORTED_FEATURE,
                 f"The field was imported, but the default value "
-                f"{default} was dropped because that's not supported in Baserow.",
+                f"{default} was dropped because that's not supported.",
             )
 
 
@@ -704,7 +704,7 @@ class AirtableViewType(Instance):
                 raw_airtable_table["name"],
                 ERROR_TYPE_UNSUPPORTED_FEATURE,
                 f'View "{view_name}" is locked, but was made collaborative because '
-                f"it Baserow does not support this yet.",
+                f"locked views are not supported yet.",
             )
 
         return view_name

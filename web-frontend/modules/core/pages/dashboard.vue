@@ -3,13 +3,6 @@
     <div class="dashboard__main">
       <DashboardVerifyEmail class="margin-top-0 margin-bottom-0" />
 
-      <WorkspaceInvitation
-        v-for="invitation in workspaceInvitations"
-        :key="'invitation-' + invitation.id"
-        :invitation="invitation"
-        class="margin-top-0 margin-bottom-0"
-      />
-
       <div class="dashboard__wrapper">
         <div class="dashboard__no-application">
           <img
@@ -42,14 +35,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useStore } from 'vuex'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useNuxtApp } from '#imports'
 
 import CreateWorkspaceModal from '@baserow/modules/core/components/workspace/CreateWorkspaceModal'
 import DashboardVerifyEmail from '@baserow/modules/core/components/dashboard/DashboardVerifyEmail'
-import WorkspaceInvitation from '@baserow/modules/core/components/workspace/WorkspaceInvitation'
 
 definePageMeta({
   layout: 'app',
@@ -63,16 +54,8 @@ definePageMeta({
   ],
 })
 
-const store = useStore()
 const { t } = useI18n()
 const { $hasPermission } = useNuxtApp()
 
 const modal = ref(null)
-
-const workspaceInvitations = computed(
-  () => store.getters['auth/getWorkspaceInvitations']
-)
-
-// If we reach here, no workspace redirect happened — fetch invitations
-await store.dispatch('auth/fetchWorkspaceInvitations')
 </script>

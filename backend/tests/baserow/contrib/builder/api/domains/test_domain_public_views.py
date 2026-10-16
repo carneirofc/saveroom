@@ -115,12 +115,12 @@ def test_get_public_builder_by_domain_name(api_client, data_fixture):
     page2 = data_fixture.create_builder_page(user=user, builder=builder_to)
 
     domain = data_fixture.create_builder_custom_domain(
-        domain_name="xyztest.getbaserow.io", published_to=builder_to
+        domain_name="xyztest.example.com", published_to=builder_to
     )
 
     url = reverse(
         "api:builder:domains:get_builder_by_domain_name",
-        kwargs={"domain_name": "xyztest.getbaserow.io"},
+        kwargs={"domain_name": "xyztest.example.com"},
     )
 
     # Anonymous request
@@ -147,10 +147,8 @@ def test_get_public_builder_by_domain_name(api_client, data_fixture):
     )
     assert response_json["login_page_id"] is None
     assert response_json["workspace"] == {
-        "generative_ai_models_enabled": {},
         "id": workspace.id,
         "name": workspace.name,
-        "licenses": [],
     }
     assert response_json["pages"] == [
         {
@@ -207,12 +205,12 @@ def test_get_builder_missing_domain_name(api_client, data_fixture):
     page2 = data_fixture.create_builder_page(builder=page.builder, user=user)
 
     domain = data_fixture.create_builder_custom_domain(
-        domain_name="test.getbaserow.io", published_to=page.builder
+        domain_name="test.example.com", published_to=page.builder
     )
 
     url = reverse(
         "api:builder:domains:get_builder_by_domain_name",
-        kwargs={"domain_name": "notexists.getbaserow.io"},
+        kwargs={"domain_name": "notexists.example.com"},
     )
     response = api_client.get(
         url,
@@ -229,12 +227,12 @@ def test_get_non_public_builder(api_client, data_fixture):
     page = data_fixture.create_builder_page(user=user)
     data_fixture.create_builder_page(builder=page.builder, user=user)
     data_fixture.create_builder_custom_domain(
-        domain_name="notpublic.getbaserow.io", builder=page.builder
+        domain_name="notpublic.example.com", builder=page.builder
     )
 
     url = reverse(
         "api:builder:domains:get_builder_by_domain_name",
-        kwargs={"domain_name": "notpublic.getbaserow.io"},
+        kwargs={"domain_name": "notpublic.example.com"},
     )
     response = api_client.get(
         url,
@@ -282,10 +280,8 @@ def test_get_public_builder_by_id(api_client, data_fixture):
     )
     assert response_json["login_page_id"] is None
     assert response_json["workspace"] == {
-        "generative_ai_models_enabled": {},
         "id": page.builder.workspace.id,
         "name": page.builder.workspace.name,
-        "licenses": [],
     }
     assert response_json["pages"] == [
         {
@@ -357,7 +353,7 @@ def test_publish_builder(mock_run_async_job, api_client, data_fixture):
     page2 = data_fixture.create_builder_page(builder=builder_from, user=user)
 
     domain = data_fixture.create_builder_custom_domain(
-        domain_name="test.getbaserow.io", builder=builder_from
+        domain_name="test.example.com", builder=builder_from
     )
 
     url = reverse(
@@ -389,7 +385,7 @@ def test_publish_builder_max_job_count_exceeded(
     builder = data_fixture.create_builder_application(user=user)
     data_fixture.create_builder_page(builder=builder, user=user)
     domain = data_fixture.create_builder_custom_domain(
-        domain_name="test.getbaserow.io", builder=builder
+        domain_name="test.example.com", builder=builder
     )
     url = reverse(
         "api:builder:domains:publish",
@@ -426,7 +422,7 @@ def test_get_elements_of_public_builder(api_client, data_fixture):
     element3 = data_fixture.create_builder_text_element(page=page)
 
     domain = data_fixture.create_builder_custom_domain(
-        domain_name="test.getbaserow.io",
+        domain_name="test.example.com",
         published_to=page.builder,
         builder=builder_from,
     )
@@ -490,43 +486,6 @@ def test_get_elements_of_public_builder(api_client, data_fixture):
 
 
 @pytest.mark.django_db
-def test_get_elements_of_public_builder_with_deactivated(api_client, data_fixture):
-    user = data_fixture.create_user()
-    builder_from = data_fixture.create_builder_application(user=user)
-    builder_to = data_fixture.create_builder_application(user=user, workspace=None)
-    page = data_fixture.create_builder_page(builder=builder_to, user=user)
-    element1 = data_fixture.create_builder_heading_element(page=page)
-    element2 = data_fixture.create_builder_heading_element(page=page)
-    element3 = data_fixture.create_builder_text_element(page=page)
-
-    element_type = element3.get_type()
-
-    prev_is_deactivated = element_type.is_deactivated
-    element_type.is_deactivated = lambda x: True
-
-    domain = data_fixture.create_builder_custom_domain(
-        domain_name="test.getbaserow.io",
-        published_to=page.builder,
-        builder=builder_from,
-    )
-
-    url = reverse(
-        "api:builder:domains:list_elements",
-        kwargs={"page_id": page.id},
-    )
-    response = api_client.get(
-        url,
-        format="json",
-    )
-    response_json = response.json()
-
-    element_type.is_deactivated = prev_is_deactivated
-
-    assert response.status_code == HTTP_200_OK
-    assert len(response_json) == 2
-
-
-@pytest.mark.django_db
 def test_get_elements_of_public_builder_permission_denied(api_client, data_fixture):
     user = data_fixture.create_user()
     builder_from = data_fixture.create_builder_application(user=user)
@@ -562,7 +521,7 @@ def test_get_data_source_of_public_builder(api_client, data_fixture):
     )
 
     domain = data_fixture.create_builder_custom_domain(
-        domain_name="test.getbaserow.io",
+        domain_name="test.example.com",
         published_to=page.builder,
         builder=builder_from,
     )
@@ -609,7 +568,7 @@ def test_ask_public_builder_domain_exists(api_client, data_fixture):
     builder_from = data_fixture.create_builder_application(user=user)
     builder_to = data_fixture.create_builder_application(user=user, workspace=None)
     data_fixture.create_builder_custom_domain(
-        domain_name="test.getbaserow.io",
+        domain_name="test.example.com",
         published_to=builder_to,
         builder=builder_from,
     )
@@ -633,7 +592,7 @@ def test_ask_public_builder_domain_exists(api_client, data_fixture):
     response = api_client.get(url)
     assert response.status_code == 404
 
-    url = reverse("api:builder:domains:ask_exists") + "?domain=test2.getbaserow.io"
+    url = reverse("api:builder:domains:ask_exists") + "?domain=test2.example.com"
     response = api_client.get(url)
     assert response.status_code == 404
 
@@ -641,7 +600,7 @@ def test_ask_public_builder_domain_exists(api_client, data_fixture):
     response = api_client.get(url)
     assert response.status_code == 404
 
-    url = reverse("api:builder:domains:ask_exists") + "?domain=test.getbaserow.io"
+    url = reverse("api:builder:domains:ask_exists") + "?domain=test.example.com"
     response = api_client.get(url)
     assert response.status_code == 200
 
@@ -2154,7 +2113,7 @@ def test_get_data_source_context_fields_are_excluded(api_client, data_fixture):
     )
 
     data_fixture.create_builder_custom_domain(
-        domain_name="test.getbaserow.io",
+        domain_name="test.example.com",
         published_to=page.builder,
         builder=builder_from,
     )
@@ -2227,7 +2186,7 @@ def test_get_data_source_context_fields_are_included(api_client, data_fixture):
     )
 
     data_fixture.create_builder_custom_domain(
-        domain_name="test.getbaserow.io",
+        domain_name="test.example.com",
         published_to=page.builder,
         builder=builder_from,
     )

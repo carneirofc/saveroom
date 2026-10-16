@@ -7,7 +7,6 @@
     "test": "playwright test --project=chrome",
     "test-ui": "playwright test --project=chrome --ui",
     "test-fast-only": "playwright test --project=chrome --grep @fast",
-    "test-enterprise-only": "playwright test --project=chrome --grep @enterprise",
     "test-search-only": "playwright test --project=chrome --grep @search",
     "test-search-only-debug": "playwright test --project=chrome --grep @search --debug",
     "test-builder": "playwright test --project=chrome --grep builder",
@@ -17,10 +16,14 @@
     "codegen": "playwright codegen"
   },
   "dependencies": {
-    "@faker-js/faker": "7.6.0",
-    "@nuxt/test-utils": "^3.21.0",
-    "@playwright/test": "^1.48.0",
-    "axios": "1.15.2",
-    "dotenv": "16.0.3"
+    "@faker-js/faker": "^10.6.0",
+    "@nuxt/test-utils": "^4.3.3",
+    "@playwright/test": "^1.63.0",
+    "axios": "^1.20.0",
+    "dotenv": "^18.0.5"
+  },
+  "resolutions": {
+    "defu": "^6.1.7",
+    "picomatch": "^4.0.7"
   }
 }

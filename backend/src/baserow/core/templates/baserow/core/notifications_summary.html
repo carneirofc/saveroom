@@ -111,7 +111,7 @@
 </head>
 
 <body style="word-spacing:normal;">
-  <div aria-roledescription="email" style="" role="article" lang="und" dir="auto">
+  <div aria-roledescription="email" role="article" lang="und" dir="auto" style="word-spacing:normal;">
     <!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" class="" role="presentation" style="width:600px;" width="600" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->
     <div style="margin:0px auto;max-width:600px;">
       <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;">
@@ -180,47 +180,30 @@
                         <!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" style="border-top:dashed 1px lightgrey;font-size:1px;margin:0px auto;width:550px;" role="presentation" width="550px" ><tr><td style="height:0;line-height:0;"> &nbsp;
 </td></tr></table><![endif]-->
                       </td>
-                    </tr>
-                    <!-- htmlmin:ignore -->{% for notification in notifications %}<!-- htmlmin:ignore --><!-- htmlmin:ignore -->{% if notification.url %}<!-- htmlmin:ignore -->
-                    <tr>
+                    </tr> {% for notification in notifications %}{% if notification.url %} <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                         <div style="font-family:Inter,sans-serif;font-size:14px;line-height:170%;text-align:left;color:#070810;"><a style="font-family:Inter,sans-serif;font-size:14px;line-height:170%;text-align:left;color:#070810;" href="{{ notification.url }}">{{ notification.title }}</a></div>
                       </td>
-                    </tr>
-                    <!-- htmlmin:ignore -->{% else %}<!-- htmlmin:ignore -->
-                    <tr>
+                    </tr> {% else %} <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                         <div style="font-family:Inter,sans-serif;font-size:14px;line-height:170%;text-align:left;color:#070810;">{{ notification.title }}</div>
                       </td>
-                    </tr>
-                    <!-- htmlmin:ignore -->{% endif %}<!-- htmlmin:ignore --><!-- htmlmin:ignore -->{% if notification.description %}<!-- htmlmin:ignore -->
-                    <tr>
+                    </tr> {% endif %}{% if notification.description %} <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                         <div style="font-family:Inter,sans-serif;font-size:12px;line-height:18px;text-align:left;color:#838387;">{{ notification.description|linebreaksbr }}</div>
                       </td>
-                    </tr>
-                    <!-- htmlmin:ignore -->{% endif %}<!-- htmlmin:ignore -->
-                    <tr>
+                    </tr> {% endif %} <tr>
                       <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                         <p style="border-top:dashed 1px lightgrey;font-size:1px;margin:0px auto;width:100%;">
                         </p>
                         <!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" style="border-top:dashed 1px lightgrey;font-size:1px;margin:0px auto;width:550px;" role="presentation" width="550px" ><tr><td style="height:0;line-height:0;"> &nbsp;
 </td></tr></table><![endif]-->
                       </td>
-                    </tr>
-                    <!-- htmlmin:ignore -->{% endfor %}<!-- htmlmin:ignore --><!-- htmlmin:ignore -->{% if unlisted_notifications_count %}<!-- htmlmin:ignore -->
-                    <tr>
+                    </tr> {% endfor %}{% if unlisted_notifications_count %} <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                         <div style="font-family:Inter,sans-serif;font-size:12px;line-height:18px;text-align:left;color:#838387;">{% blocktrans trimmed count counter=unlisted_notifications_count %} Plus {{ counter }} more notification. {% plural %} Plus {{ counter }} more notifications. {% endblocktrans %}</div>
                       </td>
-                    </tr>
-                    <!-- htmlmin:ignore -->{% endif %}<!-- htmlmin:ignore --><!-- htmlmin:ignore -->{% if show_baserow_description %}<!-- htmlmin:ignore -->
-                    <tr>
-                      <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                        <div style="font-family:Inter,sans-serif;font-size:13px;line-height:170%;text-align:left;color:#070810;">{% blocktrans trimmed %} Baserow is an open source no-code database tool which allows you to collaborate on projects, customers and more. It gives you the powers of a developer without leaving your browser. {% endblocktrans %}</div>
-                      </td>
-                    </tr>
-                    <!-- htmlmin:ignore -->{% endif %}<!-- htmlmin:ignore -->
+                    </tr> {% endif %}
                   </tbody>
                 </table>
               </div>

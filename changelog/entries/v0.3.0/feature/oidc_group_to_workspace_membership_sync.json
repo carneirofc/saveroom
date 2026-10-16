@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "OIDC providers can now map IdP groups to workspace memberships. Each mapping declares a group, a workspace and a role (ADMIN or MEMBER); on login the user is added to every mapped workspace they have a group for, or their existing membership is updated to the mapped role. This is additive - memberships are never removed by this mapping.",
+    "issue_origin": "github",
+    "issue_number": 4,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-07-16"
+}

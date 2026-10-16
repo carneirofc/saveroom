@@ -1,0 +1,9 @@
+{
+    "type": "refactor",
+    "message": "Refreshed backend and web-frontend dependencies, including Nuxt, Sentry, TipTap, Vitest and the Node runtime, and pinned resolutions for known transitive vulnerabilities.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-08-04"
+}

@@ -1,6 +1,7 @@
 import {
   defineNuxtModule,
   addPlugin,
+  addServerHandler,
   extendPages,
   addLayout,
   createResolver,
@@ -52,14 +53,22 @@ export default defineNuxtModule({
     nuxt.options.runtimeConfig.public = _.defaultsDeep(
       nuxt.options.runtimeConfig.public,
       {
-        buildDate: new Date().toISOString(),
-        gitCommit: process.env.GITHUB_SHA?.slice(0, 7),
+        // Build metadata, baked in as docker build args when an image is
+        // published. Empty means a development build, which every consumer has
+        // to render as "no version to show" rather than an empty row.
+        appVersion: process.env.BASEROW_BUILD_VERSION || '',
+        gitCommit: process.env.BASEROW_BUILD_COMMIT || '',
+        buildDate: process.env.BASEROW_BUILD_DATE || '',
         downloadFileViaXhr: '0',
         baserowDisablePublicUrlCheck: false,
         publicBackendUrl: 'http://localhost:8000',
         publicWebFrontendUrl: 'http://localhost:3000',
         initialTableDataLimit: null,
         hoursUntilTrashPermanentlyDeleted: 24 * 3,
+        exportFileExpireMinutes: 60,
+        baserowSnapshotExpirationTimeDays: 360,
+        baserowUserLogEntryRetentionDays: 61,
+        baserowRowHistoryRetentionDays: 180,
         disableAnonymousPublicViewWsConnections: '',
         baserowMaxImportFileSizeMb: 512,
         featureFlags: '',
@@ -69,8 +78,6 @@ export default defineNuxtModule({
         baserowFrontendSameSiteCookie: 'lax',
         baserowFrontendCookiePrefix: '',
         baserowFrontendJobsPollingTimeoutMs: 2000,
-        posthogProjectApiKey: '',
-        posthogHost: '',
         baserowEmbeddedShareUrl: 'http://localhost:3000',
         baserowUsePgFulltextSearch: 'true',
         integrationLocalBaserowPageSizeLimit: 200,
@@ -84,10 +91,6 @@ export default defineNuxtModule({
         baserowDisableSupport: '',
         baserowIntegrationsPeriodicMinuteMin: '1',
         mediaUrl: 'http://localhost:4000/media/',
-        sentryDsn: '',
-        sentryEnvironment: '',
-        sentryTracesSampleRate: '0.01',
-        sentryReplaysOnErrorSampleRate: '0.1',
       }
     )
 
@@ -105,6 +108,32 @@ export default defineNuxtModule({
         baseURL: '/',
         dir: resolve('static'),
       })
+      // Defaults for the runtime branding assets route. Nitro serves public
+      // assets before any handler runs, so files that branding can override
+      // are bundled as server assets and served by that route instead.
+      nitroConfig.serverAssets ||= []
+      nitroConfig.serverAssets.push(
+        { baseName: 'branding-img', dir: resolve('static/img') },
+        { baseName: 'branding-icons', dir: resolve('assets/icons') }
+      )
+    })
+
+    // Runtime branding, configured through BASEROW_BRANDING_DIR without a
+    // rebuild. See modules/core/server/branding/config.js.
+    addServerHandler({
+      route: '/_branding/theme.css',
+      method: 'get',
+      handler: resolve('server/branding/theme.js'),
+    })
+    addServerHandler({
+      route: '/_branding/config.json',
+      method: 'get',
+      handler: resolve('server/branding/configJson.js'),
+    })
+    addServerHandler({
+      route: '/_branding/assets/**',
+      method: 'get',
+      handler: resolve('server/branding/assets.js'),
     })
 
     addLayout({ src: resolve('layouts/app.vue'), filename: 'app.vue' }, 'app')
@@ -119,6 +148,7 @@ export default defineNuxtModule({
     addPlugin(resolve('plugin.js'))
     addPlugin(resolve('plugins/global.js'))
     addPlugin(resolve('plugins/i18n.js'))
+    addPlugin(resolve('plugins/branding.js'))
     addPlugin(resolve('plugins/clientHandler.js'))
     addPlugin(resolve('plugins/priorityBus.js'))
     addPlugin(resolve('plugins/registry.js'))
@@ -130,8 +160,6 @@ export default defineNuxtModule({
     addPlugin(resolve('plugins/papa.js'))
     addPlugin(resolve('plugins/ensureRender.js'))
     addPlugin(resolve('plugins/version.js'))
-    addPlugin(resolve('plugins/posthog.js'))
-    addPlugin(resolve('plugins/sentry-user.js'))
     addPlugin(resolve('plugins/vueDatepicker.js'))
     addPlugin(resolve('plugins/routeMounted.js'))
     addPlugin(resolve('plugins/storeRegister.js'))

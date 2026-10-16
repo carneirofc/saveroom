@@ -37,6 +37,7 @@
             :value="job.progress_percentage"
             :status="jobHumanReadableState"
           />
+          <JobDuration :job="job" />
         </div>
         <Button
           v-if="!createFinished"
@@ -85,6 +86,7 @@ import job from '@baserow/modules/core/mixins/job'
 import ExportWorkspaceForm from '@baserow/modules/core/components/export/ExportWorkspaceForm'
 import { ExportApplicationsJobType } from '@baserow/modules/core/jobTypes'
 import ExportWorkspaceListItem from '@baserow/modules/core/components/export/ExportWorkspaceListItem.vue'
+import JobDuration from '@baserow/modules/core/components/job/JobDuration'
 import {
   EXPORT_SERIALIZED_EXPORTING,
   EXPORT_SERIALIZED_EXPORTING_TABLE,
@@ -98,6 +100,7 @@ export default {
   components: {
     ExportWorkspaceForm,
     ExportWorkspaceListItem,
+    JobDuration,
   },
   mixins: [modal, error, job],
   props: {
@@ -163,6 +166,12 @@ export default {
         this.exportJobs.unshift(this.job)
         this.exportJobs = this.exportJobs.splice(0, WORKSPACE_EXPORTS_LIMIT)
       }
+      // A failure is announced, so a success has to be as well; otherwise a new row
+      // quietly appearing in the list is the only sign the export worked.
+      this.$store.dispatch('toast/info', {
+        title: this.$t('exportWorkspaceModal.successTitle'),
+        message: this.$t('exportWorkspaceModal.successMessage'),
+      })
     },
 
     async onJobFailed() {

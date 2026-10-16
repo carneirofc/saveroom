@@ -6,6 +6,7 @@ from .views import (
     AsyncDuplicateTableView,
     AsyncTableImportView,
     OrderTablesView,
+    TableImportPreviewView,
     TablesView,
     TableView,
 )
@@ -35,5 +36,10 @@ urlpatterns = [
         r"(?P<table_id>[0-9]+)/import/async/$",
         AsyncTableImportView.as_view(),
         name="import_async",
+    ),
+    re_path(
+        r"(?P<table_id>[0-9]+)/import/preview/$",
+        TableImportPreviewView.as_view(),
+        name="import_preview",
     ),
 ]

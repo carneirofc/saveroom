@@ -17,10 +17,14 @@ GeneratedTableModelForUpdate = NewType(
 RowsForUpdate = NewType("RowsForUpdate", QuerySet)
 
 
-class FileImportConfiguration(TypedDict):
+class FileImportConfiguration(TypedDict, total=False):
     upsert_fields: list[int]
     upsert_values: list[list[Any]]
     skipped_fields: list[int]
+    # One of `baserow.contrib.database.rows.constants.IMPORT_MODES`.
+    mode: str
+    delete_unmatched: bool
+    allow_ambiguous_matches: bool
 
 
 class FileImportDict(TypedDict):
@@ -45,6 +49,23 @@ class UpdatedRowsData(NamedTuple):
     # by the user to be updated, but were updated by various operations in the
     # code (i.e. field rules).
     cascade_update: CascadeUpdatedRows | None = None
+
+
+@dataclass
+class ImportRowsResult:
+    """
+    The outcome of a file import into an existing table.
+    """
+
+    created_rows: list[GeneratedTableModel]
+    updated_row_ids: list[int]
+    # The internal values of the updated fields before the import, by row id.
+    original_rows_values_by_id: dict[int, dict[str, Any]]
+    # The rows trashed by the import and their trash entry, if any.
+    trashed_row_ids: list[int]
+    trashed_rows_entry_id: int | None
+    error_report: dict[int, dict[str, Any]]
+    summary: dict[str, int]
 
 
 class CreatedRowsData(NamedTuple):

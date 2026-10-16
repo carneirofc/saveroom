@@ -1,0 +1,17 @@
+{
+    "type": "bug",
+    "message": "Bring in bug and security fixes from upstream Baserow up to 2.4.0.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [
+        "Data syncs from user-provided URLs can be blocked from reaching private addresses (BASEROW_DATA_SYNC_ALLOW_PRIVATE_ADDRESS), changing a data sync or SMTP/Slack connection target requires re-entering its credential, those credentials are write-only and left out of workspace exports, and the data sync properties endpoint checks workspace permissions.",
+        "Importing with upsert checks the row update permission before the import starts.",
+        "WebSocket connections no longer stall under load, and realtime replay uses less storage by compacting expired events.",
+        "Grid view: no race between search, filter and sort refreshes, edited values show immediately while saves are queued, set-based ordering for multiple select and collaborator group-bys, and NaN/infinite aggregations no longer break the response.",
+        "CSV values with unquoted newlines return a validation error instead of a server error, and many-to-many value order is kept when updating a row.",
+        "Application Builder: localized number inputs validate correctly, zero shows in numeric inputs, workflow actions only accept events their element can fire, page roles survive publishing, update row actions require a row ID, and the editor waits for data sources before rendering elements.",
+        "Backend memory is released after each API response, and periodic field updates stop at a deadline instead of being killed."
+    ],
+    "created_at": "2026-10-09"
+}

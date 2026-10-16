@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "The admin version panel credits this FOSS fork and upstream Baserow, with links to the source code and the license.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-05"
+}

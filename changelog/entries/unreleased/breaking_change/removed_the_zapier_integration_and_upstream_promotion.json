@@ -1,0 +1,9 @@
+{
+    "type": "breaking_change",
+    "message": "Removed the leftovers that still promoted or pointed at upstream Baserow. The dashboard no longer shows the \"We need your help!\" panel asking to star the project and share Baserow on Twitter, Reddit, Facebook and LinkedIn. The Zapier integration (`integrations/zapier`) is gone: it is upstream's published Zapier app and defaulted to `https://api.baserow.io`. Also removed the unused premium feature screenshots, dead generative AI translations, inert PostHog `ph-autocapture` attributes, and `@baserow.io` addresses in the development and e2e seed users, which are now `dev@example.com` and `e2e@example.com`.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-09"
+}

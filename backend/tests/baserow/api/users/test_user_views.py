@@ -14,7 +14,6 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
     HTTP_401_UNAUTHORIZED,
-    HTTP_404_NOT_FOUND,
 )
 from rest_framework_simplejwt.settings import api_settings as jwt_settings
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -57,15 +56,15 @@ def test_create_user(client, data_fixture):
             "name": "Test1Bis",
             "email": "test1bis@test.nl",
             "password": valid_password,
-            "language": "fr",
+            "language": "pt-BR",
         },
         format="json",
     )
     response_json = response.json()
     assert response.status_code == HTTP_200_OK
     user = User.objects.get(email="test1bis@test.nl")
-    assert user.profile.language == "fr"
-    assert response_json["user"]["language"] == "fr"
+    assert user.profile.language == "pt-BR"
+    assert response_json["user"]["language"] == "pt-BR"
 
     response_failed = client.post(
         reverse("api:user:index"),
@@ -353,7 +352,7 @@ def test_user_account(data_fixture, api_client):
         reverse("api:user:account"),
         {
             "first_name": "NewOriginalName",
-            "language": "fr",
+            "language": "pt-BR",
         },
         format="json",
         HTTP_AUTHORIZATION=f"JWT {token}",
@@ -362,13 +361,13 @@ def test_user_account(data_fixture, api_client):
 
     assert response.status_code == HTTP_200_OK
     assert response_json["first_name"] == "NewOriginalName"
-    assert response_json["language"] == "fr"
+    assert response_json["language"] == "pt-BR"
     assert response_json["completed_onboarding"] is False
     assert response_json["completed_guided_tours"] == []
 
     user.refresh_from_db()
     assert user.first_name == "NewOriginalName"
-    assert user.profile.language == "fr"
+    assert user.profile.language == "pt-BR"
 
     response = api_client.patch(
         reverse("api:user:account"),
@@ -432,7 +431,7 @@ def test_user_account(data_fixture, api_client):
     response_json = response.json()
     assert response.status_code == 200
     assert response_json["first_name"] == "NewOriginalName"
-    assert response_json["language"] == "fr"
+    assert response_json["language"] == "pt-BR"
     assert response_json["email_notification_frequency"] == "daily"
 
     response = api_client.patch(
@@ -446,7 +445,7 @@ def test_user_account(data_fixture, api_client):
     response_json = response.json()
     assert response.status_code == 200
     assert response_json["first_name"] == "NewOriginalName"
-    assert response_json["language"] == "fr"
+    assert response_json["language"] == "pt-BR"
     assert response_json["email_notification_frequency"] == "daily"
     assert response_json["completed_onboarding"] is True
     assert response_json["completed_guided_tours"] == []
@@ -463,7 +462,7 @@ def test_user_account(data_fixture, api_client):
     response_json = response.json()
     assert response.status_code == 200
     assert response_json["first_name"] == "NewOriginalName"
-    assert response_json["language"] == "fr"
+    assert response_json["language"] == "pt-BR"
     assert response_json["email_notification_frequency"] == "daily"
     assert response_json["completed_onboarding"] is True
     assert response_json["completed_guided_tours"] == ["core"]
@@ -513,87 +512,6 @@ def test_user_account_completed_guided_tours(data_fixture, api_client):
     assert set(response_json["completed_guided_tours"]) == set(
         ["core", "database", "application"]
     )
-
-
-@pytest.mark.django_db
-def test_create_user_with_invitation(data_fixture, client):
-    data_fixture.create_password_provider()
-    core_handler = CoreHandler()
-    valid_password = "thisIsAValidPassword"
-    invitation = data_fixture.create_workspace_invitation(email="test0@test.nl")
-    signer = core_handler.get_workspace_invitation_signer()
-
-    response_failed = client.post(
-        reverse("api:user:index"),
-        {
-            "name": "Test1",
-            "email": "test@test.nl",
-            "password": valid_password,
-            "workspace_invitation_token": "INVALID",
-        },
-        format="json",
-    )
-    assert response_failed.status_code == HTTP_400_BAD_REQUEST
-    assert response_failed.json()["error"] == "BAD_TOKEN_SIGNATURE"
-
-    response_failed = client.post(
-        reverse("api:user:index"),
-        {
-            "name": "Test1",
-            "email": "test0@test.nl",
-            "password": valid_password,
-            "workspace_invitation_token": f"{signer.dumps(invitation.id)}2",
-        },
-        format="json",
-    )
-    assert response_failed.status_code == HTTP_400_BAD_REQUEST
-    assert response_failed.json()["error"] == "BAD_TOKEN_SIGNATURE"
-    assert User.objects.all().count() == 1
-
-    response_failed = client.post(
-        reverse("api:user:index"),
-        {
-            "name": "Test1",
-            "email": "test@test.nl",
-            "password": valid_password,
-            "workspace_invitation_token": signer.dumps(99999),
-        },
-        format="json",
-    )
-    assert response_failed.status_code == HTTP_404_NOT_FOUND
-    assert response_failed.json()["error"] == "ERROR_GROUP_INVITATION_DOES_NOT_EXIST"
-
-    response_failed = client.post(
-        reverse("api:user:index"),
-        {
-            "name": "Test1",
-            "email": "test@test.nl",
-            "password": valid_password,
-            "workspace_invitation_token": signer.dumps(invitation.id),
-        },
-        format="json",
-    )
-    assert response_failed.status_code == HTTP_400_BAD_REQUEST
-    assert response_failed.json()["error"] == "ERROR_GROUP_INVITATION_EMAIL_MISMATCH"
-    assert User.objects.all().count() == 1
-
-    response_failed = client.post(
-        reverse("api:user:index"),
-        {
-            "name": "Test1",
-            "email": "test0@test.nl",
-            "password": valid_password,
-            "workspace_invitation_token": signer.dumps(invitation.id),
-        },
-        format="json",
-    )
-    assert response_failed.status_code == HTTP_200_OK
-    assert User.objects.all().count() == 2
-    assert Workspace.objects.all().count() == 1
-    assert Workspace.objects.all().first().id == invitation.workspace_id
-    assert WorkspaceUser.objects.all().count() == 2
-    assert Database.objects.all().count() == 0
-    assert Table.objects.all().count() == 0
 
 
 @pytest.mark.django_db
@@ -1069,36 +987,6 @@ def test_change_password_auth_disabled_staff(api_client, data_fixture):
 
 
 @pytest.mark.django_db
-def test_dashboard(data_fixture, client):
-    user, token = data_fixture.create_user_and_token(email="test@localhost")
-    workspace_1 = data_fixture.create_workspace(name="Test1")
-    workspace_2 = data_fixture.create_workspace()
-    invitation_1 = data_fixture.create_workspace_invitation(
-        workspace=workspace_1, email="test@localhost"
-    )
-    data_fixture.create_workspace_invitation(
-        workspace=workspace_1, email="test2@localhost"
-    )
-    data_fixture.create_workspace_invitation(
-        workspace=workspace_2, email="test3@localhost"
-    )
-
-    response = client.get(
-        reverse("api:user:dashboard"), format="json", HTTP_AUTHORIZATION=f"JWT {token}"
-    )
-    response_json = response.json()
-    assert len(response_json["workspace_invitations"]) == 1
-    assert response_json["workspace_invitations"][0]["id"] == invitation_1.id
-    assert response_json["workspace_invitations"][0]["email"] == invitation_1.email
-    assert response_json["workspace_invitations"][0]["invited_by"] == (
-        invitation_1.invited_by.first_name
-    )
-    assert response_json["workspace_invitations"][0]["workspace"] == "Test1"
-    assert "message" not in response_json["workspace_invitations"][0]
-    assert "created_on" in response_json["workspace_invitations"][0]
-
-
-@pytest.mark.django_db
 def test_additional_user_data(api_client, data_fixture):
     data_fixture.create_password_provider()
 
@@ -1390,37 +1278,6 @@ def test_send_verify_email_address_inactive_user(client, data_fixture, mailoutbo
 
     assert response.status_code == HTTP_204_NO_CONTENT
     assert len(mailoutbox) == 0
-
-
-@pytest.mark.django_db
-@patch("baserow.core.user.handler.share_onboarding_details_with_baserow")
-def test_share_onboarding_details_with_baserow(mock_task, client, data_fixture):
-    data_fixture.update_settings(instance_id="1")
-    user, token = data_fixture.create_user_and_token()
-
-    response = client.post(
-        reverse("api:user:share_onboarding_details_with_baserow"),
-        {
-            "team": "Marketing",
-            "role": "CEO",
-            "size": "11 - 50",
-            "country": "The Netherlands",
-            "how": "Google",
-        },
-        format="json",
-        HTTP_AUTHORIZATION=f"JWT {token}",
-    )
-
-    assert response.status_code == HTTP_204_NO_CONTENT
-
-    mock_task.delay.assert_called_with(
-        email=user.email,
-        team="Marketing",
-        role="CEO",
-        size="11 - 50",
-        country="The Netherlands",
-        how="Google",
-    )
 
 
 @pytest.mark.django_db(transaction=True)

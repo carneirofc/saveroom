@@ -19,12 +19,12 @@
 }
 
 .row-history-field-multiple-collaborators__item--removed {
-  background-color: #f5d3ce;
+  background-color: $palette-red-100;
   text-decoration: line-through;
 }
 
 .row-history-field-multiple-collaborators__item--added {
-  background-color: #c2f0d3;
+  background-color: $palette-green-100;
 }
 
 .row-history-field-multiple-collaborators__name {

@@ -10,6 +10,7 @@ from freezegun import freeze_time
 from rest_framework.fields import DateTimeField
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 
+from baserow.contrib.database.api.export.views import _validate_options
 from baserow.contrib.database.rows.handler import RowHandler
 
 
@@ -269,6 +270,8 @@ def test_exporting_csv_writes_file_to_storage(
                 "table": table.id,
                 "view": grid_view.id,
                 "url": None,
+                "download_url": None,
+                "error": None,
             }
             response = api_client.get(
                 reverse("api:database:export:get", kwargs={"job_id": job_id}),
@@ -277,6 +280,9 @@ def test_exporting_csv_writes_file_to_storage(
             )
             json = response.json()
             filename = json["exported_file_name"]
+            # The download url carries a freshly signed token, so only its shape is
+            # asserted; the rest of the payload is compared exactly.
+            download_url = json.pop("download_url")
             assert json == {
                 "id": job_id,
                 "created_at": expected_created_at,
@@ -288,7 +294,11 @@ def test_exporting_csv_writes_file_to_storage(
                 "table": table.id,
                 "view": grid_view.id,
                 "url": f"http://localhost:8000/media/export_files/{filename}",
+                "error": None,
             }
+            assert download_url.startswith(
+                f"http://localhost:8000/api/database/export/{job_id}/download/?token="
+            )
 
             file_path = tmpdir.join(settings.EXPORT_FILES_DIRECTORY, filename)
             assert file_path.isfile()
@@ -390,6 +400,8 @@ def test_exporting_csv_table_writes_file_to_storage(
                 "table": table.id,
                 "view": None,
                 "url": None,
+                "download_url": None,
+                "error": None,
             }
             response = api_client.get(
                 reverse("api:database:export:get", kwargs={"job_id": job_id}),
@@ -398,6 +410,9 @@ def test_exporting_csv_table_writes_file_to_storage(
             )
             json = response.json()
             filename = json["exported_file_name"]
+            # The download url carries a freshly signed token, so only its shape is
+            # asserted; the rest of the payload is compared exactly.
+            download_url = json.pop("download_url")
             assert json == {
                 "id": job_id,
                 "created_at": expected_created_at,
@@ -409,7 +424,11 @@ def test_exporting_csv_table_writes_file_to_storage(
                 "table": table.id,
                 "view": None,
                 "url": f"http://localhost:8000/media/export_files/{filename}",
+                "error": None,
             }
+            assert download_url.startswith(
+                f"http://localhost:8000/api/database/export/{job_id}/download/?token="
+            )
 
             file_path = tmpdir.join(settings.EXPORT_FILES_DIRECTORY, filename)
             assert file_path.isfile()
@@ -519,6 +538,8 @@ def test_exporting_csv_with_formatted_number_field(
                 "table": table.id,
                 "view": grid_view.id,
                 "url": None,
+                "download_url": None,
+                "error": None,
             }
             response = api_client.get(
                 reverse("api:database:export:get", kwargs={"job_id": job_id}),
@@ -527,6 +548,9 @@ def test_exporting_csv_with_formatted_number_field(
             )
             json = response.json()
             filename = json["exported_file_name"]
+            # The download url carries a freshly signed token, so only its shape is
+            # asserted; the rest of the payload is compared exactly.
+            download_url = json.pop("download_url")
             assert json == {
                 "id": job_id,
                 "created_at": expected_created_at,
@@ -538,7 +562,11 @@ def test_exporting_csv_with_formatted_number_field(
                 "table": table.id,
                 "view": grid_view.id,
                 "url": f"http://localhost:8000/media/export_files/{filename}",
+                "error": None,
             }
+            assert download_url.startswith(
+                f"http://localhost:8000/api/database/export/{job_id}/download/?token="
+            )
 
             file_path = tmpdir.join(settings.EXPORT_FILES_DIRECTORY, filename)
             assert file_path.isfile()
@@ -549,3 +577,53 @@ def test_exporting_csv_with_formatted_number_field(
             )
             with open(file_path, "r", encoding="utf-8") as written_file:
                 assert written_file.read() == expected
+
+
+@pytest.mark.parametrize(
+    "separator_name,expected_char",
+    [
+        ("tab", "\t"),
+        ("record_separator", "\x1e"),
+        ("unit_separator", "\x1f"),
+        (",", ","),
+    ],
+)
+def test_validate_options_converts_display_separator_to_char(
+    separator_name, expected_char
+):
+    result = _validate_options(
+        {
+            "exporter_type": "csv",
+            "csv_column_separator": separator_name,
+        }
+    )
+    assert result["csv_column_separator"] == expected_char
+
+
+@pytest.mark.parametrize(
+    "charset_display,expected_python",
+    [
+        ("x-mac-cyrillic", "mac-cyrillic"),
+        ("windows-874", "cp874"),
+        ("utf-8", "utf-8"),
+    ],
+)
+def test_validate_options_converts_display_charset_to_python_encoding(
+    charset_display, expected_python
+):
+    result = _validate_options(
+        {
+            "exporter_type": "csv",
+            "export_charset": charset_display,
+        }
+    )
+    assert result["export_charset"] == expected_python
+
+
+def test_validate_options_omits_group_by_when_not_provided():
+    result = _validate_options(
+        {
+            "exporter_type": "csv",
+        }
+    )
+    assert "group_by" not in result

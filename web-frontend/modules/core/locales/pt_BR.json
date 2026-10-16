@@ -17,7 +17,6 @@
   },
   "sidebar": {
     "createWorkspace": "Criar grupo",
-    "inviteOthers": "Convidar outros",
     "logoff": "Sair",
     "errorNoWorkspace": "Você não tem quaisquer grupos.",
     "admin": "Administrador",
@@ -78,8 +77,6 @@
     "password": "Senha",
     "passwordRepeat": "Repetir senha"
   },
-  "invitationTitle": "Convite",
-  "invitationMessage": "{invitedBy} convidou você para participar {group}.",
   "workspaceForm": {
     "nameLabel": "Nome"
   },
@@ -92,12 +89,6 @@
     "showMembers": "Membros",
     "createApplication": "Criar novo"
   },
-  "workspaceInvitation": {
-    "title": "Convite",
-    "message": "{by} convidou você para participar de {group}.",
-    "reject": "Rejeitar",
-    "accept": "Aceitar"
-  },
   "workspaceMemberModal": {
     "membersModalTitle": "{group} membros",
     "userDescription": "{user} - entrou {since} atrás",
@@ -105,11 +96,6 @@
     "sendInvite": "Enviar convite",
     "userAlreadyInWorkspaceTitle": "Usuário já existe no grupo.",
     "userAlreadyInWorkspaceText": "Não é possível enviar um convite quando o usuário já é membro do grupo."
-  },
-  "workspaceInviteForm": {
-    "invitationFormTitle": "Convidar por e-mail",
-    "optionalMessagePlaceholder": "Mensagem opcional",
-    "errorInvalidEmail": "Por favor adicione um endereço de e-mail válido."
   },
   "workspacesContext": {
     "search": "Pesquisar grupos",
@@ -224,19 +210,9 @@
   },
   "dashboard": {
     "title": "Painel de controle",
-    "alertTitle": "Nós precisamos da sua ajuda!",
-    "alertText": "Se você achar o Baserow útil, então patrocinar, estrelar ou compartilhar conosco é muito apreciado. Ao nos patrocinar no GitHub, você terá acesso antecipado aos recursos premium!",
-    "tweetContent": "Confira {'@'}baserow uma ferramenta de banco de dados sem código de código aberto e uma alternativa ao Airtable!",
-    "redditTitle": "'Baserow - Um banco de dados de código-aberto e no-code",
     "noWorkspaceTitle": "Sem grupos encontrados",
     "noWorkspaceText": "Você não é membro de nenhum grupo. Aplicativos como bancos de dados pertencem a um grupo, portanto, para criá-los, você precisa criar um grupo.",
-    "createWorkspace": "Criar grupo",
-    "becomeGithubSponsor": "Seja um patrocinador do Github",
-    "starOnGitlab": "Nos dê estrelas no Gitlab",
-    "shareOnTwitter": "Tweet sobre Baserow",
-    "shareOnReddit": "Compartilhar no Reddit",
-    "shareOnFacebook": "Compartilhar no Facebook",
-    "shareOnLinkedIn": "Compartilhar no LinkedIn"
+    "createWorkspace": "Criar grupo"
   },
   "login": {
     "title": "Login",
@@ -269,18 +245,37 @@
     "disabled": "Esqueci a senha está desabilitado",
     "disabledMessage": "Não é possível recuperar a senha porque ela foi desativada."
   },
+  "buildInfo": {
+    "title": "Versão",
+    "applicationVersion": "Versão da aplicação",
+    "commit": "Commit",
+    "buildDate": "Compilado em",
+    "baserowCoreVersion": "Versão do núcleo Baserow",
+    "developmentBuild": "Compilação de desenvolvimento",
+    "webFrontendBuild": "Compilação do web-frontend: {build}",
+    "mismatchTitle": "As compilações do backend e do web-frontend são diferentes",
+    "mismatchMessage": "O backend executa {backend} e o web-frontend executa {frontend}. Apenas parte desta instalação foi atualizada, o que pode causar erros inesperados.",
+    "unavailableTitle": "Não foi possível ler a compilação do backend",
+    "unavailableMessage": "A requisição da compilação do backend falhou. Um backend mais antigo que este web-frontend não a responde, o que indicaria que apenas parte desta instalação foi atualizada.",
+    "creditsFork": "Este é o Saveroom, um fork FOSS do Baserow mantido por seus contribuidores.",
+    "forkRepository": "Código-fonte",
+    "creditsUpstream": "Baseado no Baserow, criado pela Baserow B.V.",
+    "upstreamProject": "baserow.io",
+    "creditsLicense": "Distribuído sob a licença MIT.",
+    "license": "Licença"
+  },
   "settings": {
     "settingsTitle": "Configurações administrativas",
+    "versionTitle": "Versão",
+    "versionDescription": "Qual compilação da aplicação esta instância executa. Informe estes valores ao relatar um problema.",
     "baserowInstanceId": "Instância ID",
-    "instanceIdDescription": "A instância ID é uma identificação única da cópia do seu Baserow.",
+    "instanceIdDescription": "O ID da instância é o identificador único desta instalação.",
     "accountRestrictions": "Restrições ao conta",
     "settingAllowResetPasswordName": "",
     "settingAllowResetPasswordDescription": "",
     "settingAllowResetPasswordWarning": "",
     "settingAllowNewAccountsName": "Permitir criar novas contas",
-    "settingAllowNewAccountsDescription": "Por padrão, qualquer usuário que visite seu domínio Baserow pode se inscrever para uma nova conta.",
-    "settingAllowSignupsViaWorkspaceInvitationsName": "Permitir inscrições por meio de convites de grupo",
-    "settingAllowSignupsViaWorkspaceInvitationDescription": "Mesmo que a criação de novas contas esteja desativada, esta opção permite que usuários convidados diretamente ainda criem uma conta.",
+    "settingAllowNewAccountsDescription": "Por padrão, qualquer usuário que visite o seu domínio pode se inscrever para uma nova conta.",
     "enabled": "ativar"
   },
   "formSidebar": {
@@ -346,7 +341,7 @@
     }
   },
   "notificationPanel": {
-    "noNotification": "Notificaremos sobre atualizações importar e quando você mencionado no Baserow.",
+    "noNotification": "Notificaremos você sobre atualizações importantes e sempre que for mencionado no @:{'app.name'}.",
     "title": "Notificações",
     "newNotificationsAvailable": "Novas notificações disponíveis",
     "refresh": "Atualizar",
@@ -451,8 +446,6 @@
       "password": "Senha",
       "passwordRepeat": "Repetir senha"
     },
-    "invitationTitle": "Convite",
-    "invitationMessage": "{invitedBy} convidou você para participar {group}.",
     "workspaceForm": {
       "nameLabel": "Nome"
     },
@@ -465,12 +458,6 @@
       "showMembers": "Membros",
       "createApplication": "Criar novo"
     },
-    "workspaceInvitation": {
-      "title": "Convite",
-      "message": "{by} convidou você para participar de {group}.",
-      "reject": "Rejeitar",
-      "accept": "Aceitar"
-    },
     "workspaceMemberModal": {
       "membersModalTitle": "{group} membros",
       "userDescription": "{user} - entrou {since} atrás",
@@ -478,11 +465,6 @@
       "sendInvite": "Enviar convite",
       "userAlreadyInWorkspaceTitle": "Usuário já existe no grupo.",
       "userAlreadyInWorkspaceText": "Não é possível enviar um convite quando o usuário já é membro do grupo."
-    },
-    "workspaceInviteForm": {
-      "invitationFormTitle": "Convidar por e-mail",
-      "optionalMessagePlaceholder": "Mensagem opcional",
-      "errorInvalidEmail": "Por favor adicione um endereço de e-mail válido."
     },
     "workspacesContext": {
       "search": "Pesquisar grupos",
@@ -597,19 +579,9 @@
     },
     "dashboard": {
       "title": "Painel de controle",
-      "alertTitle": "Nós precisamos da sua ajuda!",
-      "alertText": "Se você achar o Baserow útil, então patrocinar, estrelar ou compartilhar conosco é muito apreciado. Ao nos patrocinar no GitHub, você terá acesso antecipado aos recursos premium!",
-      "tweetContent": "Confira {'@'}baserow uma ferramenta de banco de dados sem código de código aberto e uma alternativa ao Airtable!",
-      "redditTitle": "'Baserow - Um banco de dados de código-aberto e no-code",
       "noWorkspaceTitle": "Sem grupos encontrados",
       "noWorkspaceText": "Você não é membro de nenhum grupo. Aplicativos como bancos de dados pertencem a um grupo, portanto, para criá-los, você precisa criar um grupo.",
       "createWorkspace": "Criar grupo",
-      "becomeGithubSponsor": "Seja um patrocinador do Github",
-      "starOnGitlab": "Nos dê estrelas no Gitlab",
-      "shareOnTwitter": "Tweet sobre Baserow",
-      "shareOnReddit": "Compartilhar no Reddit",
-      "shareOnFacebook": "Compartilhar no Facebook",
-      "shareOnLinkedIn": "Compartilhar no LinkedIn",
       "totals": "Totais",
       "totalUsers": "Total de usuários",
       "totalWorkspaces": "Total de grupos",
@@ -658,15 +630,13 @@
     "settings": {
       "settingsTitle": "Configurações administrativas",
       "baserowInstanceId": "Instância ID",
-      "instanceIdDescription": "A instância ID é uma identificação única da cópia do seu Baserow.",
+      "instanceIdDescription": "O ID da instância é o identificador único desta instalação.",
       "accountRestrictions": "Restrições ao conta",
       "settingAllowResetPasswordName": "",
       "settingAllowResetPasswordDescription": "",
       "settingAllowResetPasswordWarning": "",
       "settingAllowNewAccountsName": "Permitir criar novas contas",
-      "settingAllowNewAccountsDescription": "Por padrão, qualquer usuário que visite seu domínio Baserow pode se inscrever para uma nova conta.",
-      "settingAllowSignupsViaWorkspaceInvitationsName": "Permitir inscrições por meio de convites de grupo",
-      "settingAllowSignupsViaWorkspaceInvitationDescription": "Mesmo que a criação de novas contas esteja desativada, esta opção permite que usuários convidados diretamente ainda criem uma conta.",
+      "settingAllowNewAccountsDescription": "Por padrão, qualquer usuário que visite o seu domínio pode se inscrever para uma nova conta.",
       "enabled": "ativar"
     },
     "formSidebar": {
@@ -732,7 +702,7 @@
       }
     },
     "notificationPanel": {
-      "noNotification": "Notificaremos sobre atualizações importar e quando você mencionado no Baserow.",
+      "noNotification": "Notificaremos você sobre atualizações importantes e sempre que for mencionado no @:{'app.name'}.",
       "title": "Notificações",
       "newNotificationsAvailable": "Novas notificações disponíveis",
       "refresh": "Atualizar",
@@ -868,5 +838,15 @@
     "activeUsers7days": "Usuários ativos nos últimos 7 dias",
     "activeUsers30days": "Usuários ativos nos últimos 30 dias",
     "viewAll": "Visualizar tudo"
+  },
+  "downloadLink": {
+    "expiredTitle": "Exportação não está mais disponível",
+    "expiredMessage": "Este arquivo foi removido após o período de retenção. Gere-o novamente.",
+    "storageTitle": "O armazenamento de arquivos do servidor está indisponível",
+    "storageMessage": "O arquivo foi criado, mas o servidor não consegue lê-lo de volta do seu armazenamento. Esse é um problema de configuração do servidor, não algo que você possa resolver aqui. Entre em contato com um administrador; a página de saúde da instância e os logs do servidor têm os detalhes.",
+    "linkExpiredTitle": "Link de download expirado",
+    "linkExpiredMessage": "Este link de download não é mais válido. Reabra a lista para obter um novo.",
+    "failedTitle": "Falha no download",
+    "failedMessage": "Não foi possível baixar o arquivo. Tente novamente."
   }
 }

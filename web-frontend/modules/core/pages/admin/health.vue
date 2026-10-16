@@ -5,6 +5,13 @@
         {{ $t('health.title') }}
       </h1>
       <div class="admin-health__group">
+        <h2 class="admin-health__group-title">{{ $t('buildInfo.title') }}</h2>
+        <BuildInfo :backend="buildInfo" :error="buildInfoFailed"></BuildInfo>
+      </div>
+      <div class="admin-health__group">
+        <h2 class="admin-health__group-title">
+          {{ $t('health.checksTitle') }}
+        </h2>
         <div class="admin-health__description">
           {{ $t('health.description') }}
         </div>
@@ -27,7 +34,7 @@
                 :class="
                   status === 'working'
                     ? 'iconoir-check admin-health__icon--success'
-                    : 'iconoir-cancel admin-health__icon--fail'
+                    : 'iconoir-xmark admin-health__icon--fail'
                 "
               ></i>
               <div
@@ -58,7 +65,7 @@
         <EmailTester></EmailTester>
       </div>
       <div class="admin-health__group">
-        <h2>Error tester</h2>
+        <h2 class="admin-health__group-title">Error tester</h2>
         <Button @click="error()">Click to throw error</Button>
       </div>
     </div>
@@ -69,7 +76,9 @@
 import { computed } from 'vue'
 import { useHead } from '#imports'
 import HealthService from '@baserow/modules/core/services/health'
+import BuildService from '@baserow/modules/core/services/admin/build'
 import EmailTester from '@baserow/modules/core/components/health/EmailTester.vue'
+import BuildInfo from '@baserow/modules/core/components/version/BuildInfo.vue'
 
 // Page meta
 definePageMeta({
@@ -87,6 +96,23 @@ const { data } = await useAsyncData('health', async () => {
   const res = await HealthService($client).getAll()
   return res.data
 })
+
+// The build the backend is running, so the page that answers "is this instance
+// healthy" also answers "which instance is this".
+const { data: buildData, error: buildDataError } = await useAsyncData(
+  'health-build-info',
+  async () => {
+    const res = await BuildService($client).get()
+    return res.data
+  }
+)
+
+const buildInfo = computed(() => buildData.value ?? null)
+
+// A failing request is itself a finding: a backend older than this web-frontend
+// has no endpoint to answer it, so the panel says that instead of showing an
+// empty version block.
+const buildInfoFailed = computed(() => Boolean(buildDataError.value))
 
 const healthChecks = computed(() => data.value?.checks ?? [])
 const celeryQueueSize = computed(() => data.value?.celery_queue_size ?? 0)

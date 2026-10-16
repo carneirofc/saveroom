@@ -692,8 +692,7 @@ def test_patch_view_validate_ownership_type_invalid_type(api_client, data_fixtur
     assert view.ownership_type == previous_ownership_type
     assert (
         response_data["detail"]["ownership_type"][0]["error"]
-        == "Ownership type must be one of the above: 'collaborative','personal'"
-        ",'restricted'."
+        == "Ownership type must be one of the above: 'collaborative'."
     )
 
 

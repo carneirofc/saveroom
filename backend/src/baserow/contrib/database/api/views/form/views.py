@@ -244,7 +244,7 @@ class EditRowFormViewView(APIView):
 
         try:
             row = model.objects.get(**{field_column: cell_uuid})
-        except (model.DoesNotExist, ValidationError):
+        except model.DoesNotExist, ValidationError:
             raise RowDoesNotExist(cell_uuid)
 
         options = form.active_field_options
@@ -325,7 +325,7 @@ class EditRowFormViewView(APIView):
 
         try:
             row = model.objects.get(**{field_column: cell_uuid})
-        except (model.DoesNotExist, ValidationError):
+        except model.DoesNotExist, ValidationError:
             raise RowDoesNotExist(cell_uuid)
 
         options = form.active_field_options
@@ -353,7 +353,7 @@ class FormUploadFileView(APIView):
         tags=["Database table form view"],
         operation_id="upload_file_form_view",
         description=(
-            "Uploads a file anonymously to Baserow by uploading the file "
+            "Uploads a file anonymously to Saveroom by uploading the file "
             "contents directly. A `file` multipart is expected containing the file "
             "contents."
         ),

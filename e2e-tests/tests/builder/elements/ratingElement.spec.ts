@@ -42,9 +42,14 @@ test.describe("Builder page heading element test suite", () => {
       if (node) node.remove();
     });
 
+    // Subscribe before clicking: the action handler calls window.open()
+    // synchronously, so a waitForEvent() started after the click can miss the
+    // "page" event entirely and time out.
+    const newPagePromise = context.waitForEvent("page");
+
     await page.getByRole("button", { name: "Preview" }).click();
 
-    const newPage = await context.waitForEvent("page");
+    const newPage = await newPagePromise;
 
     await newPage.waitForLoadState();
 

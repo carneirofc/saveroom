@@ -361,7 +361,6 @@ def test_get_airtable_import_job(data_fixture, api_client):
             "workspace": {
                 "id": airtable_job_1.database.workspace.id,
                 "name": airtable_job_1.database.workspace.name,
-                "generative_ai_models_enabled": {},
             },
             "tables": [],
         },

@@ -18,7 +18,7 @@
           class="grid-field-many-to-many__remove"
           @click.prevent="removeValue($event, value, item.id)"
         >
-          <i class="iconoir-cancel"></i>
+          <i class="iconoir-xmark"></i>
         </a>
       </div>
       <a

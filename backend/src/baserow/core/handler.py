@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from io import BufferedReader, BytesIO
 from pathlib import Path
 from typing import IO, Any, Callable, Dict, List, NewType, Optional, Tuple, Union, cast
-from urllib.parse import urljoin, urlparse
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from django.conf import settings
@@ -19,7 +18,6 @@ from django.utils import translation
 from django.utils.translation import gettext as _
 
 import zipstream
-from itsdangerous import URLSafeSerializer
 from loguru import logger
 from opentelemetry import trace
 from tqdm import tqdm
@@ -27,16 +25,15 @@ from tqdm import tqdm
 from baserow.core.cache import get_cached_settings, set_cached_settings
 from baserow.core.db import specific_queryset
 from baserow.core.registries import plugin_registry
-from baserow.core.user.utils import normalize_email_address
 
 from .context import clear_current_workspace_id, set_current_workspace_id
-from .emails import WorkspaceInvitationEmail
 from .exceptions import (
     ApplicationDoesNotExist,
     ApplicationNotInWorkspace,
-    BaseURLHostnameNotAllowed,
+    ApplicationTypeDisabled,
     CannotDeleteYourselfFromWorkspace,
     DuplicateApplicationMaxLocksExceededException,
+    InstanceTypeDoesNotExist,
     InvalidPermissionContext,
     LastAdminOfWorkspace,
     PermissionDenied,
@@ -45,9 +42,6 @@ from .exceptions import (
     TemplateFileDoesNotExist,
     UserNotInWorkspace,
     WorkspaceDoesNotExist,
-    WorkspaceInvitationDoesNotExist,
-    WorkspaceInvitationEmailMismatch,
-    WorkspaceUserAlreadyExists,
     WorkspaceUserDoesNotExist,
     WorkspaceUserIsLastAdmin,
     is_max_lock_exceeded_exception,
@@ -60,15 +54,12 @@ from .models import (
     Template,
     TemplateCategory,
     Workspace,
-    WorkspaceInvitation,
     WorkspaceUser,
 )
 from .operations import (
     CreateApplicationsWorkspaceOperationType,
-    CreateInvitationsWorkspaceOperationType,
     CreateWorkspaceOperationType,
     DeleteApplicationOperationType,
-    DeleteWorkspaceInvitationOperationType,
     DeleteWorkspaceOperationType,
     DeleteWorkspaceUserOperationType,
     DuplicateApplicationOperationType,
@@ -76,7 +67,6 @@ from .operations import (
     ReadApplicationOperationType,
     UpdateApplicationOperationType,
     UpdateSettingsOperationType,
-    UpdateWorkspaceInvitationType,
     UpdateWorkspaceOperationType,
     UpdateWorkspaceUserOperationType,
 )
@@ -98,9 +88,6 @@ from .signals import (
     before_workspace_user_updated,
     workspace_created,
     workspace_deleted,
-    workspace_invitation_accepted,
-    workspace_invitation_rejected,
-    workspace_invitation_updated_or_created,
     workspace_updated,
     workspace_user_added,
     workspace_user_deleted,
@@ -200,7 +187,6 @@ class CoreHandler(metaclass=baserow_trace_methods(tracer, exclude="clear_context
             kwargs,
             [
                 "allow_new_signups",
-                "allow_signups_via_workspace_invitations",
                 "allow_reset_password",
                 "allow_global_workspace_creation",
                 "account_deletion_grace_delay",
@@ -209,6 +195,10 @@ class CoreHandler(metaclass=baserow_trace_methods(tracer, exclude="clear_context
                 "co_branding_logo",
                 "email_verification",
                 "verify_import_signature",
+                "enable_database",
+                "enable_builder",
+                "enable_automation",
+                "enable_dashboard",
             ],
             settings_instance,
         )
@@ -665,7 +655,6 @@ class CoreHandler(metaclass=baserow_trace_methods(tracer, exclude="clear_context
         user: AbstractUser,
         workspace: WorkspaceForUpdate,
         name: Optional[str] = None,
-        generative_ai_models_settings: Optional[Dict[str, Any]] = None,
     ) -> Workspace:
         """
         Updates the values of a workspace if the user has admin
@@ -680,7 +669,7 @@ class CoreHandler(metaclass=baserow_trace_methods(tracer, exclude="clear_context
 
         if not isinstance(workspace, Workspace):
             raise ValueError("The workspace is not an instance of Workspace.")
-        elif name is None and generative_ai_models_settings is None:
+        elif name is None:
             raise ValueError("Nothing to update.")
 
         CoreHandler().check_permissions(
@@ -694,9 +683,6 @@ class CoreHandler(metaclass=baserow_trace_methods(tracer, exclude="clear_context
         if name is not None:
             workspace.name = name
             updated_fields.append("name")
-        if generative_ai_models_settings is not None:
-            workspace.generative_ai_models_settings = generative_ai_models_settings
-            updated_fields.append("generative_ai_models_settings")
 
         workspace.save(update_fields=updated_fields)
         workspace_updated.send(self, workspace=workspace, user=user)
@@ -993,272 +979,6 @@ class CoreHandler(metaclass=baserow_trace_methods(tracer, exclude="clear_context
             user=user,
         )
 
-    def get_workspace_invitation_signer(self):
-        """
-        Returns the workspace invitation signer. This is for example used to create
-        a url safe signed version of the invitation id which is used when sending a
-        public accept link to the user.
-
-        :return: The itsdangerous serializer.
-        :rtype: URLSafeSerializer
-        """
-
-        return URLSafeSerializer(settings.SECRET_KEY, "workspace-invite")
-
-    def send_workspace_invitation_email(self, invitation, base_url):
-        """
-        Sends out a workspace invitation email to the user based on the provided
-        invitation instance.
-
-        :param invitation: The invitation instance for which the email must be send.
-        :type invitation: WorkspaceInvitation
-        :param base_url: The base url of the frontend, where the user can accept his
-            invitation. The signed invitation id is appended to the URL (base_url +
-            '/TOKEN'). Only the PUBLIC_WEB_FRONTEND_HOSTNAME is allowed as domain name.
-        :type base_url: str
-        :raises BaseURLHostnameNotAllowed: When the host name of the base_url is not
-            allowed.
-        """
-
-        parsed_base_url = urlparse(base_url)
-        if parsed_base_url.hostname not in (
-            settings.PUBLIC_WEB_FRONTEND_HOSTNAME,
-            settings.BASEROW_EMBEDDED_SHARE_HOSTNAME,
-        ):
-            raise BaseURLHostnameNotAllowed(
-                f"The hostname {parsed_base_url.netloc} is not allowed."
-            )
-
-        signer = self.get_workspace_invitation_signer()
-        signed_invitation_id = signer.dumps(invitation.id)
-
-        if not base_url.endswith("/"):
-            base_url += "/"
-
-        public_accept_url = urljoin(base_url, signed_invitation_id)
-
-        # Send the email in the language of the user that has send the invitation.
-        with translation.override(invitation.invited_by.profile.language):
-            email = WorkspaceInvitationEmail(
-                invitation, public_accept_url, to=[invitation.email]
-            )
-            email.send()
-
-    def get_workspace_invitation_by_token(self, token, base_queryset=None):
-        """
-        Returns the workspace invitation instance if a valid signed token of the id is
-        provided. It can be signed using the signer returned by the
-        `get_workspace_invitation_signer` method.
-
-        :param token: The signed invitation id of related to the workspace invitation
-            that must be fetched. Must be signed using the signer returned by the
-            `get_workspace_invitation_signer`.
-        :type token: str
-        :param base_queryset: The base queryset from where to select the invitation.
-            This can for example be used to do a `select_related`.
-        :type base_queryset: Queryset
-        :raises BadSignature: When the provided token has a bad signature.
-        :raises WorkspaceInvitationDoesNotExist: If the invitation does not exist.
-        :return: The requested workspace invitation instance related to the
-            provided token.
-        :rtype: WorkspaceInvitation
-        """
-
-        signer = self.get_workspace_invitation_signer()
-        workspace_invitation_id = signer.loads(token)
-
-        if base_queryset is None:
-            base_queryset = WorkspaceInvitation.objects
-
-        try:
-            workspace_invitation = base_queryset.select_related(
-                "workspace", "invited_by"
-            ).get(id=workspace_invitation_id)
-        except WorkspaceInvitation.DoesNotExist:
-            raise WorkspaceInvitationDoesNotExist(
-                f"The workspace invitation with id {workspace_invitation_id} "
-                "does not exist."
-            )
-
-        return workspace_invitation
-
-    def get_workspace_invitation(self, workspace_invitation_id, base_queryset=None):
-        """
-        Selects a workspace invitation with a given id from the database.
-
-        :param workspace_invitation_id: The identifier of the invitation that must be
-            returned.
-        :type workspace_invitation_id: int
-        :param base_queryset: The base queryset from where to select the invitation.
-            This can for example be used to do a `select_related`.
-        :type base_queryset: Queryset
-        :raises WorkspaceInvitationDoesNotExist: If the invitation does not exist.
-        :return: The requested field instance of the provided id.
-        :rtype: WorkspaceInvitation
-        """
-
-        if base_queryset is None:
-            base_queryset = WorkspaceInvitation.objects
-
-        try:
-            workspace_invitation = base_queryset.select_related(
-                "workspace", "invited_by"
-            ).get(id=workspace_invitation_id)
-        except WorkspaceInvitation.DoesNotExist:
-            raise WorkspaceInvitationDoesNotExist(
-                f"The workspace invitation with id {workspace_invitation_id} "
-                "does not exist."
-            )
-
-        return workspace_invitation
-
-    def create_workspace_invitation(
-        self,
-        user: AbstractUser,
-        workspace: Workspace,
-        email: str,
-        permissions: str,
-        base_url: str,
-    ) -> WorkspaceInvitation:
-        """
-        Creates a new workspace invitation for the given email address and sends out an
-        email containing the invitation.
-
-        :param user: The user on whose behalf the invitation is created.
-        :param workspace: The workspace for which the user is invited.
-        :param email: The email address of the person that is invited to the workspace.
-            Can be an existing or not existing user.
-        :param permissions: The workspace permissions that the user will get once they
-            have accepted the invitation.
-        :param base_url: The base url of the frontend, where the user can accept his
-            invitation. The signed invitation id is appended to the URL (base_url +
-            '/TOKEN'). Only the PUBLIC_WEB_FRONTEND_HOSTNAME is allowed as domain name.
-        :raises ValueError: If the provided permissions are not allowed.
-        :raises UserInvalidWorkspacePermissionsError: If the user does not belong to the
-            workspace or doesn't have right permissions in the workspace.
-        :return: The created workspace invitation.
-        """
-
-        CoreHandler().check_permissions(
-            user,
-            CreateInvitationsWorkspaceOperationType.type,
-            workspace=workspace,
-            context=workspace,
-        )
-
-        email = normalize_email_address(email)
-
-        if WorkspaceUser.objects.filter(
-            workspace=workspace, user__email=email
-        ).exists():
-            raise WorkspaceUserAlreadyExists(
-                f"The user {email} is already part of the workspace."
-            )
-
-        invitation, created = WorkspaceInvitation.objects.update_or_create(
-            workspace=workspace,
-            email=email,
-            defaults={
-                "permissions": permissions,
-                "invited_by": user,
-            },
-        )
-
-        try:
-            invited_user = User.objects.select_related("profile").get(
-                email=invitation.email
-            )
-        except User.DoesNotExist:
-            invited_user = None
-
-        workspace_invitation_updated_or_created.send(
-            sender=self,
-            invitation=invitation,
-            invited_user=invited_user,
-            created=created,
-        )
-
-        self.send_workspace_invitation_email(invitation, base_url)
-
-        return invitation
-
-    def update_workspace_invitation(
-        self, user: AbstractUser, invitation: WorkspaceInvitation, permissions: str
-    ) -> WorkspaceInvitation:
-        """
-        Updates the permissions of an existing invitation if the user has ADMIN
-        permissions to the related workspace.
-
-        :param user: The user on whose behalf the invitation is updated.
-        :param invitation: The invitation that must be updated.
-        :param permissions: The new permissions of the invitation that the user must
-            has after accepting.
-        :raises ValueError: If the provided permissions is not allowed.
-        :raises UserInvalidWorkspacePermissionsError: If the user does not belong to the
-            workspace or doesn't have right permissions in the workspace.
-        :return: The updated workspace permissions instance.
-        """
-
-        CoreHandler().check_permissions(
-            user,
-            UpdateWorkspaceInvitationType.type,
-            workspace=invitation.workspace,
-            context=invitation,
-        )
-
-        invitation.permissions = permissions
-        invitation.save()
-
-        return invitation
-
-    def delete_workspace_invitation(
-        self, user: AbstractUser, invitation: WorkspaceInvitation
-    ) -> None:
-        """
-        Deletes an existing workspace invitation if the user has ADMIN permissions to
-        the related workspace.
-
-        :param user: The user on whose behalf the invitation is deleted.
-        :param invitation: The invitation that must be deleted.
-        :raises UserInvalidWorkspacePermissionsError: If the user does not belong to the
-            workspace or doesn't have right permissions in the workspace.
-        """
-
-        CoreHandler().check_permissions(
-            user,
-            DeleteWorkspaceInvitationOperationType.type,
-            workspace=invitation.workspace,
-            context=invitation,
-        )
-
-        invitation.delete()
-
-    def reject_workspace_invitation(self, user, invitation):
-        """
-        Rejects a workspace invitation by deleting the invitation so that can't be
-        reused again. It can only be rejected if the invitation was addressed to the
-        email address of the user.
-
-        :param user: The user who wants to reject the invitation.
-        :type user: User
-        :param invitation: The invitation that must be rejected.
-        :type invitation: WorkspaceInvitation
-        :raises WorkspaceInvitationEmailMismatch: If the invitation email does not match
-            the one of the user.
-        """
-
-        if user.username != invitation.email:
-            raise WorkspaceInvitationEmailMismatch(
-                "The email address of the invitation does not match the one of the "
-                "user."
-            )
-
-        workspace_invitation_rejected.send(
-            sender=self, invitation=invitation, user=user
-        )
-
-        invitation.delete()
-
     def add_user_to_workspace(
         self,
         workspace: Workspace,
@@ -1293,41 +1013,6 @@ class CoreHandler(metaclass=baserow_trace_methods(tracer, exclude="clear_context
                 workspace_user=workspace_user,
                 user=user,
             )
-
-        return workspace_user
-
-    def accept_workspace_invitation(
-        self, user: User, invitation: WorkspaceInvitation
-    ) -> WorkspaceUser:
-        """
-        Accepts a workspace invitation by adding the user to the correct workspace with
-        the right permissions. It can only be accepted if the invitation was
-        addressed to the email address of the user. Because the invitation has been
-        accepted it can then be deleted. If the user is already a member of the
-        workspace the invitation is consumed without changing their existing
-        permissions, so a stale invitation can never lower an existing member's role.
-
-        :param user: The user who has accepted the invitation.
-        :param invitation: The invitation that must be accepted.
-        :raises WorkspaceInvitationEmailMismatch: If the invitation email does not match
-            the one of the user.
-        :return: The workspace user relationship related to the invite.
-        """
-
-        if user.username != invitation.email:
-            raise WorkspaceInvitationEmailMismatch(
-                "The email address of the invitation does not match the one of the "
-                "user."
-            )
-
-        workspace_user = self.add_user_to_workspace(
-            invitation.workspace, user, permissions=invitation.permissions
-        )
-
-        workspace_invitation_accepted.send(
-            sender=self, invitation=invitation, user=user
-        )
-        invitation.delete()
 
         return workspace_user
 
@@ -1427,6 +1112,18 @@ class CoreHandler(metaclass=baserow_trace_methods(tracer, exclude="clear_context
             )
         return specific_queryset(queryset, per_content_type_queryset_hook)
 
+    def application_type_is_enabled(self, type_name: str) -> bool:
+        """
+        Checks whether the provided application type is enabled through the instance
+        settings. Application types without a matching ``enable_<type_name>`` setting
+        (for example those registered by plugins) are always considered enabled.
+
+        :param type_name: The application type name to check.
+        :return: Whether applications of this type may be created.
+        """
+
+        return bool(getattr(self.get_settings(), f"enable_{type_name}", True))
+
     def create_application(
         self,
         user: AbstractUser,
@@ -1445,6 +1142,8 @@ class CoreHandler(metaclass=baserow_trace_methods(tracer, exclude="clear_context
         :param init_with_data: Whether the application should be initialized with
             some default data. Defaults to False.
         :param kwargs: Additional parameters to pass to the application creation.
+        :raises ApplicationTypeDisabled: When the application type has been disabled
+            by an instance administrator through the instance settings.
         :return: The created application instance.
         """
 
@@ -1456,6 +1155,10 @@ class CoreHandler(metaclass=baserow_trace_methods(tracer, exclude="clear_context
         )
 
         application_type = application_type_registry.get(type_name)
+
+        if not self.application_type_is_enabled(type_name):
+            raise ApplicationTypeDisabled(type_name)
+
         allowed_values = extract_allowed(
             kwargs, self.default_create_allowed_fields + application_type.allowed_fields
         )
@@ -1805,18 +1508,42 @@ class CoreHandler(metaclass=baserow_trace_methods(tracer, exclude="clear_context
             imported_applications = []
             next_application_order_value = Application.get_last_order(workspace)
             for application in prioritized_applications:
-                application_type = application_type_registry.get(application["type"])
-                imported_application = application_type.import_serialized(
-                    workspace,
-                    application,
-                    import_export_config,
-                    id_mapping,
-                    files_zip,
-                    storage,
-                    progress_builder=progress.create_child_builder(
-                        represents_progress=1000
-                    ),
+                application_progress = progress.create_child_builder(
+                    represents_progress=1000
                 )
+                # Import each application inside a savepoint so that one whose type
+                # or a nested type (field, view, user source, element, ...) is
+                # provided by an uninstalled plugin can be skipped without rolling
+                # back the applications that already imported. This keeps, for
+                # example, a template's database usable even when its builder
+                # application relies on a type that isn't available.
+                try:
+                    with transaction.atomic():
+                        application_type = application_type_registry.get(
+                            application["type"]
+                        )
+                        imported_application = application_type.import_serialized(
+                            workspace,
+                            application,
+                            import_export_config,
+                            id_mapping,
+                            files_zip,
+                            storage,
+                            progress_builder=application_progress,
+                        )
+                except InstanceTypeDoesNotExist as exc:
+                    logger.warning(
+                        "Skipping application '{}' of type '{}' during import "
+                        "because a required type is not registered: {}",
+                        application.get("name"),
+                        application["type"],
+                        exc,
+                    )
+                    # Advance the parent by everything this application represented.
+                    # set_progress clamps to the total, so any progress the child
+                    # already reported before failing is not double counted.
+                    progress.increment(by=application_progress.represents_progress)
+                    continue
                 imported_application.order = next_application_order_value
                 next_application_order_value += 1
                 imported_applications.append(imported_application)
@@ -1907,7 +1634,7 @@ class CoreHandler(metaclass=baserow_trace_methods(tracer, exclude="clear_context
 
         for template_file_path in tqdm(
             template_files_paths,
-            desc="Syncing Baserow templates. Disable by setting "
+            desc="Syncing Saveroom templates. Disable by setting "
             "BASEROW_TRIGGER_SYNC_TEMPLATES_AFTER_MIGRATION=false.",
         ):
             with transaction.atomic():

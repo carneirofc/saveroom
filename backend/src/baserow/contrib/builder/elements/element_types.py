@@ -81,7 +81,10 @@ from baserow.contrib.builder.theme.theme_config_block_types import (
     TableThemeConfigBlockType,
 )
 from baserow.contrib.builder.types import ElementDict
-from baserow.contrib.builder.workflow_actions.models import BuilderWorkflowAction
+from baserow.contrib.builder.workflow_actions.models import (
+    BuilderWorkflowAction,
+    EventTypes,
+)
 from baserow.core.constants import (
     DATE_FORMAT,
     DATE_FORMAT_CHOICES,
@@ -347,6 +350,9 @@ class FormContainerElementType(ContainerElementTypeMixin, ElementType):
     class SerializedDict(ContainerElementTypeMixin.SerializedDict):
         submit_button_label: BaserowFormulaObject
         reset_initial_values_post_submission: bool
+
+    def get_event_names(self, instance: FormContainerElement) -> List[str]:
+        return [EventTypes.SUBMIT.value]
 
     def get_pytest_params(self, pytest_data_fixture) -> Dict[str, Any]:
         return {
@@ -1671,6 +1677,9 @@ class ButtonElementType(ElementType):
     class SerializedDict(ElementDict):
         value: BaserowFormulaObject
 
+    def get_event_names(self, instance: ButtonElement) -> List[str]:
+        return [EventTypes.CLICK.value]
+
     @property
     def serializer_field_overrides(self):
         from baserow.contrib.builder.api.theme.serializers import (
@@ -2096,8 +2105,14 @@ class IFrameElementType(ElementType):
     display_name = _("Iframe")
     type = "iframe"
     model_class = IFrameElement
-    allowed_fields = ["source_type", "url", "embed", "height"]
-    serializer_field_names = ["source_type", "url", "embed", "height"]
+    allowed_fields = ["source_type", "url", "embed", "height", "allow_same_origin"]
+    serializer_field_names = [
+        "source_type",
+        "url",
+        "embed",
+        "height",
+        "allow_same_origin",
+    ]
     simple_formula_fields = ["url", "embed"]
 
     class SerializedDict(ElementDict):
@@ -2105,6 +2120,7 @@ class IFrameElementType(ElementType):
         url: BaserowFormulaObject
         embed: BaserowFormulaObject
         height: int
+        allow_same_origin: bool
 
     @property
     def serializer_field_overrides(self):
@@ -2130,6 +2146,11 @@ class IFrameElementType(ElementType):
                 min_value=1,
                 max_value=2000,
             ),
+            "allow_same_origin": serializers.BooleanField(
+                help_text=IFrameElement._meta.get_field("allow_same_origin").help_text,
+                required=False,
+                default=False,
+            ),
         }
 
         return overrides
@@ -2148,6 +2169,7 @@ class IFrameElementType(ElementType):
                 version=BASEROW_FORMULA_VERSION_INITIAL,
             ),
             "height": 300,
+            "allow_same_origin": False,
         }
 
 
@@ -2330,6 +2352,17 @@ class MenuElementType(ElementType):
         alignment: str
         menu_items: List[Dict]
         variant: Dict[str, str]
+
+    def get_event_names(self, instance: MenuElement) -> List[str]:
+        """
+        Only the menu items of type `button` can fire a `click` event.
+        """
+
+        return [
+            f"{item.uid}_{EventTypes.CLICK.value}"
+            for item in instance.menu_items.all()
+            if item.type == MenuItemElement.TYPES.BUTTON
+        ]
 
     @property
     def serializer_field_overrides(self) -> Dict[str, Any]:

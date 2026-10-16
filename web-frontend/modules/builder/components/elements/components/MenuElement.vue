@@ -40,7 +40,7 @@
         @dragstart.prevent.stop
       >
         <ABIcon
-          icon="iconoir-cancel"
+          icon="iconoir-xmark"
           class="menu-element__compact-menu-close"
           is-button
           @click="closeCompactMenu"

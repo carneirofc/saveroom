@@ -31,7 +31,6 @@ import {
   CorePeriodicTriggerNodeType,
   CoreStartWorkflowNodeType,
   CoreManualTriggerNodeType,
-  AIAgentActionNodeType,
   SlackWriteMessageNodeType,
 } from '@baserow/modules/automation/nodeTypes'
 import {
@@ -134,7 +133,6 @@ export default defineNuxtPlugin({
     )
     $registry.register('node', new CorePeriodicTriggerNodeType(context))
     $registry.register('node', new CoreManualTriggerNodeType(context))
-    $registry.register('node', new AIAgentActionNodeType(context))
 
     // Automation job types
     $registry.register('job', new DuplicateAutomationWorkflowJobType(context))
@@ -146,10 +144,14 @@ export default defineNuxtPlugin({
 
     // Automation settings
     $registry.registerNamespace('automationSettings')
-    $registry.register(
-      'automationSettings',
-      new GeneralAutomationSettingsType(context)
-    )
+    // The general settings are still work in progress, so they are only
+    // available while developing.
+    if (import.meta.env.MODE === 'development') {
+      $registry.register(
+        'automationSettings',
+        new GeneralAutomationSettingsType(context)
+      )
+    }
     $registry.register(
       'automationSettings',
       new IntegrationsAutomationSettingsType(context)

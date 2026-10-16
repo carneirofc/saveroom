@@ -30,6 +30,19 @@ def pytest_generate_tests(metafunc):
         )
 
 
+def _first_user_source_type():
+    """
+    Skips instead of IndexError-ing when no plugin has registered a user
+    source type (e.g. the enterprise-only "local_baserow" type isn't part
+    of this fork).
+    """
+
+    registered_types = list(user_source_type_registry.get_all())
+    if not registered_types:
+        pytest.skip("No user source type is registered (needs a plugin).")
+    return registered_types[0]
+
+
 @pytest.mark.django_db
 def test_create_user_source(data_fixture, user_source_type: UserSourceType):
     user = data_fixture.create_user()
@@ -69,7 +82,7 @@ def test_create_user_source_bad_application(data_fixture):
     user = data_fixture.create_user()
     application = data_fixture.create_database_application(user=user)
 
-    user_source_type = user_source_type_registry.get("local_baserow")
+    user_source_type = _first_user_source_type()
 
     with pytest.raises(ApplicationOperationNotSupported):
         UserSourceHandler().create_user_source(
@@ -327,6 +340,11 @@ def test_export_user_source(data_fixture):
 
 @pytest.mark.django_db
 def test_import_user_source(data_fixture):
+    if "local_baserow" not in user_source_type_registry.registry:
+        pytest.skip(
+            "The local_baserow user source type isn't registered (enterprise-only)."
+        )
+
     builder = data_fixture.create_builder_application()
     integration = data_fixture.create_local_baserow_integration()
 
@@ -369,6 +387,11 @@ def test_import_user_source(data_fixture):
 
 @pytest.mark.django_db
 def test_import_user_source_with_migrated_integration(data_fixture):
+    if "local_baserow" not in user_source_type_registry.registry:
+        pytest.skip(
+            "The local_baserow user source type isn't registered (enterprise-only)."
+        )
+
     builder = data_fixture.create_builder_application()
     integration = data_fixture.create_local_baserow_integration()
 
@@ -403,7 +426,7 @@ def test_export_then_import_user_source(data_fixture, stub_user_source_registry)
     builder = data_fixture.create_builder_application()
     integration = data_fixture.create_local_baserow_integration()
 
-    first_user_source_type = list(user_source_type_registry.get_all())[0]
+    first_user_source_type = _first_user_source_type()
 
     def gen_uid(user_source):
         return f"{user_source.id}_test"
@@ -534,7 +557,7 @@ def test_generate_update_user_count_chunk_queryset(data_fixture):
 
     ids_seen = []
     ids_expected = list(range(1, 11))
-    user_source_type = list(user_source_type_registry.get_all())[0]
+    user_source_type = _first_user_source_type()
     user_sources = data_fixture.create_user_sources_with_primary_keys(
         user_source_type, ids_expected, application=builder
     )
@@ -625,16 +648,16 @@ def test_update_all_user_source_counts_in_chunks(data_fixture):
             ("Role", "text"),
         ],
         rows=[
-            ["jrmi@baserow.io", "Jérémie", ""],
-            ["peter@baserow.io", "Peter", ""],
-            ["afonso@baserow.io", "Afonso", ""],
-            ["tsering@baserow.io", "Tsering", ""],
-            ["evren@baserow.io", "Evren", ""],
+            ["jrmi@example.com", "Jérémie", ""],
+            ["peter@example.com", "Peter", ""],
+            ["afonso@example.com", "Afonso", ""],
+            ["tsering@example.com", "Tsering", ""],
+            ["evren@example.com", "Evren", ""],
         ],
     )
     email_field, name_field, role_field = fields
 
-    user_source_type = list(user_source_type_registry.get_all())[0]
+    user_source_type = _first_user_source_type()
     user_sources = data_fixture.create_user_sources_with_primary_keys(
         user_source_type,
         list(range(1, 11)),

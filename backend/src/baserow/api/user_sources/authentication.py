@@ -88,7 +88,7 @@ class UserSourceJSONWebTokenAuthentication(JWTAuthentication):
             validated_token = UserSourceAccessToken(raw_token)
             user_source_uid = validated_token[USER_SOURCE_CLAIM]
             user_id = validated_token[jwt_settings.USER_ID_CLAIM]
-        except (TokenError, KeyError):
+        except TokenError, KeyError:
             # Probably not a user source token let's skip this auth backend
             return None
 

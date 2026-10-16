@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Customize the app name, colors, font, logos, favicons, icons, translations and CSS at runtime from a mounted branding directory, without rebuilding the frontend.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-13"
+}

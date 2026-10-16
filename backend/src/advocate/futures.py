@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
 
 import requests_futures.sessions
 from requests.adapters import DEFAULT_POOLSIZE
@@ -9,6 +10,14 @@ from . import Session
 class FuturesSession(requests_futures.sessions.FuturesSession, Session):
     def __init__(self, executor=None, max_workers=2, session=None, *args, **kwargs):
         adapter_kwargs = {}
+        # requests_futures.FuturesSession.__init__ is bypassed (it would build
+        # a plain, non-advocate session), so mirror the bookkeeping state it
+        # sets up for close() and future tracking.
+        self._owned_executor = executor is None
+        self._pending_futures = set()
+        self._pending_futures_lock = Lock()
+        self._close_lock = Lock()
+        self._closed = False
         if executor is None:
             executor = ThreadPoolExecutor(max_workers=max_workers)
             # set connection pool size equal to max_workers if needed

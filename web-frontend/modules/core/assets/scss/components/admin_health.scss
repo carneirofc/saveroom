@@ -3,7 +3,7 @@
 }
 
 .admin-health__group {
-  max-width: 30vw;
+  max-width: 720px;
   min-width: 160px;
 
   &:not(:last-child) {
@@ -11,6 +11,12 @@
     margin-bottom: 30px;
     border-bottom: solid 1px $color-neutral-200;
   }
+}
+
+// Matches .admin-settings__group-title, so the two admin pages read as one.
+.admin-health__group-title {
+  font-size: 20px;
+  margin-bottom: 20px;
 }
 
 .admin-health__description {

@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Backups and backup schedules can upload their archives to a data destination, with retention applied there too. Remote backups can be listed and restored through the API or the backup_to_destination, list_destination_backups and restore_from_destination commands, including onto a fresh instance.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-13"
+}

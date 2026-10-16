@@ -1,5 +1,6 @@
 import unicodedata
 from dataclasses import asdict, dataclass
+from datetime import timedelta
 from typing import Dict, Optional, Union
 
 from django.contrib.auth.models import AbstractUser
@@ -34,6 +35,7 @@ def generate_session_tokens_for_user(
     user: AbstractUser,
     include_refresh_token: bool = False,
     verified_email_claim: Optional[str] = None,
+    refresh_lifetime: Optional[timedelta] = None,
 ) -> Dict[str, str]:
     """
     Generates a new access and refresh token (if requested) for the given user.
@@ -42,11 +44,17 @@ def generate_session_tokens_for_user(
     :param include_refresh_token: Whether or not a refresh token must be included.
     :param verified_email_claim: Optionally stores which authentication
         method was used.
+    :param refresh_lifetime: Optionally shortens (or lengthens) the refresh token's
+        lifetime instead of using `REFRESH_TOKEN_LIFETIME`. Since refreshing never
+        re-issues the refresh token, this bounds the whole session.
     :return: A dictionary with the access and refresh token.
     """
 
     access_token = AccessToken.for_user(user)
     refresh_token = RefreshToken.for_user(user) if include_refresh_token else None
+
+    if refresh_token and refresh_lifetime is not None:
+        refresh_token.set_exp(lifetime=refresh_lifetime)
 
     if refresh_token and verified_email_claim is not None:
         refresh_token["verified_email_claim"] = verified_email_claim

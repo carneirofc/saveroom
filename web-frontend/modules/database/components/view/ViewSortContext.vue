@@ -43,7 +43,7 @@
             class="sortings__remove"
             @click="deleteSort(sort)"
           >
-            <i class="iconoir-cancel"></i>
+            <i class="iconoir-xmark"></i>
           </a>
 
           <div class="sortings__description">

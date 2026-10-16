@@ -1,20 +1,19 @@
 Copyright (c) 2019-present Baserow B.V.
+Copyright (c) 2026-present Saveroom contributors (formerly the Baserow FOSS fork)
 
-Parts of Baserow's software are licensed as follows:
+This repository, Saveroom, is a fork of Baserow with the premium and enterprise editions
+removed. Upstream Baserow is open-core: the "premium/" and "enterprise/"
+directories were covered by separate proprietary licenses that required a paid
+subscription for production use. Those directories are not part of this fork,
+and no code from them remains here.
+
+Parts of this software are licensed as follows:
 
 * All content residing under the "docs/" directory of this repository is licensed under
   "Creative Commons: CC BY-SA 4.0 license".
-* All content that resides under the "premium/" directory of this repository, if that
-  directory exists, is licensed under the license defined in "premium/LICENSE".
-* All content that resides under the "enterprise/" directory of this repository, if that
-  directory exists, is licensed under the license defined in "enterprise/LICENSE".
-* All client-side JavaScript (when served directly or after being compiled, arranged,
-  augmented, or combined), is licensed under the "MIT Expat" license.
-* All third party components incorporated into the Baserow Software are licensed under
+* All third party components incorporated into this Software are licensed under
   the original license provided by the owner of the applicable component.
-* Content outside of the above mentioned directories or restrictions above [Baserow
-  Open Source Edition ("Baserow OSE")] is available under the "MIT Expat" license as
-  defined below.
+* All other content is available under the "MIT Expat" license as defined below.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this
 software and associated documentation files (the "Software"), to deal in the Software
@@ -32,3 +31,4 @@ PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIG
 HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
 OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</content>

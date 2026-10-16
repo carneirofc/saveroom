@@ -151,8 +151,6 @@ class BuilderWorkflowActionService:
             context=page,
         )
 
-        workflow_action_type.raise_if_deactivated(page.builder.workspace)
-
         prepared_values = workflow_action_type.prepare_values(kwargs, user)
 
         new_workflow_action = self.handler.create_workflow_action(
@@ -197,10 +195,6 @@ class BuilderWorkflowActionService:
             )
         else:
             workflow_action_type = workflow_action.get_type()
-
-        workflow_action_type.raise_if_deactivated(
-            workflow_action.page.builder.workspace
-        )
 
         if has_type_changed:
             # When a workflow action's type changes, due our polymorphism, we need
@@ -326,10 +320,6 @@ class BuilderWorkflowActionService:
             DispatchBuilderWorkflowActionOperationType.type,
             workspace=workflow_action.page.builder.workspace,
             context=workflow_action,
-        )
-
-        workflow_action.get_type().raise_if_deactivated(
-            workflow_action.page.builder.workspace
         )
 
         update_sample_data = self._can_update_sample_data(

@@ -468,9 +468,9 @@ def test_trash_restore_created_by_field(data_fixture):
 @pytest.mark.field_created_by
 @pytest.mark.django_db
 def test_created_by_field_type_sorting(data_fixture):
-    user_a = data_fixture.create_user(email="user1@baserow.io", first_name="User a")
-    user_b = data_fixture.create_user(email="user2@baserow.io", first_name="User b")
-    user_c = data_fixture.create_user(email="user3@baserow.io", first_name="User c")
+    user_a = data_fixture.create_user(email="user1@example.com", first_name="User a")
+    user_b = data_fixture.create_user(email="user2@example.com", first_name="User b")
+    user_c = data_fixture.create_user(email="user3@example.com", first_name="User c")
 
     database = data_fixture.create_database_application(user=user_a, name="Placeholder")
     data_fixture.create_user_workspace(workspace=database.workspace, user=user_b)
@@ -490,14 +490,14 @@ def test_created_by_field_type_sorting(data_fixture):
     row5 = model.objects.create(created_by=None)
 
     sort = data_fixture.create_view_sort(view=grid_view, field=field, order="ASC")
-    rows = view_handler.apply_sorting(grid_view, model.objects.all())
+    rows = view_handler.apply_ordering(grid_view, model.objects.all())
     row_ids = [row.id for row in rows]
     assert row_ids == [row5.id, row3.id, row2.id, row1.id, row4.id]
 
     sort.order = "DESC"
     sort.save()
 
-    rows = view_handler.apply_sorting(grid_view, model.objects.all())
+    rows = view_handler.apply_ordering(grid_view, model.objects.all())
     row_ids = [row.id for row in rows]
     assert row_ids == [row1.id, row4.id, row2.id, row3.id, row5.id]
 
@@ -505,9 +505,9 @@ def test_created_by_field_type_sorting(data_fixture):
 @pytest.mark.field_created_by
 @pytest.mark.django_db
 def test_created_by_field_view_aggregation(data_fixture):
-    user_a = data_fixture.create_user(email="user1@baserow.io", first_name="User a")
-    user_b = data_fixture.create_user(email="user2@baserow.io", first_name="User b")
-    user_c = data_fixture.create_user(email="user3@baserow.io", first_name="User c")
+    user_a = data_fixture.create_user(email="user1@example.com", first_name="User a")
+    user_b = data_fixture.create_user(email="user2@example.com", first_name="User b")
+    user_c = data_fixture.create_user(email="user3@example.com", first_name="User c")
 
     database = data_fixture.create_database_application(user=user_a, name="Placeholder")
     data_fixture.create_user_workspace(workspace=database.workspace, user=user_b)

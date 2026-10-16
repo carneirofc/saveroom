@@ -1,11 +1,9 @@
 <template>
   <div>
-    <h2>
+    <h2 class="admin-health__group-title">
       {{ $t('emailTester.title') }}
 
-      <a
-        href="https://baserow.io/docs/installation%2Fconfiguration#email-configuration"
-        target="_blank"
+      <a :href="$branding.docsUrl" target="_blank"
         ><i class="iconoir-chat-bubble-question"
       /></a>
     </h2>

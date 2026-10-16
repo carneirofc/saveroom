@@ -61,7 +61,7 @@ describe('GridViewFieldLookup component', () => {
       readOnly: false,
       selected: false,
       storePrefix: 'page/',
-      value: 'baserow.io',
+      value: 'example.com',
       workspaceId: 10,
     })
 
@@ -74,7 +74,7 @@ describe('GridViewFieldLookup component', () => {
       readOnly: false,
       selected: true,
       storePrefix: 'page/',
-      value: 'baserow.io',
+      value: 'example.com',
       workspaceId: 10,
     })
 

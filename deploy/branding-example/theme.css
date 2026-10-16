@@ -1,0 +1,15 @@
+/*
+ * Free-form CSS loaded after the built-in styles and the colors from
+ * branding.json. Anything here overrides the default look.
+ *
+ * Files placed in this directory's `files/` folder are served at
+ * /_branding/assets/files/..., e.g. a custom font:
+ *
+ * @font-face {
+ *   font-family: 'Brand Sans';
+ *   src: url('/_branding/assets/files/fonts/BrandSans-Regular.woff2') format('woff2');
+ *   font-weight: 400;
+ * }
+ *
+ * and then set "fontFamily": "'Brand Sans', sans-serif" in branding.json.
+ */

@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Writing values to fields is allowed again when no plugin provides field level permissions. Without one, every write permission check was denied, so Local Baserow create/update row services silently stored empty rows.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "database",
+    "bullet_points": [],
+    "created_at": "2026-07-29"
+}

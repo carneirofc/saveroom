@@ -1,6 +1,6 @@
 <template>
   <a class="select__footer-create-link">
-    <i class="select__footer-create-icon iconoir-selection"></i>
+    <i class="select__footer-create-icon iconoir-frame-select"></i>
     <span> {{ $t('addElementButton.label') }} </span>
     <i class="select__footer-create-link-icon iconoir-plus"></i>
   </a>

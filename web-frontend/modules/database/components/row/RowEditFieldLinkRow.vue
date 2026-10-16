@@ -30,7 +30,7 @@
           class="field-link-row__remove"
           @click.prevent.stop="removeValue($event, value, item.id)"
         >
-          <i class="iconoir-cancel"></i>
+          <i class="iconoir-xmark"></i>
         </a>
       </li>
       <li

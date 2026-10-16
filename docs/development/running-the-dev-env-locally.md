@@ -1,6 +1,6 @@
 # Running the Dev Environment Locally (Without Docker)
 
-This guide covers running Baserow's backend and frontend natively on your machine, using Docker only for infrastructure services (PostgreSQL, Redis). This approach offers faster iteration, easier debugging, and better IDE integration compared to full Docker development.
+This guide covers running Saveroom's backend and frontend natively on your machine, using Docker only for infrastructure services (PostgreSQL, Redis). This approach offers faster iteration, easier debugging, and better IDE integration compared to full Docker development.
 
 ## Prerequisites
 
@@ -69,7 +69,7 @@ git --version
 
 ```bash
 # Clone the repository
-git clone --branch develop https://github.com/baserow/baserow.git
+git clone --branch develop https://github.com/carneirofc/baserow.git
 cd baserow
 
 # Initialize backend and frontend (creates venv, installs deps, creates .env.local)
@@ -98,7 +98,7 @@ just dev tmux    # Alternative: start tmux session with all services (you need t
 
 The `just dev up` command orchestrates:
 
-1. **Docker services**: PostgreSQL, Redis, Mailhog, OpenTelemetry collector
+1. **Docker services**: PostgreSQL, Redis, Mailhog
 2. **Database migrations**: Applied automatically
 3. **Backend server**: Django development server on port 8000
 4. **Celery workers**: Background task processing (main, export, beat scheduler)
@@ -106,7 +106,7 @@ The `just dev up` command orchestrates:
 
 ```
 just dev up
-├── Docker: db, redis, mailhog, otel-collector
+├── Docker: db, redis, mailhog
 ├── Backend: Django dev server (port 8000)
 ├── Celery: main worker + export worker + beat scheduler
 └── Frontend: Nuxt dev server (port 3000)
@@ -268,11 +268,11 @@ just b test-coverage
 For 2-5x faster tests, use a PostgreSQL container with tmpfs:
 
 ```bash
-# Start ramdisk database (port 5433)
+# Start ramdisk database (port 5431)
 just test-db start
 
 # Run tests against it
-DATABASE_URL=postgres://baserow:baserow@localhost:5433/baserow just b test -n=auto
+DATABASE_URL=postgres://baserow:baserow@localhost:5431/baserow just b test -n=auto
 
 # Stop when done
 just test-db stop
@@ -306,14 +306,6 @@ just b m makemigrations core  # Specific app
 
 ```bash
 just b m createsuperuser
-```
-
-### Syncing Templates
-
-Templates (example databases, forms, etc.) are not synced by default for faster startup:
-
-```bash
-just b m sync_templates
 ```
 
 ### Accessing the Database

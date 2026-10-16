@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Replaced the official `caddy` image in the split-services Compose stacks with this fork's own Caddy build, compiled from source against a pinned Go 1.26.7 toolchain. The upstream image still ships a Go 1.26.5 standard library, flagged for CVE-2026-39821, CVE-2026-56865, CVE-2026-56864, CVE-2026-56862, CVE-2026-56859, CVE-2026-56853, CVE-2026-46600 and CVE-2026-33818.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-08-28"
+}

@@ -3,11 +3,13 @@
     <AirtableImportForm @submitted="importFromAirtable">
       <Error :error="error"></Error>
       <div class="modal-progress__actions">
-        <ProgressBar
-          v-if="jobIsRunning || jobHasSucceeded"
-          :value="job.progress_percentage"
-          :status="jobHumanReadableState"
-        />
+        <template v-if="jobIsRunning || jobHasSucceeded">
+          <ProgressBar
+            :value="job.progress_percentage"
+            :status="jobHumanReadableState"
+          />
+          <JobDuration :job="job" />
+        </template>
 
         <Button
           v-if="!jobHasSucceeded"
@@ -40,10 +42,11 @@ import error from '@baserow/modules/core/mixins/error'
 import jobProgress from '@baserow/modules/core/mixins/jobProgress'
 import AirtableService from '@baserow/modules/database/services/airtable'
 import AirtableImportForm from '@baserow/modules/database/components/airtable/AirtableImportForm'
+import JobDuration from '@baserow/modules/core/components/job/JobDuration'
 
 export default {
   name: 'ImportFromAirtable',
-  components: { AirtableImportForm },
+  components: { AirtableImportForm, JobDuration },
   mixins: [error, jobProgress],
   props: {
     workspace: {

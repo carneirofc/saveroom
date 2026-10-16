@@ -15,6 +15,10 @@ const CONNECTION_TIMEOUT = 10000
 // The handshake resets ``attempts`` before the auth result arrives, so the
 // backoff cap can't bound an auth-rejection loop; bound the refreshes instead.
 const MAX_TOKEN_REFRESH_RETRIES = 1
+const REPLAY_RETRY_BASE_DELAY = 1000
+const REPLAY_RETRY_MAX_DELAY = 30000
+const REPLAY_BUFFER_MAX_EVENTS = 1000
+const REPLAY_BUFFER_MAX_BYTES = 5 * 1024 * 1024
 
 export class RealTimeHandler {
   constructor(context) {
@@ -36,6 +40,14 @@ export class RealTimeHandler {
 
     this.lastSeenEventId = FIRST_CONNECT_CURSOR
     this.replayEnabled = false
+    this.replayRequestCursor = null
+    this.replayInFlight = false
+    this.replayRetryTimeout = null
+    this.replayRetryAttempts = 0
+    this.replayEventBuffer = new Map()
+    this.replayBufferBytes = 0
+    this.replayAbandoned = false
+    this.recentEventIds = new Set()
 
     this.connecting = false
     // Set on a rejected token so the next reconnect refreshes before retrying.
@@ -124,6 +136,7 @@ export class RealTimeHandler {
     }
 
     if (this.socket) {
+      this._interruptReplay()
       this.socket.onclose = null
       this.socket = null
     }
@@ -161,8 +174,12 @@ export class RealTimeHandler {
     this.socket = new WebSocket(
       `${url}?jwt_token=${token}&web_socket_id=${webSocketId}`
     )
+    const socket = this.socket
     this._armConnectionTimeout()
     this.socket.onopen = () => {
+      if (this.socket !== socket) {
+        return
+      }
       this._clearConnectionTimeout()
       this.connected = true
       this.attempts = 0
@@ -181,6 +198,9 @@ export class RealTimeHandler {
      * type and call the correct event.
      */
     this.socket.onmessage = (message) => {
+      if (this.socket !== socket) {
+        return
+      }
       let data
 
       try {
@@ -189,20 +209,24 @@ export class RealTimeHandler {
         return
       }
 
-      this.updateLastSeenId(data)
-
       if (
-        Object.prototype.hasOwnProperty.call(data, 'type') &&
-        Object.prototype.hasOwnProperty.call(this.events, data.type)
+        this.replayRequestCursor !== null &&
+        typeof data?._event_id === 'number' &&
+        this._bufferReplayEvent(data, message.data.length * 2)
       ) {
-        for (const callback of this.events[data.type]) {
-          callback(this.context, data)
-        }
+        return
       }
+      this._dispatchEvent(data)
     }
 
     this.socket.onclose = () => {
+      if (this.socket !== socket) {
+        return
+      }
       this._clearConnectionTimeout()
+      // Keep the original cursor and buffered events: a reconnect must still
+      // recover the gap, even if live events arrived while replay was busy.
+      this._interruptReplay()
       this.connected = false
       this.subscribedToPages = this.pages.length === 0
       this.context.store.dispatch('presence/clearAllSpaces')
@@ -418,6 +442,11 @@ export class RealTimeHandler {
     this.forceTokenRefresh = false
     this.tokenRefreshRetries = 0
     this.lastSeenEventId = FIRST_CONNECT_CURSOR
+    this._clearReplayRetry()
+    this.replayRequestCursor = null
+    this._clearReplayBuffer()
+    this.replayAbandoned = false
+    this.recentEventIds.clear()
     // Reset until the next auth message confirms replay is enabled.
     this.replayEnabled = false
   }
@@ -425,18 +454,146 @@ export class RealTimeHandler {
   _canReplayEvents() {
     return (
       this.replayEnabled &&
+      !this.replayAbandoned &&
       this.socket &&
       this.socket.readyState === WebSocket.OPEN
     )
   }
 
   _sendReplayEventsRequest() {
+    if (
+      !this._canReplayEvents() ||
+      this.replayInFlight ||
+      this.replayRetryTimeout !== null
+    ) {
+      return
+    }
+    // Retries must use the original cursor, including FIRST_CONNECT_CURSOR.
+    // Advancing it to a live event could silently skip missed updates.
+    this.replayRequestCursor ??= this.lastSeenEventId
+    this.replayInFlight = true
     this.socket.send(
       JSON.stringify({
         type: 'replay_events',
-        last_seen_id: this.lastSeenEventId,
+        last_seen_id: this.replayRequestCursor,
+        supports_retry: true,
       })
     )
+  }
+
+  _clearReplayRetry() {
+    clearTimeout(this.replayRetryTimeout)
+    this.replayRetryTimeout = null
+    this.replayInFlight = false
+    this.replayRetryAttempts = 0
+  }
+
+  _interruptReplay() {
+    this._clearReplayRetry()
+    if (this.replayRequestCursor === FIRST_CONNECT_CURSOR) {
+      // Losing the socket before obtaining a baseline leaves no safe cursor for
+      // events missed while disconnected. A fresh baseline would hide that gap.
+      this.replayRequestCursor = NO_REPLAY_AVAILABLE
+    }
+  }
+
+  _scheduleReplayRetry(retryAfterMs) {
+    if (!this.replayInFlight || !this._canReplayEvents()) {
+      return
+    }
+    this.replayInFlight = false
+    const minimumDelay = Math.min(
+      Math.max(
+        Number.isFinite(retryAfterMs) ? retryAfterMs : 0,
+        REPLAY_RETRY_BASE_DELAY
+      ),
+      REPLAY_RETRY_MAX_DELAY
+    )
+    const backoff = Math.min(
+      minimumDelay * 2 ** this.replayRetryAttempts,
+      REPLAY_RETRY_MAX_DELAY
+    )
+    this.replayRetryAttempts = Math.min(this.replayRetryAttempts + 1, 5)
+    const jitter = Math.random() * Math.min(1000, backoff / 4)
+    const delay = Math.max(
+      minimumDelay,
+      Math.min(backoff, REPLAY_RETRY_MAX_DELAY - 1000) + jitter
+    )
+    const socket = this.socket
+    this.replayRetryTimeout = setTimeout(() => {
+      this.replayRetryTimeout = null
+      if (this.socket === socket) {
+        this._sendReplayEventsRequest()
+      }
+    }, delay)
+  }
+
+  _clearReplayBuffer() {
+    this.replayEventBuffer.clear()
+    this.replayBufferBytes = 0
+  }
+
+  _bufferReplayEvent(data, bytes) {
+    if (this.recentEventIds.has(data._event_id)) {
+      return true
+    }
+    const previousBytes = this.replayEventBuffer.get(data._event_id)?.bytes || 0
+    const nextBytes = this.replayBufferBytes - previousBytes + bytes
+    if (
+      nextBytes > REPLAY_BUFFER_MAX_BYTES ||
+      (!this.replayEventBuffer.has(data._event_id) &&
+        this.replayEventBuffer.size >= REPLAY_BUFFER_MAX_EVENTS)
+    ) {
+      // We can no longer safely merge the missed history with live events.
+      // This is actual loss of recoverability, rather than temporary busyness.
+      this._clearReplayRetry()
+      this._clearReplayBuffer()
+      this.replayRequestCursor = null
+      this.replayAbandoned = true
+      this.context.store.dispatch('toast/setWorkspaceOutdated', true)
+      return false
+    }
+    this.replayEventBuffer.set(data._event_id, { data, bytes })
+    this.replayBufferBytes = nextBytes
+    return true
+  }
+
+  _flushReplayBuffer(cursor) {
+    const bufferedEvents = [...this.replayEventBuffer.values()].sort(
+      (a, b) => a.data._event_id - b.data._event_id
+    )
+    this._clearReplayBuffer()
+    for (const { data: event } of bufferedEvents) {
+      // First connect requests only a baseline, so every buffered live event
+      // still needs applying, even if its id precedes that baseline.
+      if (cursor === null || event._event_id > cursor) {
+        this._dispatchEvent(event)
+      }
+    }
+  }
+
+  _dispatchEvent(data) {
+    if (typeof data?._event_id === 'number') {
+      // The channel layer can deliver a live copy after replay has completed.
+      // Remember a bounded window so an old duplicate cannot revert newer state.
+      if (this.recentEventIds.has(data._event_id)) {
+        return
+      }
+      this.recentEventIds.add(data._event_id)
+      if (this.recentEventIds.size > REPLAY_BUFFER_MAX_EVENTS) {
+        this.recentEventIds.delete(this.recentEventIds.values().next().value)
+      }
+    }
+    this.updateLastSeenId(data)
+    if (
+      data &&
+      Object.prototype.hasOwnProperty.call(data, 'type') &&
+      Object.prototype.hasOwnProperty.call(this.events, data.type)
+    ) {
+      for (const callback of this.events[data.type]) {
+        callback(this.context, data)
+      }
+    }
   }
 
   updateLastSeenId(data) {
@@ -490,6 +647,15 @@ export class RealTimeHandler {
       this.replayEnabled = data.replay_enabled === true
 
       if (!this.replayEnabled) {
+        this._clearReplayRetry()
+        const cursor = this.replayRequestCursor
+        this.replayRequestCursor = null
+        this._flushReplayBuffer(cursor)
+        if (cursor !== null) {
+          // A reconnect to a server without replay cannot close the pending gap.
+          this.replayAbandoned = true
+          store.dispatch('toast/setWorkspaceOutdated', true)
+        }
         this.lastSeenEventId = NO_REPLAY_AVAILABLE
       }
 
@@ -510,13 +676,26 @@ export class RealTimeHandler {
       }
     })
 
+    this.registerEvent('replay_events_retry', (_context, data) => {
+      this._scheduleReplayRetry(data.retry_after_ms)
+    })
+
     this.registerEvent('replay_events_result', ({ store }, data) => {
+      if (this.replayAbandoned) {
+        return
+      }
+      this._clearReplayRetry()
+      const cursor = this.replayRequestCursor
+      this.replayRequestCursor = null
+      this._flushReplayBuffer(cursor)
       const latestEventId = data.latest_event_id
       if (!data.force_refresh && typeof latestEventId === 'number') {
         // ``latest_event_id`` can be 0 when the server has no events
         // recorded yet; store it verbatim.
         this.lastSeenEventId = Math.max(latestEventId, this.lastSeenEventId)
       }
+      // Later live events or reconnects cannot repair a gap declared unreplayable.
+      this.replayAbandoned = data.force_refresh === true
       store.dispatch('toast/setWorkspaceOutdated', data.force_refresh === true)
     })
 
@@ -594,6 +773,17 @@ export class RealTimeHandler {
       })
     })
 
+    this.registerEvent('permissions_updated', async ({ store }, data) => {
+      const workspace = store.getters['workspace/get'](data.workspace_id)
+      if (workspace === undefined) {
+        return
+      }
+      await store.dispatch('workspace/forceFetchPermissions', workspace)
+      // Visible databases and tables may have changed as well.
+      await store.dispatch('application/fetchAll')
+      store.dispatch('toast/setPermissionsUpdated', true)
+    })
+
     this.registerEvent('group_user_updated', ({ store }, data) => {
       store.dispatch('workspace/forceUpdateWorkspaceUser', {
         id: data.id,
@@ -640,25 +830,6 @@ export class RealTimeHandler {
           isHashed: true,
         })
       }
-    })
-
-    // invitations
-    this.registerEvent(
-      'workspace_invitation_updated_or_created',
-      ({ store }, data) => {
-        store.dispatch(
-          'auth/forceUpdateOrCreateWorkspaceInvitation',
-          data.invitation
-        )
-      }
-    )
-
-    this.registerEvent('workspace_invitation_accepted', ({ store }, data) => {
-      store.dispatch('auth/forceAcceptWorkspaceInvitation', data.invitation)
-    })
-
-    this.registerEvent('workspace_invitation_rejected', ({ store }, data) => {
-      store.dispatch('auth/forceRejectWorkspaceInvitation', data.invitation)
     })
 
     // notifications

@@ -293,6 +293,91 @@ class UpdateTableActionType(UndoableActionType):
         TableHandler().update_table_by_id(user, params.table_id, name=params.table_name)
 
 
+class UpdateTableEditConfirmationActionType(UndoableActionType):
+    type = "update_table_edit_confirmation"
+    description = ActionTypeDescription(
+        _("Update table protected editing"),
+        _(
+            'Protected editing of table "%(table_name)s" (%(table_id)s) changed '
+            "from %(original_require_edit_confirmation)s to "
+            "%(require_edit_confirmation)s"
+        ),
+        DATABASE_ACTION_CONTEXT,
+    )
+    analytics_params = [
+        "database_id",
+        "table_id",
+        "require_edit_confirmation",
+    ]
+
+    @dataclasses.dataclass
+    class Params:
+        database_id: int
+        database_name: str
+        table_id: int
+        table_name: str
+        require_edit_confirmation: bool
+        original_require_edit_confirmation: bool
+
+    @classmethod
+    def do(
+        cls, user: AbstractUser, table: Table, require_edit_confirmation: bool
+    ) -> Table:
+        """
+        Enables or disables protected editing of the table. When enabled, the web
+        frontend stages row edits until they're explicitly saved and asks for
+        confirmation before destructive or bulk row operations.
+        See baserow.contrib.database.table.handler.TableHandler.update_table
+        for further details.
+
+        :param user: The user on whose behalf the table is updated.
+        :param table: The table instance that needs to be updated.
+        :param require_edit_confirmation: The new protected editing state.
+        :return: The updated table instance.
+        """
+
+        original_require_edit_confirmation = table.require_edit_confirmation
+
+        TableHandler().update_table(
+            user, table, require_edit_confirmation=require_edit_confirmation
+        )
+
+        database = table.database
+        params = cls.Params(
+            database.id,
+            database.name,
+            table.id,
+            table.name,
+            require_edit_confirmation,
+            original_require_edit_confirmation,
+        )
+
+        cls.register_action(
+            user, params, cls.scope(database.id), workspace=database.workspace
+        )
+        return table
+
+    @classmethod
+    def scope(cls, database_id) -> ActionScopeStr:
+        return ApplicationActionScopeType.value(database_id)
+
+    @classmethod
+    def undo(cls, user: AbstractUser, params: Params, action_being_undone: Action):
+        TableHandler().update_table_by_id(
+            user,
+            params.table_id,
+            require_edit_confirmation=params.original_require_edit_confirmation,
+        )
+
+    @classmethod
+    def redo(cls, user: AbstractUser, params: Params, action_being_redone: Action):
+        TableHandler().update_table_by_id(
+            user,
+            params.table_id,
+            require_edit_confirmation=params.require_edit_confirmation,
+        )
+
+
 class DuplicateTableActionType(UndoableActionType):
     type = "duplicate_table"
     description = ActionTypeDescription(

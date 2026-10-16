@@ -10,7 +10,7 @@
     "body": "Are you sure you want to delete this webhook? You will not be able to restore it later."
   },
   "webhookList": {
-    "noWebhooksMessage": "You have not created any webhooks yet. Webhooks can be used in order to inform 3rd party systems when a row in Baserow has been created, updated or deleted."
+    "noWebhooksMessage": "You have not created any webhooks yet. Webhooks can be used in order to inform 3rd party systems when a row in @:{'app.name'} has been created, updated or deleted."
   },
   "testWebhookModal": {
     "title": "Test webhook",
@@ -58,18 +58,155 @@
     "errorTableWebhookMaxLimitExceededTitle": "Max webhooks exceeded",
     "errorTableWebhookMaxLimitExceededDescription": "Can't create the webhook because the maximum amount of webhooks per table has been exceeded."
   },
+  "dataExportModal": {
+    "title": "Datalake exports of {name}",
+    "description": "Export the rows of this database's tables as Parquet files to external storage on a schedule. The first export of a table is full, later ones only hold the rows that changed or were deleted.",
+    "noDestinations": "No external storage has been configured by your administrator.",
+    "noDestinationsStaff": "No external storage is configured for datalake exports. Declare one with BASEROW_DATA_DESTINATIONS.",
+    "newSchedule": "New export schedule",
+    "noSchedules": "This database has no export schedules yet.",
+    "inactive": "inactive",
+    "nextRunOn": "next run {date}",
+    "lastRunOn": "last run {date}",
+    "tableCount": "{n} table | {n} tables",
+    "columnNamingBadge": "Columns: {naming}",
+    "more": "More actions",
+    "status": "Status",
+    "runModes": {
+      "auto": "Auto",
+      "full": "Full",
+      "incremental": "Incremental"
+    },
+    "runStates": {
+      "running": "Running",
+      "finished": "Finished",
+      "failed": "Failed"
+    },
+    "allTables": "All tables",
+    "selectTables": "Select at least one table.",
+    "runNow": "Run now",
+    "runFull": "Run full",
+    "runs": "Runs",
+    "noRuns": "This schedule has not exported anything yet.",
+    "started": "Started",
+    "duration": "Duration",
+    "runInProgress": "Running…",
+    "table": "Table",
+    "mode": "Mode",
+    "state": "State",
+    "rows": "Rows",
+    "resetState": "Reset, next export is full",
+    "resetStateTitle": "Export state reset",
+    "resetStateMessage": "The next export of every table of this schedule will be full.",
+    "runQueuedTitle": "Export started",
+    "runQueuedMessage": "The export runs in the background, follow it in the runs of the schedule.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "name": "Name",
+    "nameTooLong": "Enter at most {max} characters.",
+    "destination": "Storage",
+    "cron": "Cron expression",
+    "cronHelp": "minute hour day-of-month month day-of-week, for example 0 * * * * for every hour.",
+    "timezone": "Timezone",
+    "fullEveryN": "Full export every",
+    "fullEveryNHelp": "Export fully after this many incremental exports. 0 only when required.",
+    "columnNaming": "Column names",
+    "columnNamingHelp": "Field ids keep columns stable when fields are renamed.",
+    "columnNamingFieldId": "Field id (field_123)",
+    "columnNamingFieldName": "Field name",
+    "tables": "Tables",
+    "active": "Active",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirmDeleteTitle": "Delete this export schedule?",
+    "confirmDeleteMessage": "The schedule \"{name}\" is permanently deleted. Files it already exported stay on the storage.",
+    "confirmResetStateTitle": "Reset the export state?",
+    "confirmResetStateMessage": "The next export of every table of \"{name}\" will be a full export instead of an incremental one.",
+    "fullEveryNInvalid": "Enter a whole number of 0 or more.",
+    "unavailableDestination": "{name} (unavailable)",
+    "unavailableDestinationError": "This storage is no longer configured. Choose another one."
+  },
   "sidebar": {
     "viewAPI": "View API Docs",
+    "datalakeExports": "Datalake exports",
+    "manageAccess": "Manage access",
     "createTable": "New table"
   },
+  "databaseAccessModal": {
+    "title": "Access to {name}",
+    "workspaceTitle": "Default access in {name}",
+    "description": "Workspace admins always have full access. Members and teams without a level here inherit it from the database or the workspace default.",
+    "subject": "Member or team",
+    "level": "Access",
+    "team": "Team",
+    "admin": "Admin",
+    "inherit": "Inherit",
+    "inheritedFrom": "Inherits {level} from {scope}",
+    "inheritsFullAccess": "Inherits full member access",
+    "scopes": {
+      "workspace": "workspace",
+      "database": "database",
+      "table": "table"
+    },
+    "levels": {
+      "none": "No access",
+      "viewer": "Viewer",
+      "editor": "Editor",
+      "builder": "Builder"
+    },
+    "levelDescriptions": {
+      "none": "Hidden",
+      "viewer": "Read rows, fields and views",
+      "editor": "Viewer and change rows",
+      "builder": "Editor and change fields, views and tables"
+    },
+    "save": "Save",
+    "saved": "Access updated"
+  },
   "sidebarItem": {
+    "manageAccess": "Manage access",
     "exportTable": "Export table",
     "importFile": "Import file",
     "webhooks": "Webhooks",
     "lastSynced": "Last synced",
     "notSynced": "not synced",
     "sync": "Sync table",
-    "updateSyncConfig": "Update sync configuration"
+    "updateSyncConfig": "Update sync configuration",
+    "protectedEditing": "Protected editing",
+    "protectedEditingPendingTitle": "Unsaved changes",
+    "protectedEditingPendingMessage": "Save or discard the unsaved changes of this table before disabling protected editing."
+  },
+  "pendingChanges": {
+    "count": "No unsaved changes | {count} unsaved change | {count} unsaved changes",
+    "save": "Save",
+    "discard": "Discard",
+    "saved": "Changes saved"
+  },
+  "confirmDataChange": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "updateCellsTitle": "Apply changes",
+    "updateCellsMessage": "Paste into {count} cell(s)? This changes data in a table with protected editing.",
+    "clearCellsTitle": "Clear cells",
+    "clearCellsMessage": "Clear the values of the selected cells? This changes data in a table with protected editing.",
+    "deleteRowTitle": "Delete row",
+    "deleteRowMessage": "Are you sure you want to delete this row?",
+    "deleteRowsTitle": "Delete rows",
+    "deleteRowsMessage": "Are you sure you want to delete the selected rows?",
+    "createRowTitle": "Create row",
+    "createRowMessage": "Create {count} new row(s) in this table?",
+    "moveRowTitle": "Move row",
+    "moveRowMessage": "Move this row to the new position?",
+    "undoTitle": "Undo",
+    "undoMessage": "Undo the last action? This may change data in a table with protected editing.",
+    "redoTitle": "Redo",
+    "redoMessage": "Redo the last undone action? This may change data in a table with protected editing.",
+    "discardTitle": "Discard unsaved changes",
+    "discardMessage": "You have {count} unsaved change(s) in this table. Leaving discards them.",
+    "discardConfirm": "Discard",
+    "enableTitle": "Stage edits and ask before changes",
+    "leaveMessage": "You have unsaved changes."
   },
   "duplicateTableJobType": {
     "name": "Duplicate table",
@@ -128,7 +265,7 @@
     "notFoundDescription": "Row or table is not found.",
     "requestEntityTooLargeDescription": "The request exceeded the maximum allowed payload size.",
     "internalErrorDescription": "The server encountered an unexpected condition.",
-    "badGatewayDescription": "Baserow is restarting or an unexpected outage is in progress.",
+    "badGatewayDescription": "@:{'app.name'} is restarting or an unexpected outage is in progress.",
     "unavailableDescription": "The server could not process your request in time."
   },
   "apiDocsTableFields": {
@@ -192,12 +329,12 @@
     "before": "Moves the row related to the given `row_id` before the row related to the provided value. If not provided, then the row will be moved to the end."
   },
   "apiDocsUploadFile": {
-    "description": "Uploads a file to Baserow by uploading the file contents directly. A `file` multipart is expected containing the file contents. The response can then be used to [upload a file to a row]({PUBLIC_BACKEND_URL}/api/redoc/#tag/Database-table-rows/operation/update_database_table_row).",
+    "description": "Uploads a file to @:{'app.name'} by uploading the file contents directly. A `file` multipart is expected containing the file contents. The response can then be used to [upload a file to a row]({PUBLIC_BACKEND_URL}/api/redoc/#tag/Database-table-rows/operation/update_database_table_row).",
     "file": "The `file` multipart containing the file contents."
   },
   "apiDocsUploadFileViaURL": {
-    "description": "Uploads a file to Baserow by downloading it from the provided URL. The response can then be used to [upload a file to a row]({PUBLIC_BACKEND_URL}/api/redoc/#tag/Database-table-rows/operation/update_database_table_row).",
-    "url": "The URL you would like Baserow to download and upload on your behalf."
+    "description": "Uploads a file to @:{'app.name'} by downloading it from the provided URL. The response can then be used to [upload a file to a row]({PUBLIC_BACKEND_URL}/api/redoc/#tag/Database-table-rows/operation/update_database_table_row).",
+    "url": "The URL you would like @:{'app.name'} to download and upload on your behalf."
   },
   "apiDocsTableUpdateRow": {
     "description": "Updates an existing {name} row.",
@@ -217,7 +354,7 @@
     "before": "If provided then the newly created rows will be positioned before the row with the provided id."
   },
   "apiDocsAuth": {
-    "description": "Baserow uses a simple token based authentication. You need to generate at least one database token in your {settingsLink} to use the endpoints described below. It is possible to give create, read, update and delete permissions up until table level per token. You can authenticate to the API by providing your token in the HTTP authorization bearer token header. All API requests must be authenticated and made over HTTPS.",
+    "description": "@:{'app.name'} uses a simple token based authentication. You need to generate at least one database token in your {settingsLink} to use the endpoints described below. It is possible to give create, read, update and delete permissions up until table level per token. You can authenticate to the API by providing your token in the HTTP authorization bearer token header. All API requests must be authenticated and made over HTTPS.",
     "settingsLink": "settings"
   },
   "apiDocsFilters": {
@@ -470,7 +607,20 @@
   "importErrorReport": {
     "reportTitleFailure": "Failing rows",
     "reportTitleSuccess": "Import successful but...",
-    "reportMessage": "The following row indexes couldn't be imported:"
+    "reportMessage": "The following row indexes couldn't be imported:",
+    "summary": "{created} created, {updated} updated, {unchanged} unchanged, {deleted} trashed, {skipped} skipped."
+  },
+  "importDiffPreview": {
+    "create": "Inserted",
+    "update": "Updated",
+    "unchanged": "Unchanged",
+    "delete": "Trashed",
+    "skipped": "Skipped",
+    "errors": "Errors",
+    "index": "File row",
+    "noChanges": "This import wouldn't change the table.",
+    "empty": "No rows.",
+    "sampleNotice": "Only the first {count} rows are shown."
   },
   "importFileModal": {
     "defaultName": "Table",
@@ -483,16 +633,50 @@
     "preparing": "Preparing data...",
     "importError": "Something went wrong during the file import",
     "fieldMappingTitle": "Field mapping",
-    "fieldMappingDescription": "We have automatically mapped the columns of the Baserow fields in your table. You can change them below. Any incompatible cell will remain empty after the import.",
+    "fieldMappingDescription": "We have automatically mapped the columns to the fields in your table. You can change them below. Any incompatible cell will remain empty after the import.",
     "selectImportMessage": "Please select data to import.",
     "filePreview": "File content preview",
     "importPreview": "Import preview",
-    "useUpsertField": "Update rows if they already exist",
-    "upsertTooltip": "Match existing rows using a unique field to overwrite data with imported values.",
+    "modeLabel": "Import mode",
+    "modeInsert": "Insert",
+    "modeUpsert": "Upsert",
+    "modeUpdate": "Update matching",
+    "modeReplace": "Replace all",
+    "modeInsertDescription": "Append every row of the file to the table.",
+    "modeUpsertDescription": "Update the rows matching the file and insert the other rows.",
+    "modeUpdateDescription": "Only update the rows matching the file, other file rows are ignored.",
+    "modeReplaceDescription": "Move every existing row to the trash, then insert the rows of the file.",
+    "matchFieldsLabel": "Match rows on",
+    "matchFieldsHelp": "A file row matches an existing row when all the selected fields are equal.",
+    "matchFieldsEmpty": "Map a column to a field that supports matching first.",
+    "deleteUnmatched": "Move the rows that are not in the file to the trash",
+    "replaceWarning": "All existing rows will be moved to the trash. They can be restored from the trash or by undoing the import.",
+    "previewChanges": "Preview changes",
+    "changesTab": "Changes",
+    "previewStale": "The import settings changed since the last preview.",
+    "previewRequired": "Preview the changes first, this import moves rows to the trash.",
+    "ambiguousTitle": "Ambiguous matches",
+    "ambiguousMessage": "These match values are not unique in the file or in the table, so rows can't be paired reliably:",
+    "ambiguousKey": "{values} ({fileCount} in the file, {tableCount} in the table)",
+    "allowAmbiguous": "Allow ambiguous matches and pair duplicates in order",
     "stateRowCreation": "Importing...",
     "statePreValidation": "Validating data...",
     "stateCreateTable": "Creating table...",
-    "restoredFile": "Importing file \"{name}\"..."
+    "restoredFile": "Importing file \"{name}\"...",
+    "replaceNotAllowed": "Only someone who may replace the rows of this table can move existing rows to the trash.",
+    "pendingChanges": "This table has {count} unsaved change(s). Save or discard them before importing, otherwise saving them would overwrite the imported values.",
+    "confirmTitle": "Apply this import?",
+    "confirmMessage": "These are the changes the import makes to \"{table}\".",
+    "confirmDestructive": "Rows will be moved to the trash. They can be restored from the trash or by undoing the import.",
+    "confirmProtected": "This table has protected editing enabled. An import is applied at once and is not staged.",
+    "confirmCount": {
+      "create": "Rows created",
+      "update": "Rows updated",
+      "unchanged": "Rows unchanged",
+      "delete": "Rows moved to the trash",
+      "skip": "Rows skipped",
+      "errors": "Rows with errors"
+    }
   },
   "formulaAdvancedEditContext": {
     "textAreaFormulaInputPlaceholder": "Click to edit the formula",
@@ -783,7 +967,8 @@
   },
   "exportTableLoadingBar": {
     "export": "Export",
-    "download": "Download"
+    "download": "Download",
+    "expires": "This file is deleted {minutes} minutes after the export finished. Export again if the download has stopped working."
   },
   "exportTableDropdown": {
     "exportEntireTable": "Export entire table"
@@ -802,7 +987,7 @@
   },
   "apiDocsComponent": {
     "title": "REST API",
-    "intro": "After you have created your database schema and API key in the {settingsLink} your Baserow database provides his own REST API endpoints to create, read, update and delete rows.",
+    "intro": "After you have created your database schema and API key in the {settingsLink} your database provides its own REST API endpoints to create, read, update and delete rows.",
     "settings": "settings",
     "selectApplicationTitle": "For which database do you want to see the documentation?",
     "signIn": "Sign in to get started",
@@ -851,7 +1036,7 @@
     "stateFailed": "Failed",
     "stateFinished": "Finished",
     "stateDownloadingBase": "Downloading base schema",
-    "stateConverting": "Converting to Baserow",
+    "stateConverting": "Converting to @:{'app.name'}",
     "stateDownloadingFiles": "Downloading files",
     "stateImporting": "Importing",
     "stateImportingTable": "Importing table {table}",
@@ -927,7 +1112,8 @@
   "snapshotListItem": {
     "restore": "restore",
     "delete": "delete",
-    "created": "created"
+    "created": "created",
+    "expiresIn": "deleted today | deleted in 1 day | deleted in {n} days"
   },
   "formViewModeType": {
     "form": "Form",
@@ -945,6 +1131,9 @@
     "descriptionPlaceholder": "Description",
     "noFieldsTitle": "This form doesn't have any fields",
     "noFieldsContent": "Click on a field in the left sidebar to add one."
+  },
+  "formViewPoweredBy": {
+    "poweredBy": "Powered by"
   },
   "table": {
     "adjacentRow": {
@@ -985,6 +1174,7 @@
   "rowHistorySidebar": {
     "name": "History",
     "empty": "No changes yet. You'll be able to track any changes to this row here.",
+    "retention": "Changes are kept for {n} days | Changes are kept for 1 day | Changes are kept for {n} days",
     "you": "You",
     "created": "created this row",
     "updated": "updated this row",
@@ -997,7 +1187,7 @@
   },
   "fieldPasswordSubForm": {
     "allowEndpointAuthentication": "Allow API endpoint authentication",
-    "allowEndpointAuthenticationHelp": "This exposes an endpoint where the row ID and password can be checked if it's correct. This allows using Baserow as authentication backend.",
+    "allowEndpointAuthenticationHelp": "This exposes an endpoint where the row ID and password can be checked if it's correct. This allows using @:{'app.name'} as authentication backend.",
     "description": "The password field can also be used by the user authentication in the application builder."
   },
   "rowEditFieldPassword": {
@@ -1017,7 +1207,7 @@
   },
   "databaseImportStep": {
     "title": "Import your data",
-    "description": "Move your data to Baserow, in just a few clicks.",
+    "description": "Move your data to @:{'app.name'}, in just a few clicks.",
     "tableNameLabel": "Table name",
     "tableNamePrefill": "{name}'s table"
   },
@@ -1098,7 +1288,6 @@
     "scratch": "Scratch",
     "import": "File",
     "airtable": "Airtable",
-    "template": "Template",
     "workspaceName": "{name}'s workspace"
   },
   "ViewFilterTypeDateUpgradeToMultiStep": {
@@ -1115,7 +1304,7 @@
     "description": "The iCal calendar sync, synchronizes automatically with the entries in the calendar file of the URL. It only supports the ICS (Internet Calendar and Scheduling) file type."
   },
   "postgreSQLDataSync": {
-    "description": "Synchronizes a PostgreSQL table with a Baserow table matching the provided details below. Note that when the synchronization starts, it will select all the rows in the provided table. Even though Baserow only selects data, we strongly recommend limiting the user to a read-only connection.",
+    "description": "Synchronizes a PostgreSQL table with a table matching the provided details below. Note that when the synchronization starts, it will select all the rows in the provided table. Even though @:{'app.name'} only selects data, we strongly recommend limiting the user to a read-only connection.",
     "host": "Host",
     "username": "Username",
     "password": "Password",
@@ -1131,7 +1320,7 @@
     "create": "Create and sync table",
     "error": "Something went wrong during the sync",
     "autoAddLabel": "Auto add new properties",
-    "autoAddHelper": "Automatically adds and synchronizes newly available properties from the data source into the Baserow table. Note that in order for this to work, all properties must be synced.",
+    "autoAddHelper": "Automatically adds and synchronizes newly available properties from the data source into the table. Note that in order for this to work, all properties must be synced.",
     "twoWaySyncLabel": "Two-way sync",
     "deleteUnmatchedRowsLabel": "Delete rows when they are deleted or hidden in the source",
     "deleteUnmatchedRowsHelper": "When enabled, rows that are deleted or no longer visible in the source are also deleted from this table on every sync. When disabled, those rows are kept and reused if the source row reappears.",

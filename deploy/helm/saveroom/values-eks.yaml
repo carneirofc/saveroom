@@ -1,0 +1,113 @@
+# Example production overrides for Amazon EKS behind an internal ALB fronted by
+# CloudFront using the VPC origin pattern.
+#   helm install baserow deploy/helm/saveroom -f deploy/helm/saveroom/values-eks.yaml
+#
+#   viewer --TLS--> CloudFront --VPC origin--> internal ALB --> backend / web-frontend
+#
+# Every value below marked <...> is a placeholder you must replace. See
+# docs/installation/install-on-eks.md for the AWS-side resources (IRSA role, S3
+# bucket policy, CloudFront distribution, VPC origin, security groups).
+#
+# Recommended posture: RDS + ElastiCache + S3 media with IRSA, so the app pods hold
+# no long-lived credentials and stay stateless.
+
+# The CloudFront domain users actually hit. It must match, or Django will build the
+# wrong absolute URLs and reject the request host.
+publicURL: "https://baserow.example.com"
+
+# The chart's OpenShift Routes have no meaning on EKS.
+openshift:
+  route:
+    enabled: false
+
+# --- Routing: one internal ALB, two target groups ---------------------------
+ingress:
+  enabled: true
+  className: alb
+  # Renders two Ingress objects that the AWS Load Balancer Controller merges onto a
+  # single ALB. Needed because health-check annotations resolve per Ingress, and the
+  # backend and web-frontend have different health endpoints.
+  mode: albGroup
+  host: "baserow.example.com"
+  group:
+    name: "baserow"
+    backendOrder: 10
+    webFrontendOrder: 20
+  annotations:
+    # Private ALB: only the CloudFront VPC origin ENI reaches it.
+    alb.ingress.kubernetes.io/scheme: internal
+    # Pods are registered directly, which VPC origins require.
+    alb.ingress.kubernetes.io/target-type: ip
+    # CloudFront terminates TLS; the VPC origin talks plain HTTP to the ALB.
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    # Baserow's realtime updates ride long-lived WebSockets on /ws; the 60s ALB
+    # default would cut them repeatedly.
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=4000
+    # alb.ingress.kubernetes.io/subnets: <subnet-a>,<subnet-b>
+    # alb.ingress.kubernetes.io/security-groups: <sg-allowing-the-vpc-origin>
+    # alb.ingress.kubernetes.io/tags: Environment=prod
+  backendAnnotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /api/_health/
+  webFrontendAnnotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /
+
+# --- AWS identity -----------------------------------------------------------
+aws:
+  region: "us-east-1"
+  irsa:
+    enabled: true
+    # The role's trust policy must allow the cluster's OIDC provider for
+    # system:serviceaccount:<namespace>:<release>-baserow.
+    roleArn: "arn:aws:iam::000000000000:role/baserow"
+
+serviceAccount:
+  create: true
+
+# --- Media on S3, no long-lived credentials ---------------------------------
+objectStorage:
+  enabled: true
+  auth: irsa
+  bucketName: "baserow-media"
+  region: "us-east-1"
+  # Buckets created since April 2023 have ACLs disabled and reject any canned ACL.
+  defaultACL: ""
+  querystringAuth: true
+  # Serve media through the same CloudFront distribution (origin access control) and
+  # set querystringAuth: false alongside it:
+  # customDomain: "baserow.example.com/media"
+
+# --- Managed data services --------------------------------------------------
+postgresql:
+  enabled: false
+externalDatabase:
+  host: "baserow.<rds-id>.us-east-1.rds.amazonaws.com"
+  port: 5432
+  user: "baserow"
+  database: "baserow"
+  existingSecret: "baserow-db" # key below must exist in it
+  existingSecretPasswordKey: "password"
+
+redis:
+  enabled: false
+externalRedis:
+  host: "baserow.<elasticache-id>.use1.cache.amazonaws.com"
+  port: 6379
+  existingSecret: "baserow-redis"
+  existingSecretPasswordKey: "redis-password"
+
+# --- App behaviour ----------------------------------------------------------
+extraEnv:
+  # Mandatory here. TLS terminates at CloudFront and the ALB forwards plain HTTP, so
+  # without this Django sees an insecure request, builds http:// URLs and refuses to
+  # set secure cookies. It makes Django trust X-Forwarded-Proto from the ALB.
+  BASEROW_ENABLE_SECURE_PROXY_SSL_HEADER: "true"
+  # Only needed if the CloudFront origin request policy does NOT forward the Host
+  # header; then the backend sees the ALB's own DNS name instead.
+  # BASEROW_EXTRA_ALLOWED_HOSTS: "internal-baserow-123.us-east-1.elb.amazonaws.com"
+
+# Stateless pods with S3 media scale horizontally.
+replicaCount:
+  backend: 2
+  webFrontend: 2
+  celery: 2

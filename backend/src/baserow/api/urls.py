@@ -10,17 +10,21 @@ from baserow.core.registries import (
 from baserow.core.services.registries import service_type_registry
 
 from .admin import urls as admin_urls
+from .api_clients import urls as api_client_urls
 from .applications import urls as application_urls
 from .auth_provider import urls as auth_provider_urls
+from .backups import urls as backup_urls
+from .contents import urls as contents_urls
+from .data_destinations import urls as data_destination_urls
 from .health import urls as health_urls
 from .integrations import urls as integrations_urls
 from .jobs import urls as jobs_urls
-from .mcp import urls as mcp_urls
 from .notifications import urls as notifications_urls
 from .search import urls as search_urls
 from .settings import urls as settings_urls
 from .snapshots import urls as snapshots_urls
 from .spectacular.views import CachedSpectacularJSONAPIView
+from .sso import urls as sso_urls
 from .templates import urls as templates_urls
 from .trash import urls as trash_urls
 from .two_factor_auth import urls as two_factor_urls
@@ -42,6 +46,7 @@ urlpatterns = (
         ),
         path("settings/", include(settings_urls, namespace="settings")),
         path("auth-provider/", include(auth_provider_urls, namespace="auth_provider")),
+        path("sso/", include(sso_urls, namespace="sso")),
         path("two-factor-auth/", include(two_factor_urls, namespace="two_factor_auth")),
         path("user/", include(user_urls, namespace="user")),
         path("user-files/", include(user_files_urls, namespace="user_files")),
@@ -51,11 +56,17 @@ urlpatterns = (
         path("trash/", include(trash_urls, namespace="trash")),
         path("jobs/", include(jobs_urls, namespace="jobs")),
         path("snapshots/", include(snapshots_urls, namespace="snapshots")),
+        path("backups/", include(backup_urls, namespace="backups")),
+        path(
+            "data-destinations/",
+            include(data_destination_urls, namespace="data_destinations"),
+        ),
+        path("contents/", include(contents_urls, namespace="contents")),
+        path("api-clients/", include(api_client_urls, namespace="api_clients")),
         path("_health/", include(health_urls, namespace="health")),
         path("notifications/", include(notifications_urls, namespace="notifications")),
         path("search/", include(search_urls, namespace="search")),
         path("admin/", include(admin_urls, namespace="admin")),
-        path("mcp/", include(mcp_urls, namespace="mcp")),
         path(
             "",
             include(integrations_urls, namespace="integrations"),

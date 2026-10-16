@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Added an OIDC-only mode (BASEROW_OIDC_ONLY) that makes the instance OIDC-only for normal users: self-service signup is disabled, password login is refused for non-staff accounts, and the login page hides the password form and signup and shows only OIDC buttons. A staff/superuser break-glass admin can still reveal the password form and log in if the IdP is unavailable.",
+    "issue_origin": "github",
+    "issue_number": 5,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-07-16"
+}

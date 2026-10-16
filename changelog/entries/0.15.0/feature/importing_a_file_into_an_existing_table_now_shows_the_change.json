@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Importing a file into an existing table now shows the changes it will make and asks you to accept them first.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "database",
+    "bullet_points": [],
+    "created_at": "2026-09-21"
+}

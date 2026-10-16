@@ -71,7 +71,7 @@ request. Note that you must already have a grid view that contains some fields.
 
 ```
 POST /api/database/views/{view_id}/filters/
-Host: api.baserow.io
+Host: YOUR_HOST
 Content-Type: application/json
 
 {
@@ -82,7 +82,7 @@ Content-Type: application/json
 ```
 or
 ```
-curl -X POST -H 'Content-Type: application/json' -i https://api.baserow.io/api/database/views/{view_id}/filters/ --data '{
+curl -X POST -H 'Content-Type: application/json' -i https://YOUR_HOST/api/database/views/{view_id}/filters/ --data '{
   "field": {field_id},
   "type": "equal_to",
   "value": "Example"
@@ -95,12 +95,12 @@ apply to the filter.
 
 ```
 GET /api/database/views/grid/{view_id}/
-Host: api.baserow.io
+Host: YOUR_HOST
 Content-Type: application/json
 ```
 or
 ```
-curl -X GET -H 'Content-Type: application/json' -i https://api.baserow.io/api/database/views/grid/{view_id}/'
+curl -X GET -H 'Content-Type: application/json' -i https://YOUR_HOST/api/database/views/grid/{view_id}/'
 ```
 
 ## Web frontend
@@ -160,14 +160,19 @@ export class EqualViewFilterType extends ViewFilterType {
 
 plugins/my_baserow_plugin/web-frontend/plugin.js
 ```javascript
+import { defineNuxtPlugin } from '#app'
 import { PluginNamePlugin } from '@my-baserow-plugin/plugins'
 import { EqualViewFilterType } from '@my-baserow-plugin/viewFilters'
 
-export default (context) => {
-  const { app } = context
-  app.$registry.register('plugin', new PluginNamePlugin(context))
-  app.$registry.register('viewFilter', new EqualViewFilterType(context))
-}
+export default defineNuxtPlugin({
+  dependsOn: ['core'],
+  setup(nuxtApp) {
+    const { $registry } = nuxtApp
+    const context = { app: nuxtApp }
+    $registry.register('plugin', new PluginNamePlugin(context))
+    $registry.register('viewFilter', new EqualViewFilterType(context))
+  },
+})
 ```
 
 Once you have added this code, a new filter to a view and have selected a

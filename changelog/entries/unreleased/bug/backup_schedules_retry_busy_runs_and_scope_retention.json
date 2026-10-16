@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Backup schedules retry a run that was blocked by a still-running backup instead of skipping it, only apply retention to their own backups, and no longer fire repeatedly when the clocks go back.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-04"
+}

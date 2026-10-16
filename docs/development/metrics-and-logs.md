@@ -1,7 +1,7 @@
 # Working with metrics and logs as a developer
 
 First see [our monitoring doc](../installation/monitoring.md) for an overview what
-Baserow offers to monitor itself.
+Saveroom offers to monitor itself.
 
 This doc explains how to:
 
@@ -11,47 +11,11 @@ This doc explains how to:
 3. What tracing is and how to add new spans tracing your functions
 4. Add new metrics to the codebase and when to do so
 
-## Setting up honeycomb to view Baserow telemetry in your local dev env
+## Sending telemetry from your local dev env
 
-1. Sign up at https://honeycomb.io.
-2. Create your own environment inside of honeycomb, you will configure your local dev
-   setup to send events here.
-3. Click on your new environment in the sidebar, click the config icon.
-4. Switch to API keys and copy your API key.
-5. Edit your local `.env` and set:
-
-```bash
-HONEYCOMB_API_KEY=YOUR_KEY
-BASEROW_ENABLE_OTEL=true
-```
-
-6. Restart the dev environment:
-   ```bash
-   just dc-dev restart
-   ```
-7. Go to your honeycomb environment and you should start seeing new datasets being
-   created!
-
-### Debugging telemetry
-
-Look at the logs of your otel-collector for a starting place:
-
-```
-docker logs baserow-otel-collector-1
-```
-
-### Under the hood
-
-* `docker-compose.dev.yml` also launches
-  an [Open Telemetry Collector](https://opentelemetry.io/docs/collector/) service
-  configured by the file in `deploy/otel/otel-collector-config.yaml`.
-* When you enable telemetry using `BASEROW_ENABLE_OTEL=true` the dev containers are
-  configured by the
-  `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318` in `docker-compose.dev.yml`
-  to send telemetry to that local collector.
-* Then this local collector will send telemetry
-  to [honeycomb](https://honeycomb.io) using your `HONEYCOMB_API_KEY` where you can
-  finally inspect everything.
+Set `BASEROW_ENABLE_OTEL=true` and point `OTEL_EXPORTER_OTLP_ENDPOINT` at your own
+[OpenTelemetry Collector](https://opentelemetry.io/docs/collector/), then restart the
+dev environment. The dev stack does not ship a collector.
 
 ## How to log
 
@@ -69,10 +33,10 @@ of awesome features.
 
 ### When and what to log
 
-As of Feb 2023 Baserow doesn't log that much. Now we have a nicer logging framework
+As of Feb 2023 Saveroom doesn't log that much. Now we have a nicer logging framework
 `loguru` and a way of shipping and storing logs using OTEL we should log much more.
 
-1. Log for humans, so they can diagnose what happened in Baserow.
+1. Log for humans, so they can diagnose what happened in Saveroom.
 2. Use the different logging levels available to you error/warning/info/debug/trace.
 3. Don't be afraid of putting into too many logs.
 
@@ -139,7 +103,7 @@ class SomeClass(metaclass=baserow_trace_methods(tracer)):
 ```
 
 This comes in very useful when working with a class that has abstract methods that
-will be implemented by many sub classes (which we do allot in Baserow).
+will be implemented by many sub classes (which we do allot in Saveroom).
 
 See below for an example of how to trace every single subclasses implementation of
 `.do` for an abstract base class!

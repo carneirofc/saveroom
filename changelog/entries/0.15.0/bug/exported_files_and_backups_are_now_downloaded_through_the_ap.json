@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Exported files and backups are now downloaded through the API, streamed straight from the server's storage, so downloads work when files are on a shared volume or in an object store the browser cannot reach.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-21"
+}

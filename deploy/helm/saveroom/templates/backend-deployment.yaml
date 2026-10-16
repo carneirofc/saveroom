@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "baserow.fullname" . }}-backend
+  labels:
+    {{- include "baserow.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.replicaCount.backend }}
+  selector:
+    matchLabels:
+      {{- include "baserow.componentSelectorLabels" (dict "root" . "component" "backend") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- include "baserow.podAnnotations" . | nindent 8 }}
+      labels:
+        {{- include "baserow.componentSelectorLabels" (dict "root" . "component" "backend") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "baserow.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: backend
+          image: {{ include "baserow.image.backend" . }}
+          imagePullPolicy: {{ .Values.image.backend.pullPolicy }}
+          args: ["gunicorn"]
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            {{- include "baserow.envFrom" . | nindent 12 }}
+          env:
+            {{- include "baserow.secretEnv" . | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /api/_health/
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /api/_health/
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.resources.backend | nindent 12 }}
+          volumeMounts:
+            {{- include "baserow.tmpVolumeMounts" . | nindent 12 }}
+            {{- if not .Values.objectStorage.enabled }}
+            - name: media
+              mountPath: /baserow/media
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- include "baserow.tmpVolumes" . | nindent 8 }}
+        {{- if not .Values.objectStorage.enabled }}
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ include "baserow.fullname" . }}-media
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "baserow.fullname" . }}-backend
+  labels:
+    {{- include "baserow.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+  {{- with .Values.service.backend.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "baserow.componentSelectorLabels" (dict "root" . "component" "backend") | nindent 4 }}
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

@@ -1,4 +1,4 @@
-from baserow.core.models import Workspace, WorkspaceInvitation, WorkspaceUser
+from baserow.core.models import Workspace, WorkspaceUser
 
 
 class WorkspaceFixtures:
@@ -45,21 +45,3 @@ class WorkspaceFixtures:
             kwargs["permissions"] = "ADMIN"
 
         return WorkspaceUser.objects.create(**kwargs)
-
-    def create_workspace_invitation(self, **kwargs):
-        if "invited_by" not in kwargs:
-            kwargs["invited_by"] = self.create_user()
-
-        if "workspace" not in kwargs:
-            kwargs["workspace"] = self.create_workspace(user=kwargs["invited_by"])
-
-        if "email" not in kwargs:
-            kwargs["email"] = self.fake.email()
-
-        if "permissions" not in kwargs:
-            kwargs["permissions"] = "ADMIN"
-
-        if "message" not in kwargs:
-            kwargs["message"] = self.fake.name()
-
-        return WorkspaceInvitation.objects.create(**kwargs)

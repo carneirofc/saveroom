@@ -13,7 +13,7 @@ from zipfile import ZipFile
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import SuspiciousOperation
-from django.core.files.base import ContentFile
+from django.core.files import File
 from django.core.files.storage import Storage
 from django.db import transaction
 from django.db.models import Exists, OuterRef, QuerySet
@@ -71,6 +71,8 @@ tracer = trace.get_tracer(__name__)
 
 WORKSPACE_EXPORTS_LIMIT = 5
 EXPORT_FORMAT_VERSION = "1.0.0"
+# Manifest versions that have a schema file in `import_export/schema`.
+SUPPORTED_MANIFEST_VERSIONS = frozenset({EXPORT_FORMAT_VERSION})
 MANIFEST_NAME = "manifest.json"
 SIGNATURE_NAME = "manifest_signature.json"
 INDENT = settings.DEBUG and 4 or None
@@ -463,6 +465,7 @@ class ImportExportHandler(metaclass=baserow_trace_methods(tracer)):
         import_export_config: ImportExportConfig,
         storage: Optional[Storage] = None,
         progress_builder: Optional[ChildProgressBuilder] = None,
+        created_by: Optional[AbstractUser] = None,
     ) -> ImportExportResource:
         """
         Create zip file with exported applications. If applications param is provided,
@@ -474,10 +477,13 @@ class ImportExportHandler(metaclass=baserow_trace_methods(tracer)):
         :param storage: The storage where the files will be stored. If not provided
             the default storage will be used.
         :param progress_builder: A progress builder that allows for publishing progress.
+        :param created_by: The user the resource belongs to. Without it the resource
+            has no owner, and can therefore neither be deleted nor imported again,
+            because both look the resource up by its owner.
         :return: The ImportExportResource instance that represents the exported file.
         """
 
-        resource = ImportExportResource.objects.create()
+        resource = ImportExportResource.objects.create(created_by=created_by)
         file_name = resource.get_archive_name()
 
         storage = storage or get_default_storage()
@@ -547,6 +553,73 @@ class ImportExportHandler(metaclass=baserow_trace_methods(tracer)):
             .select_related("user", "resource")
             .order_by("-updated_on", "-id")[:WORKSPACE_EXPORTS_LIMIT]
         )
+
+    def get_export(
+        self, performed_by: AbstractUser, workspace_id: int, job_id: int
+    ) -> ExportApplicationsJob:
+        """
+        Fetches a single finished workspace export of the given user.
+
+        Unlike `list_exports` this deliberately does not filter on the resource being
+        valid, so that a caller can tell an export whose archive aged out apart from
+        one that was never theirs. Use `is_export_expired` to make that distinction.
+
+        :param performed_by: The user on whose behalf the export is fetched.
+        :param workspace_id: The workspace the export belongs to.
+        :param job_id: The id of the export job.
+        :raises ImportExportResourceDoesNotExist: When there is no such export for
+            this user and workspace.
+        :return: The export job.
+        """
+
+        self.get_workspace_or_raise(performed_by, workspace_id)
+
+        job = (
+            ExportApplicationsJob.objects.filter(
+                id=job_id,
+                workspace_id=workspace_id,
+                state=JOB_FINISHED,
+                user=performed_by,
+            )
+            .select_related("resource")
+            .first()
+        )
+
+        if job is None:
+            raise ImportExportResourceDoesNotExist(
+                f"The export with job id {job_id} does not exist."
+            )
+
+        return job
+
+    @staticmethod
+    def is_export_expired(
+        job: ExportApplicationsJob,
+        delete_resources_after_days: int = (
+            settings.BASEROW_IMPORT_EXPORT_RESOURCE_REMOVAL_AFTER_DAYS
+        ),
+    ) -> bool:
+        """
+        Whether the archive behind an export is gone because it aged out, rather than
+        because something went wrong. Mirrors what
+        `mark_import_export_resources_for_deletion` acts on, so the answer stays true
+        even in the window between the resource becoming eligible and the periodic
+        task getting to it.
+
+        :param job: The export job to check.
+        :param delete_resources_after_days: How long an archive is kept.
+        :return: True when the archive is expected to be gone.
+        """
+
+        resource = job.resource
+
+        if resource is None or not resource.is_valid or resource.marked_for_deletion:
+            return True
+
+        cutoff_time = datetime.now(timezone.utc) - timedelta(
+            days=delete_resources_after_days
+        )
+        return resource.created_on <= cutoff_time
 
     def get_import_storage_path(self, *args) -> str:
         return str(join(settings.IMPORT_FILES_DIRECTORY, *args))
@@ -644,10 +717,22 @@ class ImportExportHandler(metaclass=baserow_trace_methods(tracer)):
                 raise ImportExportResourceInvalidFile("Manifest file is corrupted.")
 
             manifest_version = manifest_data.get("version")
+            # The version comes from the untrusted uploaded archive and is used to
+            # build a file path, so only explicitly supported versions are accepted.
+            if manifest_version not in SUPPORTED_MANIFEST_VERSIONS:
+                raise ImportExportResourceInvalidFile(
+                    "Manifest file is corrupted: unsupported version."
+                )
             manifest_schema_file = f"schema_v{manifest_version}.json"
 
-            with open(f"{schema_dir}/{manifest_schema_file}") as schema_file:
-                schema = json.load(schema_file)
+            schema_path = os.path.join(schema_dir, manifest_schema_file)
+            try:
+                with open(schema_path) as schema_file:
+                    schema = json.load(schema_file)
+            except FileNotFoundError:
+                raise ImportExportResourceInvalidFile(
+                    "Manifest file is corrupted: unsupported version."
+                )
 
             try:
                 validate(instance=manifest_data, schema=schema)
@@ -1014,8 +1099,8 @@ class ImportExportHandler(metaclass=baserow_trace_methods(tracer)):
             )
 
             with zip_file.open(file_info) as extracted_file:
-                file_content = extracted_file.read()
-                storage.save(extracted_file_path, ContentFile(file_content))
+                # `File.chunks()` streams the member, a zip bomb is never in memory.
+                storage.save(extracted_file_path, File(extracted_file))
 
             progress.increment()
 

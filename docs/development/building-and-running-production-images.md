@@ -1,10 +1,10 @@
 # Building and Running Production Images
 
-This guide covers building Baserow's production Docker images locally and running them for testing or deployment preparation.
+This guide covers building Saveroom's production Docker images locally and running them for testing or deployment preparation.
 
 ## Overview
 
-Baserow provides several image types for different deployment scenarios:
+Saveroom provides several image types for different deployment scenarios:
 
 | Image | Use Case | Command |
 |-------|----------|---------|
@@ -12,9 +12,6 @@ Baserow provides several image types for different deployment scenarios:
 | `web-frontend` | Nuxt frontend (separate deployment) | `just build web-frontend` |
 | `all-in-one` | Single container with embedded PostgreSQL/Redis | `just build all-in-one` |
 | `all-in-one-lite` | Single container without PostgreSQL/Redis | `just build all-in-one-lite` |
-| `heroku` | Heroku platform | `just build heroku` |
-| `cloudron` | Cloudron marketplace | `just build cloudron` |
-| `render` | Render.com platform | `just build render` |
 
 ## Quick Start
 
@@ -82,11 +79,6 @@ just build
 #   web-frontend    - Nuxt web frontend
 #   all-in-one      - Single container (production)
 #   all-in-one-lite - Single container without postgres/redis
-#   heroku          - Heroku platform
-#   cloudron        - Cloudron marketplace
-#   render          - Render.com platform
-#   apache          - Apache reverse proxy
-#   apache-no-caddy - Apache reverse proxy (no Caddy)
 ```
 
 ### Building with `dc-prod`
@@ -104,17 +96,18 @@ just dc-prod build backend
 just dc-prod build --no-cache --parallel
 ```
 
-This uses `docker-compose.yml` + `docker-compose.build.yml` to build the `prod` target from each Dockerfile.
+`just dc-prod` pulls the published images for the given `BASEROW_VERSION`. To build the
+`prod` target from source instead, use the root `docker-compose.yaml` (`docker compose up -d --build`).
 
 ### Image Tagging
 
 | Command | Resulting Tag |
 |---------|---------------|
-| `just build backend` | `baserow/backend:latest` |
-| `just build backend 2.0.0` | `baserow/backend:2.0.0` |
-| `just build all-in-one` | `baserow/baserow:latest` |
-| `just build all-in-one 2.0.0` | `baserow/baserow:2.0.0` |
-| `just build all-in-one-lite` | `baserow/baserow:lite-latest` |
+| `just build backend` | `saveroom/backend:latest` |
+| `just build backend 2.0.0` | `saveroom/backend:2.0.0` |
+| `just build all-in-one` | `saveroom/all-in-one:latest` |
+| `just build all-in-one 2.0.0` | `saveroom/all-in-one:2.0.0` |
+| `just build all-in-one-lite` | `saveroom/all-in-one:lite-latest` |
 
 ## Running Production Images
 
@@ -150,12 +143,6 @@ Run specific deployment configurations:
 just dc-deploy
 # Shows available deployments:
 #   all-in-one      - All-in-one container (production)
-#   cloudron        - Cloudron deployment
-#   heroku          - Heroku deployment
-#   traefik         - Traefik reverse proxy
-#   nginx           - Nginx reverse proxy
-#   apache          - Apache reverse proxy
-#   local-testing   - Local testing setup
 ```
 
 #### All-in-One Container
@@ -195,33 +182,7 @@ docker run -d \
   -e REDIS_URL=redis://host:6379 \
   -e BASEROW_PUBLIC_URL=https://baserow.example.com \
   -p 80:80 \
-  baserow/baserow:lite-latest
-```
-
-#### Platform-Specific Deployments
-
-```bash
-# Heroku
-just build heroku
-just dc-deploy heroku up -d
-
-# Cloudron
-just build cloudron
-just dc-deploy cloudron up -d
-
-# With reverse proxies
-just dc-deploy traefik up -d
-just dc-deploy nginx up -d
-just dc-deploy apache up -d
-```
-
-### Local Testing Setup
-
-For quick local testing of production images:
-
-```bash
-just dc-deploy local-testing up -d
-just dc-deploy local-testing logs -f
+  saveroom/all-in-one:lite-latest
 ```
 
 ## Environment Configuration
@@ -232,7 +193,7 @@ Key variables for production:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `BASEROW_PUBLIC_URL` | Public URL for Baserow | `https://baserow.example.com` |
+| `BASEROW_PUBLIC_URL` | Public URL for Saveroom | `https://baserow.example.com` |
 | `SECRET_KEY` | Django secret key | (generate a secure random string) |
 | `DATABASE_URL` | PostgreSQL connection | `postgres://user:pass@host:5432/db` |
 | `REDIS_URL` | Redis connection | `redis://host:6379` |
@@ -255,34 +216,16 @@ vim .env
 docker compose --env-file .env -f docker-compose.yml up -d
 ```
 
-## Multi-Architecture Builds
-
-Build images for multiple architectures (e.g., AMD64 and ARM64):
-
-```bash
-# Create a builder for multi-arch
-docker buildx create --name multiarch --use
-
-# Build and push multi-arch images
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  -f backend/Dockerfile \
-  --target prod \
-  -t baserow/backend:latest \
-  --push \
-  .
-```
-
 ## Image Sizes
 
 Typical production image sizes:
 
 | Image | Approximate Size |
 |-------|------------------|
-| `baserow/backend:latest` | ~500MB |
-| `baserow/web-frontend:latest` | ~400MB |
-| `baserow/baserow:latest` (all-in-one) | ~1.5GB |
-| `baserow/baserow:lite-latest` | ~1GB |
+| `saveroom/backend:latest` | ~500MB |
+| `saveroom/web-frontend:latest` | ~400MB |
+| `saveroom/all-in-one:latest` (all-in-one) | ~1.5GB |
+| `saveroom/all-in-one:lite-latest` | ~1GB |
 
 ## Dockerfile Targets
 
@@ -318,7 +261,7 @@ Each Dockerfile has multiple build targets:
 
 ```bash
 # Clear Docker builder cache
-# WARNING: This clears ALL Docker builder cache, not just Baserow!
+# WARNING: This clears ALL Docker builder cache, not just Saveroom!
 just prune
 
 # Build without cache
@@ -340,7 +283,7 @@ just dc-prod ps
 docker ps -a
 
 # Run with interactive shell to debug
-docker run -it --entrypoint bash baserow/backend:latest
+docker run -it --entrypoint bash saveroom/backend:latest
 ```
 
 ### Database Connection Issues
@@ -359,13 +302,13 @@ If images are unexpectedly large:
 
 ```bash
 # Check image layers
-docker history baserow/backend:latest
+docker history saveroom/backend:latest
 
 # Inspect image
-docker inspect baserow/backend:latest
+docker inspect saveroom/backend:latest
 
 # Check what's inside
-docker run --rm -it baserow/backend:latest du -sh /*
+docker run --rm -it saveroom/backend:latest du -sh /*
 ```
 
 ## Exporting Images
@@ -374,7 +317,7 @@ To transfer images without a registry:
 
 ```bash
 # Save to tar.gz
-docker save baserow/backend:latest | gzip > baserow-backend.tar.gz
+docker save saveroom/backend:latest | gzip > baserow-backend.tar.gz
 
 # Load on another machine
 docker load < baserow-backend.tar.gz

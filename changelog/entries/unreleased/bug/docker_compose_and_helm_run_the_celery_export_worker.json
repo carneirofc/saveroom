@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "The `docker-compose.yaml` stack and the Helm chart now run a Celery export worker. Without it, jobs (imports, exports, duplication, snapshots), backups, webhooks, search indexing and notification emails stayed pending. The chart adds a `celery-export` Deployment, sized with `replicaCount.celeryExport` and `resources.celeryExport`.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-09"
+}

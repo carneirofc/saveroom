@@ -1,0 +1,9 @@
+{
+    "type": "refactor",
+    "message": "The bundled Caddy is upgraded to 2.11.7, which caps request headers at 16 KiB by default and closes connections whose reads or writes stall for a minute.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-04"
+}

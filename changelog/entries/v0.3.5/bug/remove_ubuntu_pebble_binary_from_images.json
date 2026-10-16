@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Removed Ubuntu's unused `pebble` binary from every image. The `ubuntu:26.04` base layer drops `/usr/bin/pebble` and `/var/lib/pebble` in without a dpkg package owning them, so `apt-get upgrade` could neither patch nor purge the CVEs vendored into it (CVE-2026-39821, from `golang.org/x/net`). Nothing in the backend, web-frontend, all-in-one or caddy images ever ran it — each sets its own entrypoint — so it is now deleted in every stage built on Ubuntu, and CI asserts it stays out.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-03"
+}

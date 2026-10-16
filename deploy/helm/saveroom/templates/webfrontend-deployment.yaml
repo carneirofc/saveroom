@@ -1,0 +1,132 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "baserow.fullname" . }}-web-frontend
+  labels:
+    {{- include "baserow.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web-frontend
+spec:
+  replicas: {{ .Values.replicaCount.webFrontend }}
+  selector:
+    matchLabels:
+      {{- include "baserow.componentSelectorLabels" (dict "root" . "component" "web-frontend") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- include "baserow.podAnnotations" . | nindent 8 }}
+      labels:
+        {{- include "baserow.componentSelectorLabels" (dict "root" . "component" "web-frontend") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "baserow.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: web-frontend
+          image: {{ include "baserow.image.webFrontend" . }}
+          imagePullPolicy: {{ .Values.image.webFrontend.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            {{- include "baserow.envFrom" . | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /_health/
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /_health/
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.resources.webFrontend | nindent 12 }}
+          volumeMounts:
+            {{- include "baserow.tmpVolumeMounts" . | nindent 12 }}
+            {{- if or .Values.branding.existingClaim (include "baserow.branding.inline" .) }}
+            # Runtime branding directory, read by the web-frontend server.
+            - name: branding
+              mountPath: /baserow/branding
+              readOnly: true
+            {{- end }}
+            {{- if .Values.branding.faviconBase64 }}
+            - name: favicon
+              mountPath: /baserow/web-frontend/.output/public/favicon.ico
+              subPath: favicon.ico
+              readOnly: true
+            {{- end }}
+      volumes:
+        {{- include "baserow.tmpVolumes" . | nindent 8 }}
+        {{- if .Values.branding.existingClaim }}
+        - name: branding
+          persistentVolumeClaim:
+            claimName: {{ .Values.branding.existingClaim }}
+            readOnly: true
+        {{- else if include "baserow.branding.inline" . }}
+        - name: branding
+          configMap:
+            name: {{ include "baserow.fullname" . }}-branding
+            items:
+              - key: branding.json
+                path: branding.json
+              {{- if .Values.branding.themeCss }}
+              - key: theme.css
+                path: theme.css
+              {{- end }}
+              {{- range $path, $_ := .Values.branding.files }}
+              - key: {{ $path | replace "/" "__" }}
+                path: {{ $path }}
+              {{- end }}
+        {{- end }}
+        {{- if .Values.branding.faviconBase64 }}
+        - name: favicon
+          configMap:
+            name: {{ include "baserow.fullname" . }}-branding
+            items:
+              - key: favicon.ico
+                path: favicon.ico
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "baserow.fullname" . }}-web-frontend
+  labels:
+    {{- include "baserow.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web-frontend
+  {{- with .Values.service.webFrontend.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "baserow.componentSelectorLabels" (dict "root" . "component" "web-frontend") | nindent 4 }}
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

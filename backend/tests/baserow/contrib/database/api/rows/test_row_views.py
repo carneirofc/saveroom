@@ -1072,10 +1072,6 @@ def test_list_rows_join_lookup(api_client, data_fixture, user_field_names):
             "blank": None,
             "row": True,
         },
-        "ai": {
-            "blank": None,
-            "row": "I'm an AI.",
-        },
     }
 
     looked_up_fields_row = {
@@ -3965,7 +3961,7 @@ def test_list_row_history_for_different_fields(data_fixture, api_client):
             name_field.id: "Original 1",
             number_field.id: "0.00",
             email_field.id: "test@example.com",
-            url_field.id: "http://baserow.io",
+            url_field.id: "http://example.com",
             rating_field.id: 3,
             boolean_field.id: False,
             phone_field.id: "123456789",
@@ -3989,7 +3985,7 @@ def test_list_row_history_for_different_fields(data_fixture, api_client):
                     f"field_{name_field.id}": "New 1",
                     f"field_{number_field.id}": "1.00",
                     f"field_{email_field.id}": "test2@example.com",
-                    f"field_{url_field.id}": "https://baserow.io",
+                    f"field_{url_field.id}": "https://example.com",
                     f"field_{rating_field.id}": 5,
                     f"field_{boolean_field.id}": True,
                     f"field_{phone_field.id}": "123456790",
@@ -4037,7 +4033,7 @@ def test_list_row_history_for_different_fields(data_fixture, api_client):
                     f"field_{name_field.id}": "Original 1",
                     f"field_{number_field.id}": "0.00",
                     f"field_{email_field.id}": "test@example.com",
-                    f"field_{url_field.id}": "http://baserow.io",
+                    f"field_{url_field.id}": "http://example.com",
                     f"field_{rating_field.id}": 3,
                     f"field_{boolean_field.id}": False,
                     f"field_{phone_field.id}": "123456789",
@@ -4064,7 +4060,7 @@ def test_list_row_history_for_different_fields(data_fixture, api_client):
                     f"field_{name_field.id}": "New 1",
                     f"field_{number_field.id}": "1.00",
                     f"field_{email_field.id}": "test2@example.com",
-                    f"field_{url_field.id}": "https://baserow.io",
+                    f"field_{url_field.id}": "https://example.com",
                     f"field_{rating_field.id}": 5,
                     f"field_{boolean_field.id}": True,
                     f"field_{phone_field.id}": "123456790",

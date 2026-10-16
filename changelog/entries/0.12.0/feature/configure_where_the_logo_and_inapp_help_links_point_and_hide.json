@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Configure where the logo and in-app help links point, and hide the attribution footer entirely, at runtime from the branding directory.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-16"
+}

@@ -28,16 +28,6 @@ class RoleType extends Registerable {
     return true
   }
 
-  // Indicates whether the role is visible, but in a deactivated state.
-  isDeactivated(workspaceId) {
-    return false
-  }
-
-  // The modal component that must be shown when a deactivated role is clicked.
-  getDeactivatedClickModal(workspaceId) {
-    return null
-  }
-
   // `null` equals all scope types.
   get allowedScopeTypes() {
     return null

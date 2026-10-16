@@ -1,0 +1,9 @@
+{
+    "type": "breaking_change",
+    "message": "SSO now only defines who may sign in (new user_roles), staff and superuser. workspace_mappings, strict_membership, BASEROW_ROLES, sync_roles and granular roles were removed and are refused at startup; members that had a granular role become unrestricted members until restricted again with in-app access levels",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-14"
+}

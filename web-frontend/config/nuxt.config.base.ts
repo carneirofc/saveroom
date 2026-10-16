@@ -5,10 +5,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import { locales } from './locales.js'
 import pkg from '../package.json'
 
-function baserowModuleConfig(
-  premiumBase = '../premium/web-frontend',
-  enterpriseBase = '../enterprise/web-frontend'
-) {
+function baserowModuleConfig() {
   const additionalModulesCsv = process.env.ADDITIONAL_MODULES
   const additionalModules = additionalModulesCsv
     ? additionalModulesCsv
@@ -29,13 +26,6 @@ function baserowModuleConfig(
     `./modules/automation/module.js`,
     `./modules/integrations/module.js`,
   ]
-
-  if (!process.env.BASEROW_OSS_ONLY) {
-    baseModules.push(
-      premiumBase + '/modules/baserow_premium/module.js',
-      enterpriseBase + '/modules/baserow_enterprise/module.js'
-    )
-  }
 
   const modules = baseModules.concat(additionalModules)
 
@@ -67,7 +57,7 @@ export default defineNuxtConfig({
       version: pkg.version,
     },
   },
-  modules: [...baserow.modules, '@nuxtjs/i18n', '@sentry/nuxt/module'],
+  modules: [...baserow.modules, '@nuxtjs/i18n'],
   i18n: {
     strategy: 'no_prefix',
     defaultLocale: 'en',
@@ -91,15 +81,10 @@ export default defineNuxtConfig({
       preprocessorOptions: {
         scss: {
           // TODO: Migrate all @import rules to @use/@forward (Dart Sass 3.0 will remove @import).
-          //  Also fix global-builtin (unquote → string.unquote in colors.module.scss)
-          //  and if-function (old if() syntax in abstracts/_helpers.scss).
-          //  See https://sass-lang.com/d/import for the migration guide and automated migrator.
-          silenceDeprecations: [
-            'import',
-            'global-builtin',
-            'if-function',
-            'color-functions',
-          ],
+          //  `sass-migrator module --migrate-deps` alone is not enough: under @use the
+          //  ~220 `@extend %placeholder` rules need explicit module wiring, and the
+          //  emitted CSS order (and so the cascade) changes. See https://sass-lang.com/d/import.
+          silenceDeprecations: ['import'],
         },
       },
     },
@@ -137,7 +122,6 @@ export default defineNuxtConfig({
         '@vue/devtools-kit',
         'vuex',
         'vuejs3-datepicker',
-        'posthog-js',
         'flush-promises', // CJS
         'papaparse', // CJS
         'mitt',
@@ -215,7 +199,6 @@ export default defineNuxtConfig({
         'chartjs-adapter-moment',
         'xlsx',
         '@tiptap/pm/transform',
-        '@sentry/core',
         'lodash/isObject',
       ],
     },

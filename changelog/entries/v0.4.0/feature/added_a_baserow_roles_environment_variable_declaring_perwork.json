@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Added a BASEROW_ROLES environment variable declaring per-workspace roles and the operations they grant, reconciled into the database after every migrate and on demand with the new sync_roles management command. An OIDC workspace mapping can name one of these roles to restrict the member to its operations; an unknown role fails closed and the membership is refused rather than granted unrestricted.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-04"
+}

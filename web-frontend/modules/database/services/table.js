@@ -47,6 +47,13 @@ export default (client) => {
         config
       )
     },
+    previewImport(tableId, data, importConfiguration, sampleSize = 50) {
+      return client.post(`/database/tables/${tableId}/import/preview/`, {
+        data,
+        configuration: importConfiguration,
+        sample_size: sampleSize,
+      })
+    },
     get(tableId) {
       return client.get(`/database/tables/${tableId}/`)
     },

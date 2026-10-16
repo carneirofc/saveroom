@@ -1,10 +1,13 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from django.contrib.auth.models import AbstractUser
 
 from baserow.core.exceptions import CannotCalculateIntermediateOrder
 from baserow.core.handler import CoreHandler
-from baserow.core.integrations.exceptions import IntegrationNotInSameApplication
+from baserow.core.integrations.exceptions import (
+    IntegrationCredentialRequired,
+    IntegrationNotInSameApplication,
+)
 from baserow.core.integrations.handler import IntegrationHandler
 from baserow.core.integrations.models import Integration
 from baserow.core.integrations.operations import (
@@ -133,6 +136,33 @@ class IntegrationService:
 
         return new_integration
 
+    def _check_secret_dependencies(
+        self,
+        integration: IntegrationForUpdate,
+        integration_type: IntegrationType,
+        values: Dict[str, Any],
+    ):
+        """
+        Raises if a request-target field is being changed without the credential
+        it protects being supplied in the same request. A secret that is not
+        stored is skipped, so an integration that authenticates anonymously can
+        still change its host.
+        """
+
+        for secret, targets in integration_type.secret_field_dependencies.items():
+            if not getattr(integration, secret, None):
+                continue
+
+            target_changed = any(
+                target in values and values[target] != getattr(integration, target)
+                for target in targets
+            )
+            if target_changed and secret not in values:
+                raise IntegrationCredentialRequired(
+                    f"The `{secret}` must be supplied again when the connection "
+                    f"target changes."
+                )
+
     def update_integration(
         self, user: AbstractUser, integration: IntegrationForUpdate, **kwargs
     ) -> Integration:
@@ -142,9 +172,10 @@ class IntegrationService:
 
         :param user: The user trying to update the integration.
         :param integration: The integration that should be updated.
-        :param values: The values that should be set on the integration.
         :param kwargs: Additional attributes of the integration.
         :return: The updated integration.
+        :raises IntegrationCredentialRequired: When a request-target field changes
+            without its credential.
         """
 
         CoreHandler().check_permissions(
@@ -154,10 +185,14 @@ class IntegrationService:
             context=integration,
         )
 
-        prepared_values = integration.get_type().prepare_values(kwargs, user)
+        integration_type = integration.get_type()
+
+        self._check_secret_dependencies(integration, integration_type, kwargs)
+
+        prepared_values = integration_type.prepare_values(kwargs, user)
 
         integration = self.handler.update_integration(
-            integration.get_type(), integration, **prepared_values
+            integration_type, integration, **prepared_values
         )
 
         integration_updated.send(self, integration=integration, user=user)

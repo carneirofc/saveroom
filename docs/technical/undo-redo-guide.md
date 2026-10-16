@@ -3,14 +3,14 @@
 ## Actions
 
 A ActionType is a class which defines how to `do`, `undo` and `redo` a particular action
-in Baserow. It can freely use Handlers to do the logic, but it almost certainly
+in Saveroom. It can freely use Handlers to do the logic, but it almost certainly
 shouldn't call any other ActionType's unless it is some sort of `meta` ActionAction if
 we ever have one. ActionTypes will be retrieved from a registry given a type and
 triggered by `API` methods (
 e.g. `action_type_registry.get_by_type(DeleteWorkspaceAction).do(user, 
 workspace_to_delete)`).
 
-1. In `backend/src/baserow/core/actions/registries.py` there is a `action_type_registry`
+1. In `backend/src/baserow/core/action/registries.py` there is a `action_type_registry`
    which can be used to register `ActionType`'s
 2. An `ActionType` must implement `do`/`undo`/`redo` methods.
     1. `do` Performs the action when a user requests it to happen, it must also save
@@ -45,16 +45,16 @@ need three pieces of information:
    undo/redo the action. For example a user might be redoing a deletion of a workspace, but
    if they have been banned from the workspace in the meantime they should be prevented
    from redoing.
-2. A `client session id`. Every time a user does an action in Baserow we check the
+2. A `client session id`. Every time a user does an action in Saveroom we check the
    `ClientSessionId` header. If set we associate the action with that `ClientSessionId`.
    When a user then goes to undo or redo they also provide this header and we only let
    them undo/redo actions with a matching `ClientSessionId`. This lets us have different
    undo/redo histories per tab the user has open as each tab will generate a
    unique `ClientSessionId`.
-3. A `category`. Every time an action is performed in Baserow we associate it with a
+3. A `category`. Every time an action is performed in Saveroom we associate it with a
    particular category. This is literally just a text column on the `Action` model with
    values like `root` or `table10` or `workspace20`. An actions category describes in which
-   logical part of Baserow the action was performed. The `ActionType` implementation
+   logical part of Saveroom the action was performed. The `ActionType` implementation
    decides what to set its category to when calling `cls.register_action`. When an
    undo/redo occurs the web-frontend sends the categories the user is currently looking
    at. For example if I have table 20 open, with workspace 6 in the side bar and I press

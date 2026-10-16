@@ -146,7 +146,7 @@ export const getFormulaFunctionsByCategory = (app, i18n = null) => {
 
       // Get translated category name
       let category = 'Other'
-      const icon = categoryType.iconClass || 'iconoir-function'
+      const icon = categoryType.iconClass || 'iconoir-sigma-function'
 
       if (categoryType.category) {
         // Get translated category name using i18n

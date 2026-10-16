@@ -10,7 +10,7 @@
         })
       }}
       <span v-if="maxSnapshots >= 0">{{
-        $t('snapshotsModal.descriptionLimits', { count: maxSnapshots })
+        $t('snapshotsModal.descriptionLimits', maxSnapshots)
       }}</span>
     </p>
     <component
@@ -33,6 +33,7 @@
               :value="job.progress_percentage"
               :status="jobHumanReadableState"
             />
+            <JobDuration :job="job" />
           </div>
         </template>
         <template #default>
@@ -92,6 +93,7 @@ import modal from '@baserow/modules/core/mixins/modal'
 import error from '@baserow/modules/core/mixins/error'
 import CreateSnapshotForm from '@baserow/modules/core/components/snapshots/CreateSnapshotForm'
 import SnapshotListItem from '@baserow/modules/core/components/snapshots/SnapshotListItem'
+import JobDuration from '@baserow/modules/core/components/job/JobDuration'
 import SnapshotsService from '@baserow/modules/core/services/snapshots'
 import job from '@baserow/modules/core/mixins/job'
 import { CreateSnapshotJobType } from '@baserow/modules/core/jobTypes'
@@ -101,6 +103,7 @@ export default {
   components: {
     CreateSnapshotForm,
     SnapshotListItem,
+    JobDuration,
   },
   mixins: [modal, error, job],
   props: {

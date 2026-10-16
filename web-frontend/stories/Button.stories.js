@@ -157,7 +157,7 @@ export const AsLink = {
     components: { Button },
     template: `
       <div style="display: flex; gap: 10px;">
-        <Button tag="a" href="https://baserow.io" target="_blank" icon="iconoir-link">
+        <Button tag="a" href="https://example.com" target="_blank" icon="iconoir-link">
           Baserow Website
         </Button>
         <Button tag="a" href="#" type="secondary">

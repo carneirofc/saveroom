@@ -11,7 +11,7 @@ A row history entry stores information on:
 
 **Note:** An action can affect multiple rows and, indirectly, related tables/rows. Row history items returned by the action should reflect that.
 
-Row history subsystem is loosely coupled with actions. While the core of row history subystem resides in `database` application, it can handle actions from other Baserow applications with dedicated row history providers class hierarchy.
+Row history subsystem is loosely coupled with actions. While the core of row history subystem resides in `database` application, it can handle actions from other Saveroom applications with dedicated row history providers class hierarchy.
 
 Also, other applications can add their own row history providers to `baserow.contrib.database.rows.registries.row_history_provider_registry`, which keeps a registry of `baserow.contrib.database.rows.registries.RowHistoryProviderType` classes.
 

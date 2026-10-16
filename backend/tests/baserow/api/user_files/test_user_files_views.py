@@ -330,12 +330,12 @@ def test_upload_file_via_url_with_jwt_auth(api_client, data_fixture, tmpdir):
 
     responses.add(
         responses.GET,
-        "https://baserow.io/test2.txt",
+        "https://example.com/test2.txt",
         status=404,
     )
     response = api_client.post(
         reverse("api:user_files:upload_via_url"),
-        data={"url": "https://baserow.io/test2.txt"},
+        data={"url": "https://example.com/test2.txt"},
         HTTP_AUTHORIZATION=f"JWT {token}",
     )
     assert response.status_code == HTTP_400_BAD_REQUEST
@@ -344,7 +344,7 @@ def test_upload_file_via_url_with_jwt_auth(api_client, data_fixture, tmpdir):
     # Only the http and https protocol are allowed.
     response = api_client.post(
         reverse("api:user_files:upload_via_url"),
-        data={"url": "ftp://baserow.io/test2.txt"},
+        data={"url": "ftp://example.com/test2.txt"},
         HTTP_AUTHORIZATION=f"JWT {token}",
     )
     assert response.status_code == HTTP_400_BAD_REQUEST
@@ -440,12 +440,12 @@ def test_upload_file_via_url_with_token_auth(api_client, data_fixture, tmpdir):
 
     responses.add(
         responses.GET,
-        "https://baserow.io/test2.txt",
+        "https://example.com/test2.txt",
         status=404,
     )
     response = api_client.post(
         reverse("api:user_files:upload_via_url"),
-        data={"url": "https://baserow.io/test2.txt"},
+        data={"url": "https://example.com/test2.txt"},
         HTTP_AUTHORIZATION=f"Token {token.key}",
     )
     assert response.status_code == HTTP_400_BAD_REQUEST
@@ -454,7 +454,7 @@ def test_upload_file_via_url_with_token_auth(api_client, data_fixture, tmpdir):
     # Only the http and https protocol are allowed.
     response = api_client.post(
         reverse("api:user_files:upload_via_url"),
-        data={"url": "ftp://baserow.io/test2.txt"},
+        data={"url": "ftp://example.com/test2.txt"},
         HTTP_AUTHORIZATION=f"Token {token.key}",
     )
     assert response.status_code == HTTP_400_BAD_REQUEST

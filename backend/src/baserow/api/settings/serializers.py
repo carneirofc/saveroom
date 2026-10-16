@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from rest_framework import serializers
 
 from baserow.api.user_files.serializers import UserFileField
@@ -7,14 +9,19 @@ from baserow.core.models import Settings
 class SettingsSerializer(serializers.ModelSerializer):
     co_branding_logo = UserFileField(
         required=False,
-        help_text="Co-branding logo that's placed next to the Baserow logo (176x29).",
+        help_text="Co-branding logo that's placed next to the Saveroom logo (176x29).",
+    )
+    oidc_only = serializers.SerializerMethodField(
+        help_text=(
+            "Whether the instance is in OIDC-only mode: self-service signup and "
+            "password login for non-staff users are disabled."
+        )
     )
 
     class Meta:
         model = Settings
         fields = (
             "allow_new_signups",
-            "allow_signups_via_workspace_invitations",
             "allow_reset_password",
             "allow_global_workspace_creation",
             "account_deletion_grace_delay",
@@ -24,10 +31,14 @@ class SettingsSerializer(serializers.ModelSerializer):
             "co_branding_logo",
             "email_verification",
             "verify_import_signature",
+            "oidc_only",
+            "enable_database",
+            "enable_builder",
+            "enable_automation",
+            "enable_dashboard",
         )
         extra_kwargs = {
             "allow_new_signups": {"required": False},
-            "allow_signups_via_workspace_invitations": {"required": False},
             "allow_reset_password": {"required": False},
             "allow_global_workspace_creation": {"required": False},
             "account_deletion_grace_delay": {"required": False},
@@ -35,7 +46,14 @@ class SettingsSerializer(serializers.ModelSerializer):
             "show_baserow_help_request": {"required": False},
             "email_verification": {"required": False},
             "verify_import_signature": {"required": False},
+            "enable_database": {"required": False},
+            "enable_builder": {"required": False},
+            "enable_automation": {"required": False},
+            "enable_dashboard": {"required": False},
         }
+
+    def get_oidc_only(self, instance) -> bool:
+        return bool(settings.BASEROW_OIDC_ONLY)
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)

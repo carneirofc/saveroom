@@ -11,7 +11,7 @@
         aria-controls="api-docs-databases"
         @click.prevent="databasesOpen = !databasesOpen"
       >
-        <i class="api-docs__switch-icon iconoir-db"></i>
+        <i class="api-docs__switch-icon iconoir-database"></i>
         {{ $t('apiDocsDatabase.pageTitle', database) }}
       </a>
       <div class="api-docs__open">
@@ -478,7 +478,7 @@ const getUploadFileListUrl = () => {
  */
 const getUploadFileViaUrlRequestExample = () => {
   return {
-    url: 'https://baserow.io/assets/photo.png',
+    url: 'https://example.com/assets/photo.png',
   }
 }
 /**

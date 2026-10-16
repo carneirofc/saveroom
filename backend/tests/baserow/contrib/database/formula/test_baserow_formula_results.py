@@ -30,6 +30,7 @@ from baserow.contrib.database.formula.ast.function_defs import (
     BaserowManyToManyCount,
     BaserowMultipleSelectCount,
     BaserowMultipleSelectOptionsAgg,
+    BaserowStringAggCollaboratorValues,
     BaserowStringAggManyToManyValues,
     BaserowStringAggMultipleSelectValues,
 )
@@ -254,6 +255,8 @@ VALID_FORMULA_TESTS = [
     ("right('abcde', 2)", "de"),
     ("right('abc', 2/0)", None),
     ("when_empty(1, 2)", "1"),
+    ("when_empty('', 'fallback')", "fallback"),
+    ("when_empty('hello', 'fallback')", "hello"),
     ("round(1.12345, 0)", "1"),
     ("round(1.12345, 4)", "1.1235"),
     ("round(1.12345, 100)", "1.1234500000"),
@@ -415,24 +418,24 @@ VALID_FORMULA_TESTS = [
     ("split_part('John, Jane, Matthew', ', ', 3.5)", "Matthew"),
     ("split_part('John, Jane, Matthew', ', ', 4.5)", ""),
     ("split_part('John, Jane, Matthew', ', ', 9999)", ""),
-    ("tourl('baserow.io')", "baserow.io"),
-    ("tourl('baserow.io/subpage')", "baserow.io/subpage"),
-    ("tourl('baserow.io/subpage/?query=true')", "baserow.io/subpage/?query=true"),
+    ("tourl('example.com')", "example.com"),
+    ("tourl('example.com/subpage')", "example.com/subpage"),
+    ("tourl('example.com/subpage/?query=true')", "example.com/subpage/?query=true"),
     (
-        "tourl(concat('baserow.io', '/subpage/?query=true'))",
-        "baserow.io/subpage/?query=true",
+        "tourl(concat('example.com', '/subpage/?query=true'))",
+        "example.com/subpage/?query=true",
     ),
-    ("tourl(lower('BASEROW.io'))", "baserow.io"),
-    ("tourl(replace('base-ow.io', '-', 'r'))", "baserow.io"),
+    ("tourl(lower('EXAMPLE.com'))", "example.com"),
+    ("tourl(replace('ex-mple.com', '-', 'a'))", "example.com"),
     ("tourl('localhost')", "localhost"),
     ("tourl('skype://call-me')", "skype://call-me"),
-    ("tourl('https://baserow.io:3000')", "https://baserow.io:3000"),
-    ("tourl('ftp://baserow.io/some/path')", "ftp://baserow.io/some/path"),
-    ("tourl('https://baserow.io:3000invalid')", ""),
-    ("tourl('https://baserow.iohttps://baserow.io')", ""),
+    ("tourl('https://example.com:3000')", "https://example.com:3000"),
+    ("tourl('ftp://example.com/some/path')", "ftp://example.com/some/path"),
+    ("tourl('https://example.com:3000invalid')", ""),
+    ("tourl('https://example.comhttps://example.com')", ""),
     (
-        "tourl('https://user:password@www.baserow.io:8080/path/to/resource?search=query&filter=active#section2')",
-        "https://user:password@www.baserow.io:8080/path/to/resource?search=query&filter=active#section2",
+        "tourl('https://user:password@www.example.com:8080/path/to/resource?search=query&filter=active#section2')",
+        "https://user:password@www.example.com:8080/path/to/resource?search=query&filter=active#section2",
     ),
 ]
 
@@ -1154,6 +1157,7 @@ def test_aggregate_functions_never_allow_non_many_inputs(data_fixture, api_clien
         BaserowManyToManyAgg.type,
         BaserowManyToManyCount.type,
         BaserowStringAggManyToManyValues.type,
+        BaserowStringAggCollaboratorValues.type,
     }
     custom_cases = {
         BaserowAggJoin.type: [
@@ -1260,6 +1264,7 @@ def test_aggregate_functions_can_be_referenced_by_other_formulas(
         BaserowStringAggMultipleSelectValues.type,
         # Multiple collaborators formulas
         BaserowStringAggManyToManyValues.type,
+        BaserowStringAggCollaboratorValues.type,
     }
 
     for formula_func in formula_function_registry.get_all():
@@ -1894,11 +1899,11 @@ def test_formulas_with_lookup_url_field_type(data_fixture):
             [
                 {
                     linked_table_primary_field.db_column: "URL #1",
-                    linked_table_url_field.db_column: "https://baserow.io/1",
+                    linked_table_url_field.db_column: "https://example.com/1",
                 },
                 {
                     linked_table_primary_field.db_column: "URL #2",
-                    linked_table_url_field.db_column: "https://baserow.io/2",
+                    linked_table_url_field.db_column: "https://example.com/2",
                 },
             ],
         )
@@ -1954,38 +1959,38 @@ def test_formulas_with_lookup_url_field_type(data_fixture):
     assert rows == [
         [
             "Row #1",
-            [{"id": 1, "value": "https://baserow.io/1"}],
-            "https://baserow.io/1",
-            "https://baserow.io/1",
-            [{"id": 1, "value": "https://baserow.io/1"}],
-            [{"id": 1, "value": "https://baserow.io/1some-text"}],
-            "https://baserow.io/1",
-            "https://baserow.io/1",
+            [{"id": 1, "value": "https://example.com/1"}],
+            "https://example.com/1",
+            "https://example.com/1",
+            [{"id": 1, "value": "https://example.com/1"}],
+            [{"id": 1, "value": "https://example.com/1some-text"}],
+            "https://example.com/1",
+            "https://example.com/1",
             Decimal("1"),
-            [{"id": 1, "value": "https://baserow.io/1"}],
+            [{"id": 1, "value": "https://example.com/1"}],
         ],
         [
             "Row #2",
             [
-                {"id": 1, "value": "https://baserow.io/1"},
-                {"id": 2, "value": "https://baserow.io/2"},
+                {"id": 1, "value": "https://example.com/1"},
+                {"id": 2, "value": "https://example.com/2"},
             ],
-            "https://baserow.io/1https://baserow.io/2",
-            "https://baserow.io/1some-texthttps://baserow.io/2",
+            "https://example.com/1https://example.com/2",
+            "https://example.com/1some-texthttps://example.com/2",
             [
-                {"id": 1, "value": "https://baserow.io/1"},
-                {"id": 2, "value": "https://baserow.io/2"},
+                {"id": 1, "value": "https://example.com/1"},
+                {"id": 2, "value": "https://example.com/2"},
             ],
             [
-                {"id": 1, "value": "https://baserow.io/1some-text"},
-                {"id": 2, "value": "https://baserow.io/2some-text"},
+                {"id": 1, "value": "https://example.com/1some-text"},
+                {"id": 2, "value": "https://example.com/2some-text"},
             ],
-            "https://baserow.io/2",
-            "https://baserow.io/1",
+            "https://example.com/2",
+            "https://example.com/1",
             Decimal("2"),
             [
-                {"id": 1, "value": "https://baserow.io/1"},
-                {"id": 2, "value": "https://baserow.io/2"},
+                {"id": 1, "value": "https://example.com/1"},
+                {"id": 2, "value": "https://example.com/2"},
             ],
         ],
         ["Row #3", [], None, None, [], [], None, None, Decimal("0"), []],
@@ -2236,7 +2241,7 @@ def _setup_file_field(df, table):
         lambda df, table: (
             df.create_url_field(table=table, name="target"),
             "https://example.com",
-            "https://baserow.io",
+            "https://example.org",
         ),
         lambda df, table: (
             df.create_email_field(table=table, name="target"),

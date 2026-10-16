@@ -207,7 +207,6 @@ def test_get_integrations_serializer(
                 "workspace": {
                     "id": workspace.id,
                     "name": workspace.name,
-                    "generative_ai_models_enabled": {},
                 },
                 "tables": [
                     {

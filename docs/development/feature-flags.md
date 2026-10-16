@@ -1,7 +1,11 @@
 # Feature flags
 
-Baserow uses basic feature flags currently to allow unfinished features to be merged
+Saveroom uses basic feature flags currently to allow unfinished features to be merged
 and/or released.
+
+> Looking to turn databases, the application builder, dashboards or automations on or off
+> for an instance? Those are admin settings, not feature flags — see
+> [Turning application types off instance-wide](../installation/instance-settings.md).
 
 ## Available Feature Flags
 

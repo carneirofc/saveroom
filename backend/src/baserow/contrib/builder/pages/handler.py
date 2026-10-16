@@ -50,7 +50,9 @@ from baserow.core.cache import global_cache
 from baserow.core.exceptions import IdDoesNotExist
 from baserow.core.psycopg import is_unique_violation_error
 from baserow.core.storage import ExportZipFile
+from baserow.core.user_sources.handler import UserSourceHandler
 from baserow.core.user_sources.user_source_user import UserSourceUser
+from baserow.core.user_sources.utils import remap_user_source_roles
 from baserow.core.utils import ChildProgressBuilder, MirrorDict, find_unused_name
 
 BUILDER_PAGE_IS_PUBLISHED_CACHE_TTL_SECONDS = 60 * 60
@@ -765,6 +767,21 @@ class PageHandler:
             page_instance.path_params = serialized_page["path_params"]
             page_instance.graph = serialized_page.get("graph", {})
         else:
+            # Publishing/importing an application creates new user sources, so
+            # page restrictions must refer to their new default roles as well.
+            roles = serialized_page.get("roles", [])
+            user_sources_mapping = id_mapping.get("user_sources", {})
+            if roles and user_sources_mapping:
+                if cache is None:
+                    cache = {}
+                existing_roles = cache.setdefault("existing_roles", {})
+                if builder.id not in existing_roles:
+                    existing_roles[builder.id] = (
+                        UserSourceHandler().get_all_roles_for_application(builder)
+                    )
+                roles = remap_user_source_roles(
+                    roles, existing_roles[builder.id], user_sources_mapping
+                )
             # Note: serialized pages exported before the page visibility feature
             # will not contain the `visibility`, `role_type` or `roles` keys,
             # so we use the default values for all three values instead.
@@ -778,7 +795,7 @@ class PageHandler:
                 shared=False,
                 visibility=serialized_page.get("visibility", Page.VISIBILITY_TYPES.ALL),
                 role_type=serialized_page.get("role_type", Page.ROLE_TYPES.ALLOW_ALL),
-                roles=serialized_page.get("roles", []),
+                roles=roles,
                 graph=serialized_page.get("graph", {}),
             )
 

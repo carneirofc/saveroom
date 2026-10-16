@@ -169,7 +169,7 @@
           <div v-if="!readOnly" class="context__footer">
             <ButtonText
               v-if="view.public"
-              icon="iconoir-cancel"
+              icon="iconoir-xmark"
               @click.stop="updateView({ public: false })"
             >
               {{ $t('shareViewLink.disableLink') }}

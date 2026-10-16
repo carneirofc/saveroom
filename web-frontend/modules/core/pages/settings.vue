@@ -1,32 +1,15 @@
 <template>
   <div style="height: 100%; display: flex; flex-direction: column">
-    <Tabs
-      offset
-      full-height
-      :route="route"
-      large-offset
-      @click-disabled="clickDisabled(pages[$event])"
-    >
+    <Tabs offset full-height :route="route" large-offset>
       <Tab
         v-for="page in pages"
         :key="page.type"
         :title="page.name"
-        :disabled="!page.navigable"
         :to="page.to"
-        :icon="!page.navigable ? 'iconoir-lock' : null"
       >
         <NuxtPage :workspace="workspace" />
       </Tab>
     </Tabs>
-
-    <component
-      :is="page.deactivatedModal[0]"
-      v-for="page in deactivatedPagesWithModal"
-      :key="page.type"
-      :ref="(el) => setDeactivatedModalRef(page.type, el)"
-      v-bind="page.deactivatedModal[1]"
-      :workspace="workspace"
-    />
   </div>
 </template>
 
@@ -82,14 +65,8 @@ const pages = computed(() => {
     type: instance.type,
     name: instance.getName(),
     to: instance.getRoute(workspace.value),
-    navigable: instance.isFeatureActive(workspace.value),
-    deactivatedModal: instance.getFeatureDeactivatedModal(workspace.value),
   }))
 })
-
-const deactivatedPagesWithModal = computed(() =>
-  pages.value.filter((page) => !page.navigable && page.deactivatedModal)
-)
 
 /* Dynamic page title based on current tab */
 const currentPageName = computed(() => {
@@ -100,13 +77,6 @@ const currentPageName = computed(() => {
 useHead(() => ({
   title: currentPageName.value,
 }))
-
-/* Modal refs */
-const modalRefs = reactive({})
-
-function setDeactivatedModalRef(type, el) {
-  modalRefs[type] = el
-}
 
 /* Event bus */
 const bus = nuxtApp.$bus
@@ -122,11 +92,4 @@ onMounted(() => {
 onBeforeUnmount(() => {
   bus.$off('workspace-deleted', workspaceDeleted)
 })
-
-function clickDisabled(page) {
-  const ref = modalRefs[page.type]
-  if (ref) {
-    ref.show()
-  }
-}
 </script>

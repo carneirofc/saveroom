@@ -84,7 +84,7 @@ import {
 import { notifyIf } from '@baserow/modules/core/utils/error'
 
 const store = useStore()
-const { $registry, $priorityBus, $realtime, $bus } = useNuxtApp()
+const { $registry, $priorityBus, $realtime, $bus, $i18n } = useNuxtApp()
 
 const col1Width = ref(240)
 const col3Width = ref(400)
@@ -127,6 +127,23 @@ function toggleRightSidebar(value = !col3Visible.value) {
   localStorage.setItem('baserow.rightSidebarOpen', col3Visible.value)
 }
 
+/**
+ * Undoing or redoing can change row data. When the selected table has protected
+ * editing enabled (database module), the user must confirm it first.
+ */
+function confirmUndoRedoOnProtectedTable(redo) {
+  const selectedTable =
+    store.hasModule('pendingRowChanges') && store.getters['table/getSelected']
+  if (!selectedTable?.require_edit_confirmation) {
+    return Promise.resolve(true)
+  }
+  const key = redo ? 'redo' : 'undo'
+  return store.dispatch('pendingRowChanges/confirm', {
+    title: $i18n.t(`confirmDataChange.${key}Title`),
+    message: $i18n.t(`confirmDataChange.${key}Message`),
+  })
+}
+
 function keyDown(event) {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
     event.preventDefault()
@@ -141,9 +158,16 @@ function keyDown(event) {
       el.isContentEditable
 
     if (!avoid) {
-      const actionName = event.shiftKey ? 'undoRedo/redo' : 'undoRedo/undo'
-      store.dispatch(actionName, { showLoadingToast: true }).catch(notifyIf)
+      const redo = event.shiftKey
+      const actionName = redo ? 'undoRedo/redo' : 'undoRedo/undo'
       event.preventDefault()
+      confirmUndoRedoOnProtectedTable(redo)
+        .then((confirmed) => {
+          if (confirmed) {
+            return store.dispatch(actionName, { showLoadingToast: true })
+          }
+        })
+        .catch(notifyIf)
     }
   }
 

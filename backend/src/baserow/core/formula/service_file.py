@@ -379,5 +379,5 @@ def _read_remote_url_bytes(url: str) -> bytes:
                 )
 
         return content
-    except (RequestException, UnacceptableAddressException, ConnectionError):
+    except RequestException, UnacceptableAddressException, ConnectionError:
         raise FileURLCouldNotBeReached("The provided URL could not be reached.")

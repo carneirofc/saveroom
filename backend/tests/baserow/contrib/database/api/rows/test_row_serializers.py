@@ -558,12 +558,6 @@ def test_get_row_serializer_with_user_field_names(
                 "uuid": "00000000-0000-4000-8000-000000000002",
                 "autonumber": 2,
                 "password": True,
-                "ai": "I'm an AI.",
-                "ai_choice": {
-                    "color": "orange",
-                    "id": SelectOption.objects.get(value="Object").id,
-                    "value": "Object",
-                },
                 "form_view_edit_row": form_view_edit_row_url,
             }
         )
@@ -585,7 +579,7 @@ def test_get_row_validation_serializer_does_not_query_select_options_per_field(
     # The validation serializer builds a help text from each select field's options.
     # Those options are prefetched during model generation, so building the serializer
     # must not issue a query per select field (regression for the select option N+1 on
-    # the batch rows endpoint, Sentry BASEROW-SAAS-BACKEND-12V).
+    # the batch rows endpoint).
     table, _, _, _, _ = setup_interesting_test_table(data_fixture)
     model = table.get_model()
 

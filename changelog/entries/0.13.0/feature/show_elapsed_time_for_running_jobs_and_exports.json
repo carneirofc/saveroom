@@ -1,0 +1,7 @@
+{
+    "type": "feature",
+    "message": "Show how long a job has been running next to its progress bar, for table and workspace exports, imports, snapshots, backups, restores, data syncs and application publishes.",
+    "issue_number": null,
+    "bullet_points": [],
+    "created_at": "2026-09-17"
+}

@@ -30,7 +30,7 @@
     <ABIcon
       v-if="dateInputValue"
       class="ab-datetime-picker__icon"
-      icon="iconoir-cancel"
+      icon="iconoir-xmark"
       @click="clearValue"
     />
     <Context

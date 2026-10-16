@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-06 19:38+0000\n"
+"POT-Creation-Date: 2026-10-09 13:22+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -25,31 +25,32 @@ msgid ""
 "\"%(builder_name)s\" (%(builder_id)s)."
 msgstr ""
 
-#: src/baserow/contrib/builder/builder_beta_init_application.py:45
+#: src/baserow/contrib/builder/builder_beta_init_application.py:46
 msgid "Homepage"
 msgstr ""
 
-#: src/baserow/contrib/builder/builder_beta_init_application.py:46
+#: src/baserow/contrib/builder/builder_beta_init_application.py:47
 msgid "Examples"
 msgstr ""
 
-#: src/baserow/contrib/builder/builder_beta_init_application.py:47
+#: src/baserow/contrib/builder/builder_beta_init_application.py:48
 msgid "Customers"
 msgstr ""
 
-#: src/baserow/contrib/builder/builder_beta_init_application.py:48
+#: src/baserow/contrib/builder/builder_beta_init_application.py:49
 msgid "List rows"
 msgstr ""
 
-#: src/baserow/contrib/builder/builder_beta_init_application.py:49
-msgid "Local Baserow"
+#: src/baserow/contrib/builder/builder_beta_init_application.py:50
+#, python-format
+msgid "Local %(app_name)s"
 msgstr ""
 
-#: src/baserow/contrib/builder/builder_beta_init_application.py:50
+#: src/baserow/contrib/builder/builder_beta_init_application.py:53
 msgid "Name"
 msgstr ""
 
-#: src/baserow/contrib/builder/builder_beta_init_application.py:51
+#: src/baserow/contrib/builder/builder_beta_init_application.py:54
 msgid "Last name"
 msgstr ""
 

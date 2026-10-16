@@ -1,6 +1,6 @@
 # Debugging Tools
 
-Baserow development dependencies include some useful tools for debugging that you can use.
+Saveroom development dependencies include some useful tools for debugging that you can use.
 
 ## snoop
 
@@ -53,13 +53,13 @@ Note that `import snoop` or `from snoop import pp` is not necessary as snoop is 
 You can use django-extensions commands inside backend docker containers:
 
 * `django-admin shell_plus` starts an interactive Python shell with loaded Django contexts and imported models.
-* `django-admin show_urls` lists all registered urls in the Baserow. 
+* `django-admin show_urls` lists all registered urls in the Saveroom. 
 
 ## django-silk
 
 [django-silk](https://github.com/jazzband/django-silk) is a live profiling and inspection tool for executed requests and database queries.
 
-The interface can be accessed at http://localhost:8000/silk/ after Baserow is started in the debug mode. Every request is logged and can be analyzed, including the list of performed database queries.
+The interface can be accessed at http://localhost:8000/silk/ after Saveroom is started in the debug mode. Every request is logged and can be analyzed, including the list of performed database queries.
 
 django-silk can be also configured and used for profiling using the Python's built-in profiler, see the official documentation for details.
 
@@ -69,5 +69,5 @@ django-silk can be also configured and used for profiling using the Python's bui
 monitoring and managing Celery clusters. It provides real-time information about the
 status of Celery workers and tasks.
 
-The interface can be accessed at http://localhost:5555/ after the Baserow development
+The interface can be accessed at http://localhost:5555/ after the Saveroom development
 environment has started.

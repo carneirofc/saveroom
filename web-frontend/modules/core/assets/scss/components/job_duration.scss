@@ -1,0 +1,8 @@
+.job-duration {
+  color: $color-neutral-400;
+
+  // The value changes once a second, so it must not reflow whatever sits next
+  // to it as the digits grow.
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

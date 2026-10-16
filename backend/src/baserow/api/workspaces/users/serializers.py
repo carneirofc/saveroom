@@ -7,8 +7,8 @@ from rest_framework import serializers
 from baserow.api.mixins import UnknownFieldRaisesExceptionSerializerMixin
 from baserow.api.two_factor_auth.serializers import TwoFactorAuthSerializer
 from baserow.api.user.registries import member_data_registry
-from baserow.core.generative_ai.registries import generative_ai_model_type_registry
 from baserow.core.models import WorkspaceUser
+from baserow.core.registries import workspace_users_add_option_registry
 
 User = get_user_model()
 
@@ -142,20 +142,59 @@ class WorkspaceUserWorkspaceSerializer(serializers.Serializer):
         read_only=True,
         help_text="The number of unread notifications for the requesting user.",
     )
-    generative_ai_models_enabled = serializers.SerializerMethodField(
-        read_only=True, help_text="Generative AI models available in this workspace."
-    )
-
-    def get_generative_ai_models_enabled(self, object):
-        return generative_ai_model_type_registry.get_enabled_models_per_type(
-            workspace=object.workspace
-        )
 
 
 class UpdateWorkspaceUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkspaceUser
         fields = ("permissions",)
+
+
+class AddWorkspaceUsersSerializer(serializers.Serializer):
+    user_ids = serializers.ListField(
+        child=serializers.IntegerField(), min_length=1, max_length=100
+    )
+    permissions = serializers.ChoiceField(
+        choices=["ADMIN", "MEMBER"],
+        default="MEMBER",
+        help_text="The permissions the added users get in the workspace.",
+    )
+    team_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        default=list,
+        max_length=100,
+        help_text="Teams of the workspace the users join.",
+    )
+
+
+def get_add_workspace_users_serializer():
+    """
+    Returns `AddWorkspaceUsersSerializer` extended with the field of every registered
+    `WorkspaceUsersAddOptionType`. It's built when used because apps register their
+    options after this module is imported.
+    """
+
+    attrs = {
+        option_type.type: option_type.get_serializer_field()
+        for option_type in workspace_users_add_option_registry.get_all()
+    }
+    return type(
+        "AddWorkspaceUsersWithOptionsSerializer", (AddWorkspaceUsersSerializer,), attrs
+    )
+
+
+class WorkspaceUserCandidateSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source="id")
+    name = serializers.CharField(source="first_name")
+
+    class Meta:
+        model = User
+        fields = ("user_id", "name", "email")
+
+
+class WorkspaceUserCandidatesQuerySerializer(serializers.Serializer):
+    search = serializers.CharField(min_length=3, max_length=255)
 
 
 class GetWorkspaceUsersViewParamsSerializer(serializers.Serializer):

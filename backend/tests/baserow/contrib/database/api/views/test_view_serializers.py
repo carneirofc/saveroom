@@ -1,3 +1,4 @@
+import msgpack
 import pytest
 from pytest_unordered import unordered
 
@@ -6,7 +7,24 @@ from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.views.handler import ViewHandler
 from baserow.contrib.database.views.models import DEFAULT_SORT_TYPE_KEY
+from baserow.contrib.database.views.registries import view_type_registry
 from baserow.test_utils.helpers import setup_interesting_test_table
+
+
+@pytest.mark.django_db
+def test_field_options_field_to_representation_keys_are_msgpack_safe(data_fixture):
+    grid_view = data_fixture.create_grid_view()
+    data_fixture.create_text_field(table=grid_view.table)
+
+    view_type = view_type_registry.get_by_model(grid_view.specific_class)
+    serializer_class = view_type.get_field_options_serializer_class(
+        create_if_missing=True
+    )
+    payload = serializer_class(grid_view).data["field_options"]
+
+    assert payload, "expected at least one field option in the payload"
+    packed = msgpack.packb(payload, use_bin_type=True)
+    msgpack.unpackb(packed, strict_map_key=True, raw=False)
 
 
 @pytest.mark.django_db
@@ -93,8 +111,6 @@ def test_serialize_group_by_metadata_on_all_fields_in_interesting_table(data_fix
     ).select_options.all()
 
     actual_result_per_field_name = {}
-
-    ai_choice_select_options = Field.objects.get(name="ai_choice").select_options.all()
 
     for field in fields_to_group_by:
         counts = handler.get_group_by_metadata_in_rows([field], rows, queryset)
@@ -297,14 +313,6 @@ def test_serialize_group_by_metadata_on_all_fields_in_interesting_table(data_fix
         "duration_dhms": [
             {"count": 1, "field_duration_dhms": 90066.0},
             {"count": 1, "field_duration_dhms": None},
-        ],
-        "ai": [
-            {"count": 1, "field_ai": "I'm an AI."},
-            {"count": 1, "field_ai": None},
-        ],
-        "ai_choice": [
-            {"count": 1, "field_ai_choice": ai_choice_select_options[0].id},
-            {"count": 1, "field_ai_choice": None},
         ],
         "link_row": [
             {"field_link_row": [], "count": 1},

@@ -1,15 +1,15 @@
 from django.urls import include, path, re_path
 
-from .invitations import urls as invitation_urls
+from .teams import urls as team_urls
 from .users import urls as user_urls
 from .views import (
     AsyncExportWorkspaceApplicationsView,
     AsyncImportApplicationsView,
     CreateInitialWorkspaceView,
+    DownloadExportWorkspaceApplicationsView,
     ImportExportResourceUploadFileView,
     ImportExportResourceView,
     ListExportWorkspaceApplicationsView,
-    WorkspaceGenerativeAISettingsView,
     WorkspaceLeaveView,
     WorkspaceOrderView,
     WorkspacePermissionsView,
@@ -21,7 +21,7 @@ app_name = "baserow.api.workspaces"
 
 urlpatterns = [
     path("users/", include(user_urls, namespace="users")),
-    path("invitations/", include(invitation_urls, namespace="invitations")),
+    path("teams/", include(team_urls, namespace="teams")),
     re_path(r"^$", WorkspacesView.as_view(), name="list"),
     re_path(
         r"(?P<workspace_id>[0-9]+)/permissions/$",
@@ -34,11 +34,6 @@ urlpatterns = [
     re_path(r"(?P<workspace_id>[0-9]+)/$", WorkspaceView.as_view(), name="item"),
     re_path(r"order/$", WorkspaceOrderView.as_view(), name="order"),
     re_path(
-        r"(?P<workspace_id>[0-9]+)/settings/generative-ai/$",
-        WorkspaceGenerativeAISettingsView.as_view(),
-        name="generative_ai_settings",
-    ),
-    re_path(
         r"create-initial-workspace/$",
         CreateInitialWorkspaceView.as_view(),
         name="create_initial_workspace",
@@ -47,6 +42,11 @@ urlpatterns = [
         r"(?P<workspace_id>[0-9]+)/export/async/$",
         AsyncExportWorkspaceApplicationsView.as_view(),
         name="export_workspace_async",
+    ),
+    re_path(
+        r"(?P<workspace_id>[0-9]+)/export/(?P<job_id>[0-9]+)/download/$",
+        DownloadExportWorkspaceApplicationsView.as_view(),
+        name="export_workspace_download",
     ),
     re_path(
         r"(?P<workspace_id>[0-9]+)/export/$",

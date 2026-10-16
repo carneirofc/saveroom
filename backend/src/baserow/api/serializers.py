@@ -1,9 +1,15 @@
+from urllib.parse import quote, urljoin
+
+from django.conf import settings
+from django.urls import reverse
+
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.relations import PrimaryKeyRelatedField
 
+from baserow.api.download.tokens import sign_download_token
 from baserow.core.context import clear_current_workspace_id, set_current_workspace_id
 from baserow.core.storage import get_default_storage
 from baserow.core.utils import split_comma_separated_string
@@ -125,7 +131,10 @@ class CommaSeparatedIntegerValuesField(serializers.Field):
         return ",".join(value)
 
     def to_internal_value(self, data):
-        record_ids = split_comma_separated_string(data)
+        try:
+            record_ids = split_comma_separated_string(data)
+        except ValueError as e:
+            raise serializers.ValidationError(str(e), code="invalid") from e
         if not all([record.isdigit() for record in record_ids]):
             raise serializers.ValidationError("The provided record ids are not valid.")
 
@@ -133,7 +142,31 @@ class CommaSeparatedIntegerValuesField(serializers.Field):
 
 
 class FileURLSerializerMixin(serializers.Serializer):
-    url = serializers.SerializerMethodField()
+    """
+    Adds the two links to an exported file: `download_url`, which goes through this
+    API, and the older `url`, which points straight at the storage.
+
+    `download_url` exists because the storage URL is not reachable from a browser in
+    most container deployments: with a volume it resolves to a `/media/` path nothing
+    serves, and with object storage it is a presigned link to an address that is often
+    only routable inside the cluster. Streaming through the API works everywhere.
+    """
+
+    url = serializers.SerializerMethodField(
+        help_text=(
+            "DEPRECATED: use download_url instead. A link straight to the file in the "
+            "server's storage. It is only reachable when that storage is exposed to "
+            "the client, which is not the case for a volume backed deployment or for "
+            "a bucket that is private to the cluster."
+        )
+    )
+    download_url = serializers.SerializerMethodField(
+        help_text=(
+            "A link that downloads the file through this API, streamed out of the "
+            "server's storage. It carries a short lived signed token so that a plain "
+            "browser link works, and is null while there is no file."
+        )
+    )
 
     def get_handler(self):
         """Define handler used for url generation.
@@ -157,6 +190,40 @@ class FileURLSerializerMixin(serializers.Serializer):
                 clear_current_workspace_id()
         else:
             return self._get_url(instance)
+
+    @extend_schema_field(OpenApiTypes.URI)
+    def get_download_url(self, instance):
+        if not self._get_exported_file_name(instance):
+            return None
+
+        download_type, object_id = self.get_download_token_scope(instance)
+        path = reverse(
+            self.get_download_url_name(), kwargs=self.get_download_url_kwargs(instance)
+        )
+        # These serializers are also built without a request -- from a celery task
+        # broadcasting a finished job, for instance -- so the absolute URL comes from
+        # the configured public backend URL rather than from the request.
+        url = urljoin(settings.PUBLIC_BACKEND_URL, path)
+        token = sign_download_token(instance.user_id, download_type, object_id)
+        return f"{url}?token={quote(token)}"
+
+    def get_download_url_name(self) -> str:
+        """The name of the url pattern serving this kind of download."""
+
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def get_download_url_kwargs(self, instance) -> dict:
+        """The url kwargs identifying the file within that pattern."""
+
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def get_download_token_scope(self, instance):
+        """
+        The download type and object id the token is bound to, so that a link minted
+        for one file cannot be replayed against another.
+        """
+
+        raise NotImplementedError("Subclasses must implement this method.")
 
     def _get_exported_file_name(self, instance):
         return self.get_instance_attr(instance, "exported_file_name")
@@ -186,5 +253,5 @@ class NonValidatingPrimaryKeyRelatedField(PrimaryKeyRelatedField):
     def to_internal_value(self, data):
         try:
             return int(data)
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             raise ValidationError(f"Invalid ID: {data}")

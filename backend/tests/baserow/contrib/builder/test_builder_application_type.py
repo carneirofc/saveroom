@@ -17,7 +17,6 @@ from baserow.contrib.builder.builder_beta_init_application import (
 )
 from baserow.contrib.builder.elements.models import (
     ColumnElement,
-    Element,
     HeadingElement,
     LinkElement,
     TableElement,
@@ -42,11 +41,11 @@ from baserow.core.registries import ImportExportConfig, application_type_registr
 from baserow.core.storage import ExportZipFile
 from baserow.core.trash.handler import TrashHandler
 from baserow.core.user_files.handler import UserFileHandler
-from baserow.core.user_sources.registries import DEFAULT_USER_ROLE_PREFIX
-from baserow.test_utils.helpers import AnyStr
-from baserow_enterprise.integrations.local_baserow.user_source_types import (
-    LocalBaserowUserSourceType,
+from baserow.core.user_sources.registries import (
+    DEFAULT_USER_ROLE_PREFIX,
+    user_source_type_registry,
 )
+from baserow.test_utils.helpers import AnyStr
 
 
 def test_builder_application_type_import_application_priority():
@@ -1049,26 +1048,15 @@ IMPORT_REFERENCE = {
     ],
     "integrations": [
         {
-            "authorized_user": "test@baserow.io",
+            "authorized_user": "test@example.com",
             "id": 42,
             "name": "test",
             "order": "1.00000000000000000000",
             "type": "local_baserow",
         },
     ],
-    "user_sources": [
-        {
-            "auth_providers": [],
-            "email_field_id": None,
-            "id": 42,
-            "integration_id": 42,
-            "name": "My user source",
-            "name_field_id": None,
-            "order": "1.00000000000000000000",
-            "table_id": None,
-            "type": "local_baserow",
-        },
-    ],
+    # No concrete user source type ships with this fork, so nothing to import.
+    "user_sources": [],
     "theme": {
         "body_text_color": "#ccccccff",
         "body_font_size": 14,
@@ -1117,7 +1105,7 @@ IMPORT_REFERENCE = {
 
 @pytest.mark.django_db
 def test_builder_application_import(data_fixture):
-    user = data_fixture.create_user(email="test@baserow.io")
+    user = data_fixture.create_user(email="test@example.com")
     workspace = data_fixture.create_workspace(user=user)
 
     config = ImportExportConfig(include_permission_data=True)
@@ -1135,7 +1123,7 @@ def test_builder_application_import(data_fixture):
     first_integration = builder.integrations.first().specific
     assert first_integration.authorized_user.id == user.id
 
-    assert builder.user_sources.count() == 1
+    assert builder.user_sources.count() == 0
 
     [page1, page2] = builder.visible_pages.all()
 
@@ -1469,26 +1457,15 @@ COMPAT_IMPORT_REFERENCE = {
     ],
     "integrations": [
         {
-            "authorized_user": "test@baserow.io",
+            "authorized_user": "test@example.com",
             "id": 42,
             "name": "test",
             "order": "1.00000000000000000000",
             "type": "local_baserow",
         },
     ],
-    "user_sources": [
-        {
-            "auth_providers": [],
-            "email_field_id": None,
-            "id": 42,
-            "integration_id": 42,
-            "name": "My user source",
-            "name_field_id": None,
-            "order": "1.00000000000000000000",
-            "table_id": None,
-            "type": "local_baserow",
-        },
-    ],
+    # No concrete user source type ships with this fork, so nothing to import.
+    "user_sources": [],
     "theme": {
         "body_text_color": "#ccccccff",
         "body_font_size": 14,
@@ -1537,7 +1514,7 @@ COMPAT_IMPORT_REFERENCE = {
 
 @pytest.mark.django_db
 def test_builder_application_import_compat(data_fixture):
-    user = data_fixture.create_user(email="test@baserow.io")
+    user = data_fixture.create_user(email="test@example.com")
     workspace = data_fixture.create_workspace(user=user)
 
     config = ImportExportConfig(include_permission_data=True)
@@ -1549,7 +1526,7 @@ def test_builder_application_import_compat(data_fixture):
     assert builder.visible_pages.count() == 2
     assert builder.page_set.filter(shared=True).count() == 1
     assert builder.integrations.count() == 1
-    assert builder.user_sources.count() == 1
+    assert builder.user_sources.count() == 0
 
     [page1, page2] = builder.visible_pages.all()
 
@@ -1688,26 +1665,15 @@ IMPORT_REFERENCE_COMPLEX = {
     ],
     "integrations": [
         {
-            "authorized_user": "test@baserow.io",
+            "authorized_user": "test@example.com",
             "id": 42,
             "name": "test",
             "order": "1.00000000000000000000",
             "type": "local_baserow",
         },
     ],
-    "user_sources": [
-        {
-            "auth_providers": [],
-            "email_field_id": None,
-            "id": 42,
-            "integration_id": 42,
-            "name": "My user source",
-            "name_field_id": None,
-            "order": "1.00000000000000000000",
-            "table_id": None,
-            "type": "local_baserow",
-        },
-    ],
+    # No concrete user source type ships with this fork, so nothing to import.
+    "user_sources": [],
     "theme": {
         "primary_color": "#ccccccff",
         "secondary_color": "#ccccccff",
@@ -1728,7 +1694,7 @@ IMPORT_REFERENCE_COMPLEX = {
 
 @pytest.mark.django_db
 def test_builder_application_import_with_complex_elements(data_fixture):
-    user = data_fixture.create_user(email="test@baserow.io")
+    user = data_fixture.create_user(email="test@example.com")
     workspace = data_fixture.create_workspace(user=user)
 
     config = ImportExportConfig(include_permission_data=True)
@@ -1755,7 +1721,7 @@ def test_builder_application_imports_page_with_default_visibility(
     Page Visibility related values are missing in the exported data.
     """
 
-    user = data_fixture.create_user(email="test@baserow.io")
+    user = data_fixture.create_user(email="test@example.com")
     workspace = data_fixture.create_workspace(user=user)
 
     config = ImportExportConfig(include_permission_data=True)
@@ -1780,7 +1746,7 @@ def test_builder_application_doesnt_import_favicon_file(data_fixture):
     doesn't exist in the serialized values.
     """
 
-    user = data_fixture.create_user(email="test@baserow.io")
+    user = data_fixture.create_user(email="test@example.com")
     workspace = data_fixture.create_workspace(user=user)
 
     config = ImportExportConfig(include_permission_data=True)
@@ -1802,7 +1768,7 @@ def test_builder_application_doesnt_import_favicon_file(data_fixture):
 def test_builder_application_imports_favicon_file(data_fixture, tmpdir):
     """Ensure the favicon_file is imported and saved to the builder."""
 
-    user = data_fixture.create_user(email="test@baserow.io")
+    user = data_fixture.create_user(email="test@example.com")
     workspace = data_fixture.create_workspace(user=user)
     storage = FileSystemStorage(location=str(tmpdir), base_url="http://localhost")
 
@@ -1834,7 +1800,7 @@ def test_builder_application_does_not_import_login_page(data_fixture):
     doesn't exist in the serialized values.
     """
 
-    user = data_fixture.create_user(email="test@baserow.io")
+    user = data_fixture.create_user(email="test@example.com")
     workspace = data_fixture.create_workspace(user=user)
 
     config = ImportExportConfig(include_permission_data=True)
@@ -1945,14 +1911,29 @@ def test_builder_application_imports_correct_default_roles(data_fixture):
     is used for any default roles.
     """
 
-    user = data_fixture.create_user(email="test@baserow.io")
+    user = data_fixture.create_user(email="test@example.com")
     workspace = data_fixture.create_workspace(user=user)
+
+    user_source_types = list(user_source_type_registry.get_all())
+    if not user_source_types:
+        pytest.skip("No user source type is registered (needs a plugin).")
 
     serialized_values = IMPORT_REFERENCE.copy()
     first_page = serialized_values["pages"][0]
 
-    serialized_user_source = serialized_values["user_sources"][0]
-    serialized_user_source["role_field_id"] = None
+    serialized_user_source = {
+        "auth_providers": [],
+        "email_field_id": None,
+        "id": 42,
+        "integration_id": 42,
+        "name": "My user source",
+        "name_field_id": None,
+        "order": "1.00000000000000000000",
+        "role_field_id": None,
+        "table_id": None,
+        "type": user_source_types[0].type,
+    }
+    serialized_values["user_sources"] = [serialized_user_source]
 
     serialized_element = serialized_values["pages"][0]["elements"][0]
     serialized_element["role_type"] = "allow_all_except"
@@ -2065,78 +2046,6 @@ def test_ensure_new_element_roles_are_sanitized_during_import_for_default_roles(
             assert role == role.format(new_user_source.id)
         else:
             assert role == expected_roles[index]
-
-
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    "user_source_roles,element_roles,expected_roles",
-    [
-        (
-            [],
-            [],
-            [],
-        ),
-        (
-            [],
-            ["foo_role"],
-            [],
-        ),
-        (
-            ["foo_role"],
-            ["bar_role"],
-            [],
-        ),
-        (
-            ["foo_role"],
-            ["foo_role"],
-            ["foo_role"],
-        ),
-        (
-            ["foo_role", "bar_role", "baz_role"],
-            ["invalid_role_a", "bar_role", "invalid_role_b"],
-            ["bar_role"],
-        ),
-    ],
-)
-def test_ensure_new_element_roles_are_sanitized_during_import_for_roles(
-    data_fixture,
-    user_source_roles,
-    element_roles,
-    expected_roles,
-):
-    """
-    Ensure that during the import process, both the existing and new Element
-    roles are sanitized when using roles.
-    """
-
-    user = data_fixture.create_user()
-    workspace = data_fixture.create_workspace(user=user)
-    builder = data_fixture.create_builder_application(user=user, workspace=workspace)
-    page = data_fixture.create_builder_page(builder=builder)
-    integration = data_fixture.create_local_baserow_integration(
-        application=builder, authorized_user=user, name="test"
-    )
-    user_source = data_fixture.create_user_source_with_first_type(
-        application=builder, user=user, integration=integration
-    )
-    user_source.role_type = Element.ROLE_TYPES.ALLOW_ALL_EXCEPT
-    user_source.save()
-
-    old_element = data_fixture.create_builder_heading_element(page=page, level=2)
-    old_element.roles = element_roles
-    old_element.save()
-
-    config = ImportExportConfig(include_permission_data=True)
-    serialized = BuilderApplicationType().export_serialized(builder, config)
-
-    with patch.object(LocalBaserowUserSourceType, "get_roles") as m:
-        m.return_value = user_source_roles
-        builder = BuilderApplicationType().import_serialized(
-            workspace, serialized, config, {}
-        )
-
-    new_element = builder.visible_pages.all()[0].element_set.all()[0]
-    assert new_element.roles == expected_roles
 
 
 @pytest.mark.django_db

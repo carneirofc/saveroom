@@ -45,11 +45,11 @@ export default {
         case 'success':
           return 'iconoir-check-circle'
         case 'info-primary':
-          return 'iconoir-info-empty'
+          return 'iconoir-info-circle'
         case 'error':
           return 'iconoir-warning-triangle'
         default:
-          return 'iconoir-info-empty'
+          return 'iconoir-info-circle'
       }
     },
     closeToast(toast) {

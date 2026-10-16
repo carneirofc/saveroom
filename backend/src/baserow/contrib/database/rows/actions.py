@@ -21,7 +21,11 @@ from baserow.contrib.database.rows.handler import (
     GeneratedTableModelForUpdate,
     RowHandler,
 )
-from baserow.contrib.database.rows.types import FileImportDict, UpdatedRowsData
+from baserow.contrib.database.rows.types import (
+    FileImportDict,
+    ImportRowsResult,
+    UpdatedRowsData,
+)
 from baserow.contrib.database.table.handler import TableHandler
 from baserow.contrib.database.table.models import (
     FieldObject,
@@ -349,7 +353,20 @@ class ImportRowsActionType(UndoableActionType):
         database_id: int
         database_name: str
         row_ids: List[int]
+        # The trash entry of the created rows, set when the action is undone.
         trashed_rows_entry_id: Optional[int] = None
+        # The existing rows trashed by the import (replace mode or delete unmatched
+        # rows) and their trash entry.
+        import_trashed_row_ids: List[int] = dataclasses.field(default_factory=list)
+        import_trashed_rows_entry_id: Optional[int] = None
+        # The values before the import of the rows updated by the import.
+        original_rows_values_by_id: Dict[int, Dict[str, Any]] = dataclasses.field(
+            default_factory=dict
+        )
+        # The values written by the import, to redo the updates.
+        updated_rows_values: List[Dict[str, Any]] = dataclasses.field(
+            default_factory=list
+        )
 
     @classmethod
     def do(
@@ -360,20 +377,40 @@ class ImportRowsActionType(UndoableActionType):
         progress: Optional[Progress] = None,
     ) -> Tuple[List[GeneratedTableModel], Dict[str, Any]]:
         """
-        Creates rows for a given table with the provided values if the user
+        Imports rows into a given table with the provided values if the user
+        belongs to the related workspace. See `do_with_result`.
+
+        :return: The created list of rows instances and the error report.
+        """
+
+        result = cls.do_with_result(user, table, data, progress=progress)
+        return result.created_rows, result.error_report
+
+    @classmethod
+    def do_with_result(
+        cls,
+        user: AbstractUser,
+        table: Table,
+        data: FileImportDict,
+        progress: Optional[Progress] = None,
+    ) -> ImportRowsResult:
+        """
+        Imports rows into a given table with the provided values if the user
         belongs to the related workspace. It also calls the table_updated signal.
         This action is supposed to handle bigger row amount than the createRowsAction,
         it generates an import error report and allow to track the progress.
-        Undoing this action trashes the rows and redoing restores them all.
-        The new rows are appended to the existing rows.
+        Depending on the import mode, rows are appended, existing rows are updated
+        and existing rows are trashed.
+        Undoing this action trashes the created rows, restores the trashed rows and
+        the updated values. Redoing applies them again.
         See the baserow.contrib.database.rows.handler.RowHandler.import_rows
         for more information.
 
-        :param user: The user of whose behalf the rows are created.
+        :param user: The user of whose behalf the rows are imported.
         :param table: The table for which the rows should be imported.
-        :param data: List of rows values for rows that need to be created.
+        :param data: List of rows values and the import configuration.
         :param progress: An optional progress object to track the task progress.
-        :return: The created list of rows instances and the error report.
+        :return: The result of the import.
         """
 
         if table.is_read_only_data_synced_table:
@@ -381,28 +418,63 @@ class ImportRowsActionType(UndoableActionType):
                 "Can't create rows because it has a data sync."
             )
 
-        created_rows, error_report = RowHandler().import_rows(
+        result = RowHandler().import_rows_with_result(
             user,
             table,
             data=data["data"],
             configuration=data.get("configuration") or {},
             progress=progress,
         )
-        if error_report:
-            logger.warning(f"Errors during rows import: {error_report}")
+        if result.error_report:
+            logger.warning(f"Errors during rows import: {result.error_report}")
+
+        updated_rows_values = []
+        if result.original_rows_values_by_id:
+            model = table.get_model()
+            field_ids = {
+                model.get_field_object(name)["field"].id
+                for values in result.original_rows_values_by_id.values()
+                for name in values
+                if name != "id"
+            }
+            rows = model.objects.filter(id__in=result.updated_row_ids)
+            updated_rows_values = [
+                get_row_values(row, [model._field_objects[fid] for fid in field_ids])
+                for row in rows
+            ]
+
         workspace = table.database.workspace
         params = cls.Params(
             table.id,
             table.name,
             table.database.id,
             table.database.name,
-            [row.id for row in created_rows],
+            [row.id for row in result.created_rows],
+            import_trashed_row_ids=result.trashed_row_ids,
+            import_trashed_rows_entry_id=result.trashed_rows_entry_id,
+            original_rows_values_by_id=result.original_rows_values_by_id,
+            updated_rows_values=updated_rows_values,
         )
         cls.register_action(
             user, params, scope=cls.scope(table.id), workspace=workspace
         )
 
-        return created_rows, error_report
+        return result
+
+    @classmethod
+    def serialized_to_params(cls, serialized_params: Any) -> Any:
+        """
+        Integer dictionary keys are stored as strings, convert the row ids back.
+        """
+
+        serialized_params = deepcopy(serialized_params)
+        serialized_params["original_rows_values_by_id"] = {
+            int(row_id): row_values
+            for row_id, row_values in (
+                serialized_params.get("original_rows_values_by_id") or {}
+            ).items()
+        }
+        return cls.Params(**serialized_params)
 
     @classmethod
     def scope(cls, table_id) -> ActionScopeStr:
@@ -410,20 +482,43 @@ class ImportRowsActionType(UndoableActionType):
 
     @classmethod
     def undo(cls, user: AbstractUser, params: Params, action_being_undone: Action):
-        trashed_rows_trash_entry = RowHandler().delete_rows(
-            user, TableHandler().get_table(params.table_id), params.row_ids
-        )
-        params.trashed_rows_entry_id = trashed_rows_trash_entry.id
+        table = TableHandler().get_table(params.table_id)
+        handler = RowHandler()
+        if params.row_ids:
+            trashed_rows_trash_entry = handler.delete_rows(user, table, params.row_ids)
+            params.trashed_rows_entry_id = trashed_rows_trash_entry.id
+        if params.original_rows_values_by_id:
+            handler.update_rows(
+                user, table, list(params.original_rows_values_by_id.values())
+            )
+        if params.import_trashed_rows_entry_id:
+            TrashHandler.restore_item(
+                user,
+                "rows",
+                params.import_trashed_rows_entry_id,
+                parent_trash_item_id=params.table_id,
+            )
         action_being_undone.params = params
 
     @classmethod
     def redo(cls, user: AbstractUser, params: Params, action_being_redone: Action):
-        TrashHandler.restore_item(
-            user,
-            "rows",
-            params.trashed_rows_entry_id,
-            parent_trash_item_id=params.table_id,
-        )
+        table = TableHandler().get_table(params.table_id)
+        handler = RowHandler()
+        if params.import_trashed_row_ids:
+            trashed_rows = handler.delete_rows(
+                user, table, params.import_trashed_row_ids
+            )
+            params.import_trashed_rows_entry_id = trashed_rows.id
+        if params.row_ids and params.trashed_rows_entry_id:
+            TrashHandler.restore_item(
+                user,
+                "rows",
+                params.trashed_rows_entry_id,
+                parent_trash_item_id=params.table_id,
+            )
+        if params.updated_rows_values:
+            handler.update_rows(user, table, params.updated_rows_values)
+        action_being_redone.params = params
 
 
 class DeleteRowActionType(UndoableActionType):

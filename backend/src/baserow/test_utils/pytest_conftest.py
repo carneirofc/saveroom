@@ -490,7 +490,12 @@ def stub_user_source_registry(data_fixture, mutable_user_source_registry, fake):
 
         from baserow.core.user_sources.registries import user_source_type_registry
 
-        user_source_type = list(mutable_user_source_registry.get_all())[0]
+        registered_types = list(mutable_user_source_registry.get_all())
+        if not registered_types:
+            import pytest
+
+            pytest.skip("No user source type is registered (needs a plugin).")
+        user_source_type = registered_types[0]
 
         class StubbedUserSourceType(UserSourceType):
             type = user_source_type.type
@@ -956,15 +961,6 @@ def migrator(second_separate_database_for_migrations, reset_schema):
 @pytest.fixture
 def disable_full_text_search(settings):
     settings.PG_FULLTEXT_SEARCH_ENABLED = False
-
-
-@pytest.fixture(autouse=True)
-def mutable_generative_ai_model_type_registry():
-    from baserow.core.generative_ai.registries import generative_ai_model_type_registry
-
-    before = generative_ai_model_type_registry.registry.copy()
-    yield generative_ai_model_type_registry
-    generative_ai_model_type_registry.registry = before
 
 
 @pytest.fixture(autouse=True)

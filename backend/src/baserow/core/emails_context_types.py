@@ -18,7 +18,10 @@ class CoreEmailContextType(EmailContextType):
             "public_web_frontend_url": settings.PUBLIC_WEB_FRONTEND_URL,
             "baserow_embedded_share_url": settings.BASEROW_EMBEDDED_SHARE_URL,
             "baserow_embedded_share_hostname": settings.BASEROW_EMBEDDED_SHARE_HOSTNAME,
-            "logo_url": settings.PUBLIC_WEB_FRONTEND_URL + "/img/logo.svg",
+            "app_name": settings.BRANDING_APP_NAME,
+            # Served by the web-frontend's branding route, so a logo replaced
+            # through runtime branding reaches the emails too.
+            "logo_url": settings.PUBLIC_WEB_FRONTEND_URL
+            + "/_branding/assets/img/logo.svg",
             "logo_additional_text": "",
-            "show_baserow_description": True,
         }

@@ -64,11 +64,11 @@
 
   &:hover {
     text-decoration: none;
-    background-color: rgba($palette-neutral-1300, 0.04);
+    background-color: alpha($palette-neutral-1300, 0.04);
   }
 
   &.active {
-    background-color: rgba($palette-neutral-1300, 0.04);
+    background-color: alpha($palette-neutral-1300, 0.04);
     color: $palette-neutral-1200;
   }
 }

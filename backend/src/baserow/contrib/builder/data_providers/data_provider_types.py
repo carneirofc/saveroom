@@ -206,7 +206,7 @@ class DataSourceDataProviderType(BuilderDataProviderType):
             try:
                 data_source_id = id_mapping["builder_data_sources"][int(data_source_id)]
                 data_source = DataSourceHandler().get_data_source(data_source_id)
-            except (KeyError, DataSourceDoesNotExist):
+            except KeyError, DataSourceDoesNotExist:
                 # The data source have probably been deleted so we return the
                 # initial path
                 return [str(data_source_id), *rest]
@@ -294,7 +294,7 @@ class DataSourceContextDataProviderType(BuilderDataProviderType):
             try:
                 data_source_id = id_mapping["builder_data_sources"][int(data_source_id)]
                 data_source = DataSourceHandler().get_data_source(data_source_id)
-            except (KeyError, DataSourceDoesNotExist):
+            except KeyError, DataSourceDoesNotExist:
                 # The data source have probably been deleted, so we return the
                 # initial path
                 return [str(data_source_id), *rest]
@@ -564,7 +564,7 @@ class PreviousActionProviderType(BuilderDataProviderType):
                 workflow_action = BuilderWorkflowActionHandler().get_workflow_action(
                     workflow_action_id
                 )
-            except (KeyError, WorkflowActionDoesNotExist):
+            except KeyError, WorkflowActionDoesNotExist:
                 return [str(workflow_action_id), *rest]
 
             service_type = workflow_action.service.specific.get_type()

@@ -35,7 +35,7 @@ export async function getStaffUser(): Promise<User> {
    * Authenticates as the 'e2e' staff user. Used in fixtures which rely
    * on API endpoints that require an admin/staff user.
    */
-  return getTokenAuth("e2e@baserow.io", "testpassword");
+  return getTokenAuth("e2e@example.com", "testpassword");
 }
 
 export async function createUser(
@@ -44,7 +44,7 @@ export async function createUser(
 ): Promise<User> {
   const password = faker.internet.password();
   const response: any = await getClient().post("user/", {
-    name: faker.name.fullName(),
+    name: faker.person.fullName(),
     email: faker.internet.email(),
     password,
     language: "en",

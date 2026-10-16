@@ -190,7 +190,7 @@ def test_add_sub_link(menu_element_fixture):
         (
             "navigate_to_url",
             BaserowFormulaObject(
-                formula="https://www.baserow.io",
+                formula="https://www.example.com",
                 mode=BASEROW_FORMULA_MODE_SIMPLE,
                 version=BASEROW_FORMULA_VERSION_INITIAL,
             ),

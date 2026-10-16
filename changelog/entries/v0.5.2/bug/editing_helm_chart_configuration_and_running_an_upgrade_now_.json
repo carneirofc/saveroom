@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Editing Helm chart configuration and running an upgrade now restarts the affected pods. Previously a configuration-only change updated the ConfigMap but left every pod running on the old values until it happened to be restarted for another reason.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-11"
+}

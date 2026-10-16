@@ -193,7 +193,7 @@ export default {
       ],
       menuVariants: [
         {
-          icon: 'iconoir-enlarge-round-arrow',
+          icon: 'iconoir-enlarge',
           label: this.$t('menuElementForm.expanded'),
           value: 'expanded',
         },
@@ -245,7 +245,7 @@ export default {
       return this.values.variant?.[this.deviceTypeSelected] === 'compact'
     },
     editorCompactMenuToggleIcon() {
-      return this.editorCompactMenuOpen ? 'iconoir-cancel' : 'iconoir-menu'
+      return this.editorCompactMenuOpen ? 'iconoir-xmark' : 'iconoir-menu'
     },
     editorCompactMenuToggleLabel() {
       return this.editorCompactMenuOpen

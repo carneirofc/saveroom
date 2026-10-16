@@ -13,6 +13,8 @@ from rest_framework.views import APIView
 
 from baserow.api.applications.errors import ERROR_APPLICATION_DOES_NOT_EXIST
 from baserow.api.decorators import map_exceptions, validate_body
+from baserow.api.download.handler import DOWNLOAD_EXCEPTIONS
+from baserow.api.download.views import BaseArchiveDownloadView
 from baserow.api.errors import (
     ERROR_GROUP_DOES_NOT_EXIST,
     ERROR_USER_INVALID_GROUP_PERMISSIONS,
@@ -35,7 +37,6 @@ from baserow.api.schemas import (
 )
 from baserow.api.trash.errors import ERROR_CANNOT_DELETE_ALREADY_DELETED_ITEM
 from baserow.api.user_files.errors import ERROR_FILE_SIZE_TOO_LARGE, ERROR_INVALID_FILE
-from baserow.api.utils import validate_data
 from baserow.api.workspaces.users.serializers import WorkspaceUserWorkspaceSerializer
 from baserow.core.action.registries import action_type_registry
 from baserow.core.actions import (
@@ -69,7 +70,6 @@ from baserow.core.jobs.exceptions import MaxJobCountExceeded
 from baserow.core.jobs.handler import JobHandler
 from baserow.core.jobs.registries import job_type_registry
 from baserow.core.notifications.handler import NotificationHandler
-from baserow.core.operations import UpdateWorkspaceOperationType
 from baserow.core.trash.exceptions import CannotDeleteAlreadyDeletedItem
 from baserow.core.user_files.exceptions import (
     FileSizeTooLargeError,
@@ -81,7 +81,6 @@ from .serializers import (
     OrderWorkspacesSerializer,
     PermissionObjectSerializer,
     WorkspaceSerializer,
-    get_generative_ai_settings_serializer,
 )
 
 
@@ -375,89 +374,6 @@ class WorkspacePermissionsView(APIView):
         permissions = CoreHandler().get_permissions(request.user, workspace=workspace)
 
         return Response(permissions)
-
-
-class WorkspaceGenerativeAISettingsView(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    @extend_schema(
-        tags=["Workspaces"],
-        operation_id="get_workspace_generative_ai_models_settings",
-        description=(
-            "Returns the generative AI models settings for the given workspace."
-        ),
-        responses={200: get_generative_ai_settings_serializer()},
-    )
-    @map_exceptions(
-        {
-            WorkspaceDoesNotExist: ERROR_GROUP_DOES_NOT_EXIST,
-            UserNotInWorkspace: ERROR_USER_NOT_IN_GROUP,
-            UserInvalidWorkspacePermissionsError: ERROR_USER_INVALID_GROUP_PERMISSIONS,
-        }
-    )
-    def get(self, request, workspace_id):
-        workspace = CoreHandler().get_workspace(workspace_id)
-
-        # Only ADMINs and who can update the workspace can view these settings.
-        CoreHandler().check_permissions(
-            request.user,
-            UpdateWorkspaceOperationType.type,
-            workspace=workspace,
-            context=workspace,
-        )
-        serializer = get_generative_ai_settings_serializer()
-        settings = workspace.generative_ai_models_settings or {}
-        return Response(serializer(settings).data)
-
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="workspace_id",
-                location=OpenApiParameter.PATH,
-                type=OpenApiTypes.INT,
-                description="Updates the workspace settings for the generative AI models available.",
-            ),
-            CLIENT_SESSION_ID_SCHEMA_PARAMETER,
-        ],
-        tags=["Workspaces"],
-        operation_id="update_workspace_generative_ai_models_settings",
-        description=(
-            "Updates the generative AI models settings for the given workspace."
-        ),
-        request=get_generative_ai_settings_serializer(),
-        responses={
-            200: WorkspaceSerializer,
-            400: get_error_schema(
-                [
-                    "ERROR_USER_NOT_IN_GROUP",
-                    "ERROR_REQUEST_BODY_VALIDATION",
-                    "ERROR_USER_INVALID_GROUP_PERMISSIONS",
-                ]
-            ),
-            404: get_error_schema(["ERROR_GROUP_DOES_NOT_EXIST"]),
-        },
-    )
-    @transaction.atomic
-    @map_exceptions(
-        {
-            WorkspaceDoesNotExist: ERROR_GROUP_DOES_NOT_EXIST,
-            UserNotInWorkspace: ERROR_USER_NOT_IN_GROUP,
-            UserInvalidWorkspacePermissionsError: ERROR_USER_INVALID_GROUP_PERMISSIONS,
-        }
-    )
-    def patch(self, request, workspace_id):
-        data = validate_data(
-            get_generative_ai_settings_serializer(),
-            request.data,
-            return_validated=True,
-        )
-
-        handler = CoreHandler()
-        workspace = handler.get_workspace_for_update(workspace_id)
-        updated_workspace = handler.update_workspace(
-            request.user, workspace, generative_ai_models_settings=data
-        )
-        return Response(WorkspaceSerializer(updated_workspace).data)
 
 
 class CreateInitialWorkspaceView(APIView):
@@ -754,3 +670,87 @@ class AsyncImportApplicationsView(APIView):
 
         serializer = job_type_registry.get_serializer(job, JobSerializer)
         return Response(serializer.data, status=HTTP_202_ACCEPTED)
+
+
+class DownloadExportWorkspaceApplicationsView(BaseArchiveDownloadView):
+    def get_job(self, request, workspace_id=None, job_id=None, **kwargs):
+        return ImportExportHandler().get_export(request.user, workspace_id, job_id)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="workspace_id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.INT,
+                description="The id of the workspace the export belongs to.",
+            ),
+            OpenApiParameter(
+                name="job_id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.INT,
+                description="The id of the export job to download the archive of.",
+            ),
+            OpenApiParameter(
+                name="token",
+                location=OpenApiParameter.QUERY,
+                type=OpenApiTypes.STR,
+                description=(
+                    "A signed download token, as returned in `download_url`. Lets a "
+                    "browser download through a plain link, which cannot carry an "
+                    "Authorization header. A regular JWT works as well."
+                ),
+            ),
+        ],
+        tags=["Workspaces"],
+        operation_id="download_workspace_export",
+        description=(
+            "Downloads the archive of a finished workspace export, streamed from the "
+            "server's file storage. Returns `ERROR_EXPORT_FILE_EXPIRED` when the "
+            "archive is past its retention, and "
+            "`ERROR_EXPORT_FILE_MISSING_FROM_STORAGE` or `ERROR_STORAGE_UNAVAILABLE` "
+            "when the server cannot reach its own file storage."
+        ),
+        request=None,
+        responses={
+            200: OpenApiTypes.BINARY,
+            400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
+            401: get_error_schema(
+                ["ERROR_DOWNLOAD_TOKEN_INVALID", "ERROR_DOWNLOAD_TOKEN_EXPIRED"]
+            ),
+            404: get_error_schema(
+                ["ERROR_GROUP_DOES_NOT_EXIST", "ERROR_RESOURCE_DOES_NOT_EXIST"]
+            ),
+            410: get_error_schema(["ERROR_EXPORT_FILE_EXPIRED"]),
+            500: get_error_schema(["ERROR_EXPORT_FILE_MISSING_FROM_STORAGE"]),
+            503: get_error_schema(["ERROR_STORAGE_UNAVAILABLE"]),
+        },
+    )
+    @map_exceptions(
+        {
+            WorkspaceDoesNotExist: ERROR_GROUP_DOES_NOT_EXIST,
+            UserNotInWorkspace: ERROR_USER_NOT_IN_GROUP,
+            ImportExportResourceDoesNotExist: ERROR_RESOURCE_DOES_NOT_EXIST,
+            **DOWNLOAD_EXCEPTIONS,
+        }
+    )
+    def get(self, request, workspace_id, job_id):
+        return self.serve(request, workspace_id=workspace_id, job_id=job_id)
+
+    @map_exceptions(
+        {
+            WorkspaceDoesNotExist: ERROR_GROUP_DOES_NOT_EXIST,
+            UserNotInWorkspace: ERROR_USER_NOT_IN_GROUP,
+            ImportExportResourceDoesNotExist: ERROR_RESOURCE_DOES_NOT_EXIST,
+            **DOWNLOAD_EXCEPTIONS,
+        }
+    )
+    def head(self, request, workspace_id, job_id):
+        """
+        Answers the client's preflight: the same checks, without the body, so a
+        download that cannot work is reported as a message instead of dumping an
+        error page where the archive was supposed to be.
+        """
+
+        return self.serve(
+            request, head_only=True, workspace_id=workspace_id, job_id=job_id
+        )

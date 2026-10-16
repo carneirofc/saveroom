@@ -595,7 +595,7 @@ class CoreHTTPRequestServiceType(CoreServiceType):
         elif service.body_type == BODY_TYPE.RAW:  # Raw payload
             body_dict["data"] = body_content
 
-        headers = {"user-agent": f"Baserow/{BASEROW_VERSION}/HTTPRequestService"} | {
+        headers = {"user-agent": f"Saveroom/{BASEROW_VERSION}/HTTPRequestService"} | {
             h.key: resolved_values[f"header_{h.id}"] for h in service.headers.all()
         }
         query_params = {
@@ -895,8 +895,11 @@ class CoreSMTPEmailServiceType(CoreServiceType):
                 backend="django.core.mail.backends.smtp.EmailBackend",
                 host=smtp_integration.host,
                 port=smtp_integration.port,
-                username=smtp_integration.username,
-                password=smtp_integration.password,
+                # Django's backend replaces a None username or password with the
+                # instance's EMAIL_HOST_USER / EMAIL_HOST_PASSWORD, which would
+                # authenticate to a host the builder chose.
+                username=smtp_integration.username or "",
+                password=smtp_integration.password or "",
                 use_tls=smtp_integration.use_tls,
                 timeout=SMTP_EMAIL_TIMEOUT,
             )

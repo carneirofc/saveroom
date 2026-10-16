@@ -14,7 +14,7 @@
             class="context__menu-item-link"
             @click.prevent="showChangePasswordModal"
           >
-            <i class="context__menu-item-icon iconoir-key-alt"></i>
+            <i class="context__menu-item-icon iconoir-key"></i>
             {{ $t('editUserContext.changePassword') }}
           </a>
         </li>
@@ -27,7 +27,7 @@
             }"
             @click.prevent="deactivate"
           >
-            <i class="context__menu-item-icon iconoir-cancel"></i>
+            <i class="context__menu-item-icon iconoir-xmark"></i>
             {{ $t('action.deactivate') }}
           </a>
           <a

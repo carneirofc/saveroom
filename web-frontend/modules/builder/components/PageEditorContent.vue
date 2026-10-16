@@ -3,7 +3,8 @@
     <PageHeader />
     <div class="layout__col-2-2 page-editor__content">
       <div :style="{ width: `calc(100% - ${panelWidth}px)` }">
-        <PagePreview />
+        <div v-if="pageLoading" class="loading-absolute-center"></div>
+        <PagePreview v-else />
       </div>
       <div
         class="page-editor__side-panel"
@@ -37,12 +38,23 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  loading: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
 })
 
 const mode = 'editing'
 const { $store, $registry } = useNuxtApp()
 
 const panelWidth = ref(360)
+
+const pageLoading = computed(
+  () =>
+    props.loading ||
+    $store.getters['dataSource/getLoading'](props.page) === true
+)
 
 const applicationContext = computed(() => ({
   workspace: props.workspace,

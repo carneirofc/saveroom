@@ -82,7 +82,7 @@ export default class UserAdminUserHelpers {
   }
 
   async clickDeactivateUser(editUserContext) {
-    await editUserContext.find('.iconoir-cancel').trigger('click')
+    await editUserContext.find('.iconoir-xmark').trigger('click')
   }
 
   async clickActivateUser(editUserContext) {

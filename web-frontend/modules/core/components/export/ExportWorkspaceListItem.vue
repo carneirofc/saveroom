@@ -12,7 +12,7 @@
     </div>
     <div class="export-workspace__actions">
       <DownloadLink
-        :url="exportJob.url"
+        :url="exportJob.download_url"
         :filename="exportJob.exported_file_name"
         :loading-class="'button--loading'"
       >

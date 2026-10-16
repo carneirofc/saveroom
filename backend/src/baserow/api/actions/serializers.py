@@ -44,7 +44,7 @@ def get_undo_request_serializer() -> Type[serializers.Serializer]:
             required=True,
             help_text="A JSON object with keys and values representing the various "
             "action scopes to include when undoing or redoing. Every action in "
-            "Baserow will be associated with a action scope, when undoing/redoing "
+            "Saveroom will be associated with a action scope, when undoing/redoing "
             "only actions which match any of the provided scope key:value pairs will "
             "included when this endpoint picks the next action to undo/redo. If no "
             "scopes are provided then all actions performed in the client session "

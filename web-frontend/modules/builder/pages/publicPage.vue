@@ -130,7 +130,7 @@ const {
         } catch (error) {
           if (error.response?.status === 401) {
             // We logoff as the token has probably expired or became invalid
-            await logOffAndReturnToLogin({
+            return logOffAndReturnToLogin({
               builder,
               store,
               redirect: navigateTo,
@@ -245,7 +245,7 @@ const {
       if (error.response?.status === 401) {
         // this case can happen if the site has been published with changes in the
         // user source. In this case we want to unlog the user.
-        await logOffAndReturnToLogin({ builder, store, redirect: navigateTo })
+        return logOffAndReturnToLogin({ builder, store, redirect: navigateTo })
       } else if (
         error.response?.status === 404 &&
         error.response?.data?.error === 'ERROR_PAGE_DOES_NOT_EXIST'

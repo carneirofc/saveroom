@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Retention notices (row history, audit log) and snapshot limits and expiry now show their number of days, and several icons that rendered blank are visible again.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-25"
+}

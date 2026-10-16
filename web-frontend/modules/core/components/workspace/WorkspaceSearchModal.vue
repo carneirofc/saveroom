@@ -34,7 +34,7 @@
               v-show="searchTerm.length > 0"
               class="workspace-search__close"
               @click="clearSearch"
-              ><i class="iconoir-cancel"
+              ><i class="iconoir-xmark"
             /></a>
           </div>
         </div>

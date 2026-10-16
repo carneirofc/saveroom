@@ -1,0 +1,44 @@
+.pending-changes-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px 8px 16px;
+  background-color: $white;
+  border: 1px solid $color-neutral-200;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px alpha($black, 0.16);
+  white-space: nowrap;
+}
+
+.pending-changes-bar--inline {
+  position: static;
+  transform: none;
+  margin-top: 20px;
+  box-shadow: none;
+}
+
+.pending-changes-bar__icon {
+  color: $color-neutral-500;
+  font-size: 16px;
+}
+
+.pending-changes-bar__count {
+  font-weight: 500;
+}
+
+.pending-changes-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.sidebar-item__protected-check {
+  margin-left: auto;
+  padding-left: 8px;
+}

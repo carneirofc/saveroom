@@ -1,5 +1,4 @@
 from django.db import connection
-from django.test import override_settings
 
 import pytest
 from asgiref.sync import sync_to_async
@@ -577,22 +576,15 @@ def test_broadcast_to_permitted_users_does_not_fail_for_trashed_objects(data_fix
         pytest.fail(f"broadcast_to_permitted_users raised an exception: {e}")
 
 
-@pytest.mark.django_db
-@override_settings(BASEROW_REALTIME_REPLAY_MAX_EVENTS=0)
-def test_cleanup_task_skips_query_when_recording_disabled(django_assert_num_queries):
-    from baserow.ws.tasks import cleanup_old_realtime_events
-
-    # With recording disabled the periodic task must not touch the database.
-    with django_assert_num_queries(0):
-        cleanup_old_realtime_events()
-
-
-@pytest.mark.django_db
-@override_settings(BASEROW_REALTIME_REPLAY_MAX_EVENTS=5)
-def test_cleanup_task_runs_when_recording_enabled():
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("max_events", [0, 5])
+def test_cleanup_task_removes_expired_data_independently_of_recording(
+    settings, max_events
+):
     from baserow.ws.models import RealtimeEvent
     from baserow.ws.tasks import cleanup_old_realtime_events
 
+    settings.BASEROW_REALTIME_REPLAY_MAX_EVENTS = max_events
     with connection.cursor() as cursor:
         cursor.execute(
             "INSERT INTO ws_realtime_events "

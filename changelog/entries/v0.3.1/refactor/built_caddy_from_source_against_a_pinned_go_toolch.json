@@ -1,0 +1,9 @@
+{
+    "type": "refactor",
+    "message": "Built Caddy from source against a pinned Go 1.26.7 toolchain in the all-in-one image instead of copying the binary from the official caddy image, resolving the Go standard library CVEs reported against the published image.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-08-28"
+}

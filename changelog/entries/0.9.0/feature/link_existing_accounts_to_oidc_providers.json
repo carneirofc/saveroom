@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Added recovery from errorDifferentProvider OIDC lockouts: a per-provider link_existing_accounts option links an existing non-staff account on sign-in when the IdP verifies its email, and the link_oidc_account management command lists, links, unlinks and carries over account links after a provider rename.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-14"
+}

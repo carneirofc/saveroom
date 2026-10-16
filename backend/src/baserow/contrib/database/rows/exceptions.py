@@ -38,6 +38,22 @@ class CannotDeleteRowsInTable(Exception):
     """
 
 
+class ImportAmbiguousMatches(Exception):
+    """
+    Raised when the match keys of an import are not unique in the imported data or
+    in the table and ambiguous matches were not explicitly allowed.
+    """
+
+    def __init__(self, keys: list[dict], *args, **kwargs):
+        self.keys = keys
+        super().__init__(
+            f"{len(keys)} match key(s) are not unique in the imported data or the "
+            "table.",
+            *args,
+            **kwargs,
+        )
+
+
 class InvalidRowLength(Exception):
     """
     Row's length doesn't match expected length based on schema.

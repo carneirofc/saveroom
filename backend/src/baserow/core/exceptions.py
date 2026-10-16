@@ -70,9 +70,7 @@ class WorkspaceUserDoesNotExist(Exception):
 
 class WorkspaceUserAlreadyExists(Exception):
     """
-    Raised when trying to create a workspace user that already exists. This could also
-    be raised when an invitation is created for a user that is already part of the
-    workspace.
+    Raised when trying to create a workspace user that already exists.
     """
 
 
@@ -138,6 +136,17 @@ class ApplicationOperationNotSupported(Exception):
     """
 
 
+class ApplicationTypeDisabled(Exception):
+    """
+    Raised when trying to create an application of a type that has been
+    disabled by an instance administrator through the instance settings.
+    """
+
+    def __init__(self, application_type: str = None, *args, **kwargs):
+        self.application_type = application_type
+        super().__init__(*args, **kwargs)
+
+
 class AuthenticationProviderTypeAlreadyRegistered(InstanceTypeAlreadyRegistered):
     pass
 
@@ -181,18 +190,6 @@ class BaseURLHostnameNotAllowed(Exception):
     """
 
 
-class WorkspaceInvitationDoesNotExist(Exception):
-    """
-    Raised when the requested workspace invitation doesn't exist.
-    """
-
-
-class WorkspaceInvitationEmailMismatch(Exception):
-    """
-    Raised when the workspace invitation email is not the expected email address.
-    """
-
-
 class TemplateDoesNotExist(Exception):
     """
     Raised when the requested template does not exist in the database.
@@ -233,8 +230,8 @@ class MaxLocksPerTransactionExceededException(Exception):
     """
 
     message = (
-        "Baserow has exceeded the maximum number of PostgreSQL locks per transaction. "
-        "Please read https://baserow.io/docs/technical/postgresql-locks"
+        "The server has exceeded the maximum number of PostgreSQL locks per transaction. "
+        "Please read https://github.com/carneirofc/baserow"
     )
 
 
@@ -257,9 +254,9 @@ class DuplicateApplicationMaxLocksExceededException(
     """
 
     message = (
-        "Baserow attempted to duplicate an application, but exceeded the maximum "
+        "The server attempted to duplicate an application, but exceeded the maximum "
         "number of PostgreSQL locks per transaction. Please read "
-        "https://baserow.io/docs/technical/postgresql-locks"
+        "https://github.com/carneirofc/baserow"
     )
 
 

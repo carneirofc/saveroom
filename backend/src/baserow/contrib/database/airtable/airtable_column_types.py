@@ -226,7 +226,7 @@ class NumberAirtableColumnType(AirtableColumnType):
                 raw_airtable_table.get("name", ""),
                 ERROR_TYPE_UNSUPPORTED_FEATURE,
                 f"The field was imported, but the separator format "
-                f"{separator_format} was dropped because it doesn't exist in Baserow.",
+                f"{separator_format} was dropped because it isn't supported.",
             )
         default_value = raw_airtable_column.get("default", "") or None
 
@@ -551,8 +551,7 @@ class FormulaAirtableColumnType(AirtableColumnType):
                     raw_airtable_table.get("name", ""),
                     ERROR_TYPE_UNSUPPORTED_FEATURE,
                     f"The field was imported, but the support to depend on "
-                    f"specific fields was dropped because that's not supported by "
-                    f"Baserow.",
+                    f"specific fields was dropped because that's not supported.",
                 )
 
             return LastModifiedField(
@@ -618,7 +617,7 @@ class ForeignKeyAirtableColumnType(AirtableColumnType):
                 raw_airtable_table.get("name", ""),
                 ERROR_TYPE_UNSUPPORTED_FEATURE,
                 f"The field was imported, but support for a one to many "
-                f"relationship was dropped because it's not supported by Baserow.",
+                f"relationship was dropped because it's not supported.",
             )
 
         if view_id_for_record_selection is not None:
@@ -638,7 +637,7 @@ class ForeignKeyAirtableColumnType(AirtableColumnType):
                 raw_airtable_table.get("name", ""),
                 ERROR_TYPE_UNSUPPORTED_FEATURE,
                 f"The field was imported, but filtering record by a condition "
-                f"was dropped because it's not supported by Baserow.",
+                f"was dropped because it's not supported.",
             )
 
         if ai_matching_options is not None:
@@ -648,7 +647,7 @@ class ForeignKeyAirtableColumnType(AirtableColumnType):
                 raw_airtable_table.get("name", ""),
                 ERROR_TYPE_UNSUPPORTED_FEATURE,
                 f"The field was imported, but using AI to show top matches was "
-                f"dropped because it's not supported by Baserow.",
+                f"dropped because it's not supported.",
             )
 
         return LinkRowField(

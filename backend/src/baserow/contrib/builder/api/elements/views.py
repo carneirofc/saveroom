@@ -31,7 +31,6 @@ from baserow.contrib.builder.api.elements.errors import (
     ERROR_ELEMENT_MOVE_NOT_ALLOWED,
     ERROR_ELEMENT_NOT_IN_SAME_PAGE,
     ERROR_ELEMENT_PROPERTY_OPTIONS_NOT_UNIQUE,
-    ERROR_ELEMENT_TYPE_DEACTIVATED,
 )
 from baserow.contrib.builder.api.elements.serializers import (
     CreateElementSerializer,
@@ -58,7 +57,6 @@ from baserow.contrib.builder.elements.exceptions import (
     ElementDoesNotExist,
     ElementMoveNotAllowed,
     ElementNotInSamePage,
-    ElementTypeDeactivated,
 )
 from baserow.contrib.builder.elements.handler import ElementHandler
 from baserow.contrib.builder.elements.registries import element_type_registry
@@ -177,7 +175,6 @@ class ElementsView(APIView):
             PageDoesNotExist: ERROR_PAGE_DOES_NOT_EXIST,
             ElementDoesNotExist: ERROR_ELEMENT_DOES_NOT_EXIST,
             ElementNotInSamePage: ERROR_ELEMENT_NOT_IN_SAME_PAGE,
-            ElementTypeDeactivated: ERROR_ELEMENT_TYPE_DEACTIVATED,
             InvalidRuntimeFormula: ERROR_ELEMENT_INVALID_FORMULA,
             GraphPointReferencePointInvalid: ERROR_ELEMENT_DOES_NOT_EXIST,
         }

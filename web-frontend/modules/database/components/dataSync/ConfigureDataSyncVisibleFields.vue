@@ -69,20 +69,12 @@
           v-model="twoWayDataSync"
           class="margin-top-2"
           small
-          :disabled="updateLoading || isTwoWaySyncDeactivated"
+          :disabled="updateLoading"
           @input="completed = false"
-          @click="clickTwoWaySync"
         >
           {{ $t('createDataSync.twoWaySyncLabel') }}
-          <i v-if="isTwoWaySyncDeactivated" class="iconoir-lock"></i>
         </SwitchInput>
       </FormGroup>
-      <component
-        :is="twoWaySyncDeactivatedModal[0]"
-        v-if="twoWaySyncDeactivatedModal !== null"
-        ref="twoWaySyncDeactivatedModal"
-        v-bind="twoWaySyncDeactivatedModal[1]"
-      ></component>
       <Error :error="error"></Error>
       <div class="modal-progress__actions margin-top-2">
         <ProgressBar
@@ -161,18 +153,6 @@ export default {
 
       return this.$registry.get('twoWaySyncStrategy', strategy)
     },
-    isTwoWaySyncDeactivated() {
-      if (!this.twoWaySyncStrategy) {
-        return true
-      }
-      return this.twoWaySyncStrategy.isDeactivated(this.database.workspace.id)
-    },
-    twoWaySyncDeactivatedModal() {
-      if (!this.twoWaySyncStrategy) {
-        return null
-      }
-      return this.twoWaySyncStrategy.getDeactivatedClickModal()
-    },
   },
   mounted() {
     this.hideError()
@@ -181,9 +161,9 @@ export default {
     )
     this.autoAddNewProperties = this.table.data_sync.auto_add_new_properties
     this.deleteUnmatchedRows = this.table.data_sync.delete_unmatched_rows
-    this.twoWayDataSync = this.isTwoWaySyncDeactivated
-      ? false
-      : this.table.data_sync.two_way_sync
+    this.twoWayDataSync = this.twoWaySyncStrategy
+      ? this.table.data_sync.two_way_sync
+      : false
     this.fetchExistingProperties(this.table)
   },
   methods: {
@@ -203,11 +183,6 @@ export default {
       )
       if (!this.syncTableValue) {
         this.completed = true
-      }
-    },
-    clickTwoWaySync() {
-      if (this.isTwoWaySyncDeactivated) {
-        this.$refs.twoWaySyncDeactivatedModal.show()
       }
     },
   },

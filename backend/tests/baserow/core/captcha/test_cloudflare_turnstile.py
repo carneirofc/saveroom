@@ -110,7 +110,7 @@ def test_validate_token_failure():
 )
 @responses.activate
 def test_validate_token_network_error():
-    """Network errors should bubble up uncaught so they surface in Sentry."""
+    """Network errors should bubble up uncaught so they surface in the logs."""
 
     responses.add(
         responses.POST,
@@ -128,7 +128,7 @@ def test_validate_token_network_error():
 )
 @responses.activate
 def test_validate_token_http_500_error():
-    """Unexpected HTTP errors should bubble up uncaught so they surface in Sentry."""
+    """Unexpected HTTP errors should bubble up uncaught so they surface in logs."""
 
     responses.add(
         responses.POST,

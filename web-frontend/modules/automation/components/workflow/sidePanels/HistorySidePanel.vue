@@ -24,7 +24,7 @@
       </span>
 
       <a role="button" @click="closeHistory()">
-        <Icon icon="iconoir-cancel" type="secondary" />
+        <Icon icon="iconoir-xmark" type="secondary" />
       </a>
     </div>
 

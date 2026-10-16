@@ -52,7 +52,7 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background-color: #fff;
+  background-color: $white;
   border: 1px solid $palette-neutral-400;
   cursor: pointer;
 
@@ -72,15 +72,15 @@
 }
 
 .radio__input input[type='radio']:checked + label {
-  @include fill-radio('#{$palette-blue-500}');
+  @include fill-radio($palette-blue-500);
 }
 
 .radio__input input[type='radio']:checked + label:hover {
-  @include fill-radio('#{$palette-blue-700}');
+  @include fill-radio($palette-blue-700);
 }
 
 .radio__input input[type='radio']:disabled:checked + label {
-  @include fill-radio('#{$palette-neutral-200}');
+  @include fill-radio($palette-neutral-200);
 }
 
 .radio__loading {
@@ -121,7 +121,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  border: 2px solid #007bff;
+  border: 2px solid $color-primary-500;
   border-top-color: transparent;
   animation: radio__loading 0.5s linear infinite;
 }

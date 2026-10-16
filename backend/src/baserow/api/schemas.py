@@ -6,6 +6,10 @@ from drf_spectacular.utils import OpenApiParameter
 
 
 def get_error_schema(errors=None):
+    if errors is not None:
+        # Callers often combine shared error lists; OpenAPI requires `enum`
+        # items to be unique, so drop repeats while keeping the order.
+        errors = list(dict.fromkeys(errors))
     return build_object_type(
         {
             "error": {

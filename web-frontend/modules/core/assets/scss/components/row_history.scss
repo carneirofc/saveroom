@@ -16,6 +16,15 @@
   }
 }
 
+.row-history__retention {
+  // Sits under the scrolling list rather than in it, so it stays visible while
+  // the history is scrolled.
+  flex: 0 0 auto;
+  color: $color-neutral-400;
+  padding: 8px 12px;
+  text-align: center;
+}
+
 .row-history__empty {
   text-align: center;
   display: flex;

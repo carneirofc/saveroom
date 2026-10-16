@@ -19,7 +19,7 @@
           class="form-view__file-delete"
           @click="updateForm({ cover_image: null })"
         >
-          <i class="iconoir-cancel"></i>
+          <i class="iconoir-xmark"></i>
           {{ $t('action.remove') }}
         </a>
       </template>

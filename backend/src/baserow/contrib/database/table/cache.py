@@ -35,27 +35,51 @@ def table_model_cache_entry_key(table_id: int) -> str:
     return f"full_table_model_{table_id}_{BASEROW_VERSION}"
 
 
-def get_cached_model_field_attrs(table: "Table") -> Optional[Dict[str, Any]]:
+def get_cached_model_field_attrs(
+    table: "Table", version: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """
+    :param table: The table to get the cached field attrs for.
+    :param version: The table version the entry must match. Defaults to
+        `table.version`, but callers that know a fresher version than the one
+        carried by this particular instance should pass it explicitly.
+    """
+
+    if version is None:
+        version = table.version
+
     cache_key = table_model_cache_entry_key(table.id)
     cache_entry = generated_models_cache.get(cache_key)
 
-    if cache_entry and cache_entry["version"] == table.version:
+    if cache_entry and cache_entry["version"] == version:
         return cache_entry["field_attrs"]
     else:
         return None
 
 
-def set_cached_model_field_attrs(table: "Table", field_attrs: Dict[str, Any]):
+def set_cached_model_field_attrs(
+    table: "Table", field_attrs: Dict[str, Any], version: Optional[str] = None
+):
+    """
+    :param table: The table to cache the field attrs for.
+    :param field_attrs: The generated field attrs to cache.
+    :param version: The table version to label the entry with. Defaults to
+        `table.version`. See `get_cached_model_field_attrs`.
+    """
+
+    if version is None:
+        version = table.version
+
     cache_key = table_model_cache_entry_key(table.id)
     generated_models_cache.set(
         cache_key,
-        {"field_attrs": field_attrs, "version": table.version},
+        {"field_attrs": field_attrs, "version": version},
         timeout=None,
     )
 
 
 def clear_generated_model_cache():
-    print("Clearing Baserow's internal generated model cache...")
+    print("Clearing Saveroom's internal generated model cache...")
     if hasattr(generated_models_cache, "delete_pattern"):
         generated_models_cache.delete_pattern("full_table_model_*")
     elif settings.TESTS:
@@ -63,7 +87,7 @@ def clear_generated_model_cache():
         generated_models_cache.clear()
     else:
         raise ImproperlyConfigured(
-            "Baserow must be run with a redis cache outside of tests."
+            "Saveroom must be run with a redis cache outside of tests."
         )
     print("Done clearing cache.")
 

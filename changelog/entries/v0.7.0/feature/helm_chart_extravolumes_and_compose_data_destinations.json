@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "The Helm chart adds extraVolumes and extraVolumeMounts to the backend and Celery pods, and Docker Compose forwards BASEROW_DATA_DESTINATIONS, so destination credentials can be mounted as files.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-13"
+}

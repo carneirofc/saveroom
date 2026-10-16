@@ -9,7 +9,7 @@ export class DatabaseSearchType extends ApplicationSearchType {
     super(context)
     this.type = 'database'
     this.name = 'Database'
-    this.icon = 'iconoir-db'
+    this.icon = 'iconoir-database'
     this.priority = 1
   }
 

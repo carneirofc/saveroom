@@ -27,7 +27,7 @@
     <div v-if="isSelected" class="element-preview__tags">
       <div class="element-preview__name-tag">
         {{ elementType.name }}
-        <i v-if="!isVisible" class="iconoir-eye-off" />
+        <i v-if="!isVisible" class="iconoir-eye-closed" />
       </div>
       <div v-if="errorMessage" class="element-preview__error-tag">
         {{ errorMessage }}

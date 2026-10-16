@@ -2,7 +2,7 @@
 #
 # READ ME FIRST!
 #
-# Use the much simpler `docker-compose.all-in-one.yml` instead of this file
+# Use the much simpler root `docker-compose.yaml` instead of this file
 # unless you are an advanced user!
 #
 # This compose file runs every service separately using a Caddy reverse proxy to route
@@ -17,11 +17,11 @@
 # 3. Set further environment variables as you wish.
 #
 # More documentation can be found in:
-# https://baserow.io/docs/installation%2Finstall-with-docker-compose
+# https://github.com/carneirofc/baserow
 #
 ########################################################################################
 
-# See https://baserow.io/docs/installation%2Fconfiguration for more details on these
+# See https://github.com/carneirofc/baserow for more details on these
 # backend environment variables, their defaults if left blank etc.
 x-backend-variables:
   &backend-variables # Most users should only need to set these first four variables.
@@ -88,8 +88,9 @@ x-backend-variables:
   AWS_S3_ENDPOINT_URL:
   AWS_S3_CUSTOM_DOMAIN:
 
-  # Misc settings see https://baserow.io/docs/installation%2Fconfiguration for info
+  # Misc settings see https://github.com/carneirofc/baserow for info
   BASEROW_AMOUNT_OF_WORKERS:
+  BASEROW_BRANDING_APP_NAME:
   BASEROW_ROW_PAGE_SIZE_LIMIT:
   BASEROW_DEPENDANT_ROWS_REALTIME_UPDATE_LIMIT:
   BASEROW_INTEGRATION_LOCAL_BASEROW_PAGE_SIZE_LIMIT:
@@ -99,11 +100,12 @@ x-backend-variables:
   BATCH_ROWS_SIZE_LIMIT:
   INITIAL_TABLE_DATA_LIMIT:
   BASEROW_FILE_UPLOAD_SIZE_LIMIT_MB:
+  BASEROW_MAX_REQUEST_BODY_SIZE_MB:
   BASEROW_FILE_UPLOAD_ACTIVE_CONTENT_POLICY:
-  BASEROW_OPENAI_UPLOADED_FILE_SIZE_LIMIT_MB:
   BASEROW_UNIQUE_ROW_VALUES_SIZE_LIMIT:
   BASEROW_MAX_FIELD_TEXT_LENGTH:
   BASEROW_REALTIME_REPLAY_MAX_EVENTS:
+  BASEROW_REALTIME_REPLAY_RETENTION_HOURS:
 
   BASEROW_AUTOMATION_HISTORY_PAGE_SIZE_LIMIT:
   BASEROW_AUTOMATION_WORKFLOW_RATE_LIMIT_MAX_RUNS:
@@ -140,8 +142,6 @@ x-backend-variables:
   BASEROW_DEPLOYMENT_ENV:
   OTEL_EXPORTER_OTLP_ENDPOINT:
   OTEL_RESOURCE_ATTRIBUTES:
-  POSTHOG_PROJECT_API_KEY:
-  POSTHOG_HOST:
 
   PRIVATE_BACKEND_URL: http://backend:8000
   PUBLIC_BACKEND_URL:
@@ -152,6 +152,10 @@ x-backend-variables:
 
   BASEROW_AIRTABLE_IMPORT_SOFT_TIME_LIMIT:
   HOURS_UNTIL_TRASH_PERMANENTLY_DELETED:
+  EXPORT_FILE_EXPIRE_MINUTES:
+  BASEROW_EXPORT_DOWNLOAD_TOKEN_MAX_AGE_SECONDS:
+  BASEROW_EXPORT_DOWNLOAD_BLOCK_SIZE:
+  BASEROW_SHARED_STORAGE_PROBE_INTERVAL_MINUTES:
   OLD_ACTION_CLEANUP_INTERVAL_MINUTES:
   MINUTES_UNTIL_ACTION_CLEANED_UP:
   BASEROW_GROUP_STORAGE_USAGE_QUEUE:
@@ -171,6 +175,7 @@ x-backend-variables:
   BASEROW_MAX_ROW_REPORT_ERROR_COUNT:
   BASEROW_JOB_SOFT_TIME_LIMIT:
   BASEROW_FRONTEND_JOBS_POLLING_TIMEOUT_MS:
+  BASEROW_FRONTEND_COOKIE_PREFIX:
   BASEROW_INITIAL_CREATE_SYNC_TABLE_DATA_LIMIT:
   BASEROW_MAX_SNAPSHOTS_PER_GROUP:
   BASEROW_SNAPSHOT_EXPIRATION_TIME_DAYS:
@@ -186,8 +191,7 @@ x-backend-variables:
   BASEROW_WEBHOOKS_REQUEST_TIMEOUT_SECONDS:
   BASEROW_INTEGRATIONS_ALLOW_PRIVATE_ADDRESS:
   BASEROW_INTEGRATIONS_PERIODIC_MINUTE_MIN:
-  BASEROW_ENTERPRISE_AUDIT_LOG_CLEANUP_INTERVAL_MINUTES:
-  BASEROW_ENTERPRISE_AUDIT_LOG_RETENTION_DAYS:
+  BASEROW_DATA_SYNC_ALLOW_PRIVATE_ADDRESS:
   BASEROW_ALLOW_MULTIPLE_SSO_PROVIDERS_FOR_SAME_ACCOUNT:
   BASEROW_SEAT_USAGE_JOB_CRONTAB:
   BASEROW_PERIODIC_FIELD_UPDATE_CRONTAB:
@@ -202,7 +206,6 @@ x-backend-variables:
   BASEROW_THROTTLE_IP_ENABLED:
   BASEROW_SEND_VERIFY_EMAIL_RATE_LIMIT:
   BASEROW_LOGIN_ACTION_LOG_LIMIT:
-  BASEROW_OSS_ONLY:
   OTEL_TRACES_SAMPLER:
   OTEL_TRACES_SAMPLER_ARG:
   OTEL_PER_MODULE_SAMPLER_OVERRIDES:
@@ -214,30 +217,12 @@ x-backend-variables:
   BASEROW_BUILDER_PUBLICLY_USED_PROPERTIES_CACHE_TTL_SECONDS:
   BASEROW_BUILDER_DISPATCH_ACTION_CACHE_TTL_SECONDS:
   BASEROW_AUTO_INDEX_VIEW_ENABLED:
-  BASEROW_PERSONAL_VIEW_LOWEST_ROLE_ALLOWED:
   BASEROW_DISABLE_LOCKED_MIGRATIONS:
   BASEROW_USE_PG_FULLTEXT_SEARCH:
   BASEROW_PG_FULLTEXT_SEARCH_UPDATE_DATA_THROTTLE_SECONDS:
   BASEROW_BUILDER_DOMAINS:
-  SENTRY_DSN:
-  SENTRY_BACKEND_DSN:
-  SENTRY_TRACES_SAMPLE_RATE:
   OPENAI_API_KEY:
   GROQ_API_KEY:
-  BASEROW_OPENAI_API_KEY:
-  BASEROW_OPENAI_ORGANIZATION:
-  BASEROW_OPENAI_MODELS:
-  BASEROW_OPENAI_BASE_URL:
-  BASEROW_OPENROUTER_API_KEY:
-  BASEROW_OPENROUTER_ORGANIZATION:
-  BASEROW_OPENROUTER_MODELS:
-  BASEROW_ANTHROPIC_API_KEY:
-  BASEROW_ANTHROPIC_MODELS:
-  BASEROW_MISTRAL_API_KEY:
-  BASEROW_MISTRAL_MODELS:
-  BASEROW_OLLAMA_HOST:
-  BASEROW_OLLAMA_MODELS:
-  BASEROW_AI_FIELD_MAX_CONCURRENT_GENERATIONS:
   BASEROW_SERVE_FILES_THROUGH_BACKEND:
   BASEROW_SERVE_FILES_THROUGH_BACKEND_PERMISSION:
   BASEROW_SERVE_FILES_THROUGH_BACKEND_EXPIRE_SECONDS:
@@ -246,29 +231,17 @@ x-backend-variables:
   BASEROW_REFRESH_TOKEN_LIFETIME_HOURS:
   BASEROW_PREVENT_POSTGRESQL_DATA_SYNC_CONNECTION_TO_DATABASE:
   BASEROW_POSTGRESQL_DATA_SYNC_BLACKLIST:
+  BASEROW_POSTGRESQL_DATA_SYNC_STATEMENT_TIMEOUT:
   BASEROW_TWO_WAY_SYNC_MAX_CONSECUTIVE_FAILURES:
   BASEROW_TWO_WAY_SYNC_MAX_RETRIES:
   BASEROW_ASGI_HTTP_MAX_CONCURRENCY: ${BASEROW_ASGI_HTTP_MAX_CONCURRENCY:-}
   BASEROW_MAX_WEBHOOK_CALLS_IN_QUEUE_PER_WEBHOOK:
   BASEROW_MAX_HEALTHY_CELERY_QUEUE_SIZE:
-  BASEROW_ENTERPRISE_PERIODIC_DATA_SYNC_CHECK_INTERVAL_MINUTES:
-  BASEROW_ENTERPRISE_MAX_PERIODIC_DATA_SYNC_CONSECUTIVE_ERRORS:
   BASEROW_USE_LOCAL_CACHE:
   BASEROW_WEBHOOKS_BATCH_LIMIT:
   BASEROW_WEBHOOK_ROWS_ENTER_VIEW_BATCH_SIZE:
   BASEROW_DEADLOCK_INITIAL_BACKOFF:
   BASEROW_DEADLOCK_MAX_RETRIES:
-  BASEROW_PREMIUM_GROUPED_AGGREGATE_SERVICE_MAX_SERIES:
-  BASEROW_PREMIUM_GROUPED_AGGREGATE_SERVICE_MAX_AGG_BUCKETS:
-  BASEROW_ENTERPRISE_CODE_RUNNER_DEFAULT_TYPE:
-  BASEROW_ENTERPRISE_CODE_RUNNER_WASMTIME_EXECUTABLE:
-  BASEROW_ENTERPRISE_CODE_RUNNER_QUICKJS_WASM_PATH:
-  BASEROW_ENTERPRISE_CODE_RUNNER_TIMEOUT_SECONDS:
-  BASEROW_ENTERPRISE_CODE_RUNNER_MEMORY_LIMIT_BYTES:
-  BASEROW_ENTERPRISE_CODE_RUNNER_FUEL_LIMIT:
-  BASEROW_ENTERPRISE_ASSISTANT_LLM_MODEL:
-  BASEROW_ENTERPRISE_ASSISTANT_LLM_TEMPERATURE:
-  BASEROW_EMBEDDINGS_API_URL:
   BASEROW_OAUTH_BACKEND_URL:
   BASEROW_TOTP_ISSUER_NAME:
   BASEROW_ENABLE_CAPTCHA:
@@ -281,7 +254,12 @@ services:
   # requests to either the backend or web-frontend and also serving user uploaded files
   # from the media volume.
   caddy:
-    image: caddy:2.11.4
+    # This fork's own Caddy build (deploy/caddy/Dockerfile): the same pinned
+    # Caddy release compiled against a current Go toolchain, because the
+    # official caddy image lags behind Go security releases. It is tagged with
+    # this fork's release versions like the other images, but keeps its own
+    # variable so it can be pinned independently of BASEROW_VERSION.
+    image: ghcr.io/carneirofc/baserow/caddy:${BASEROW_CADDY_VERSION:-latest}
     restart: unless-stopped
     environment:
       # Controls what port the Caddy server binds to inside its container.
@@ -302,7 +280,7 @@ services:
       local:
 
   backend:
-    image: baserow/backend:${BASEROW_VERSION:-2.3.2}
+    image: ghcr.io/carneirofc/baserow/backend:${BASEROW_VERSION:-0.15.0}
     restart: unless-stopped
 
     environment:
@@ -316,7 +294,7 @@ services:
       local:
 
   web-frontend:
-    image: baserow/web-frontend:${BASEROW_VERSION:-2.3.2}
+    image: ghcr.io/carneirofc/baserow/web-frontend:${BASEROW_VERSION:-0.15.0}
     restart: unless-stopped
     environment:
       BASEROW_PUBLIC_URL: ${BASEROW_PUBLIC_URL-http://localhost}
@@ -331,8 +309,14 @@ services:
       DOWNLOAD_FILE_VIA_XHR:
       BASEROW_DISABLE_GOOGLE_DOCS_FILE_PREVIEW:
       BASEROW_DISABLE_SUPPORT:
-      BASEROW_EXTRA_CLIENT_SCRIPT_URLS:
       HOURS_UNTIL_TRASH_PERMANENTLY_DELETED:
+      # Retention and expiry values the frontend states in the UI. They must reach
+      # this service too, otherwise it falls back to its own defaults and shows
+      # numbers the backend does not actually enforce.
+      EXPORT_FILE_EXPIRE_MINUTES:
+      BASEROW_SNAPSHOT_EXPIRATION_TIME_DAYS:
+      BASEROW_USER_LOG_ENTRY_RETENTION_DAYS:
+      BASEROW_ROW_HISTORY_RETENTION_DAYS:
       DISABLE_ANONYMOUS_PUBLIC_VIEW_WS_CONNECTIONS:
       FEATURE_FLAGS:
       BASEROW_PRESENCE_VISIBLE_USERS:
@@ -341,11 +325,8 @@ services:
       BASEROW_MAX_SNAPSHOTS_PER_GROUP:
       BASEROW_ENABLE_OTEL:
       BASEROW_DEPLOYMENT_ENV:
-      BASEROW_OSS_ONLY:
       BASEROW_USE_PG_FULLTEXT_SEARCH:
       BASEROW_PG_FULLTEXT_SEARCH_UPDATE_DATA_THROTTLE_SECONDS:
-      POSTHOG_PROJECT_API_KEY:
-      POSTHOG_HOST:
       BASEROW_UNIQUE_ROW_VALUES_SIZE_LIMIT:
       BASEROW_MAX_FIELD_TEXT_LENGTH:
       BASEROW_ROW_PAGE_SIZE_LIMIT:
@@ -358,11 +339,6 @@ services:
       BASEROW_BUILDER_DOMAINS:
       BASEROW_FRONTEND_SAME_SITE_COOKIE:
       BASEROW_FRONTEND_COOKIE_PREFIX:
-      SENTRY_DSN:
-      SENTRY_TRACES_SAMPLE_RATE:
-      SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE:
-      BASEROW_PREMIUM_GROUPED_AGGREGATE_SERVICE_MAX_SERIES:
-      BASEROW_PREMIUM_GROUPED_AGGREGATE_SERVICE_MAX_AGG_BUCKETS:
       BASEROW_AUTOMATION_HISTORY_PAGE_SIZE_LIMIT:
       BASEROW_AUTOMATION_WORKFLOW_RATE_LIMIT_MAX_RUNS:
       BASEROW_AUTOMATION_WORKFLOW_RATE_LIMITS:
@@ -376,15 +352,13 @@ services:
       BASEROW_AUTOMATION_WORKFLOW_HISTORY_MIN_RETENTION_DAYS:
       BASEROW_AUTOMATION_WORKFLOW_HISTORY_CLEANUP_INTERVAL_MINUTES:
       BASEROW_INTEGRATIONS_PERIODIC_MINUTE_MIN:
-      BASEROW_ENTERPRISE_CODE_RUNNER_DEFAULT_TYPE:
-      BASEROW_ENTERPRISE_ASSISTANT_LLM_MODEL:
     depends_on:
       - backend
     networks:
       local:
 
   celery:
-    image: baserow/backend:${BASEROW_VERSION:-2.3.2}
+    image: ghcr.io/carneirofc/baserow/backend:${BASEROW_VERSION:-0.15.0}
     restart: unless-stopped
     environment:
       <<: *backend-variables
@@ -406,7 +380,7 @@ services:
       local:
 
   celery-export-worker:
-    image: baserow/backend:${BASEROW_VERSION:-2.3.2}
+    image: ghcr.io/carneirofc/baserow/backend:${BASEROW_VERSION:-0.15.0}
     restart: unless-stopped
     command: celery-exportworker
     environment:
@@ -428,7 +402,7 @@ services:
       local:
 
   celery-beat-worker:
-    image: baserow/backend:${BASEROW_VERSION:-2.3.2}
+    image: ghcr.io/carneirofc/baserow/backend:${BASEROW_VERSION:-0.15.0}
     restart: unless-stopped
     command: celery-beat
     healthcheck:
@@ -453,9 +427,9 @@ services:
       local:
 
   db:
-    image: pgvector/pgvector:pg15
+    image: pgvector/pgvector:pg18
     # If you were using a previous version, perform the update by uncommenting the
-    # following line. See: https://baserow.io/docs/installation%2Finstall-with-docker#upgrading-postgresql-database-from-a-previous-version
+    # following line. See: https://github.com/carneirofc/baserow
     # for more information.
     # image: pgautoupgrade/pgautoupgrade:15-alpine3.8
     restart: unless-stopped
@@ -463,6 +437,10 @@ services:
       - POSTGRES_USER=${DATABASE_USER:-baserow}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD:?}
       - POSTGRES_DB=${DATABASE_NAME:-baserow}
+      # postgres 18+ defaults PGDATA to /var/lib/postgresql/<major>/docker and
+      # refuses to start with a volume on the old path. Pin the old layout so
+      # the pgdata volume keeps working.
+      - PGDATA=/var/lib/postgresql/data
     healthcheck:
       test:
         [
@@ -478,7 +456,7 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   redis:
-    image: redis:6
+    image: redis:8
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD:?}
     healthcheck:
@@ -489,7 +467,7 @@ services:
   # By default, the media volume will be owned by root on startup. Ensure it is owned by
   # the same user that django is running as, so it can write user files.
   volume-permissions-fixer:
-    image: bash:4.4
+    image: bash:5.3
     command: chown 9999:9999 -R /baserow/media
     volumes:
       - media:/baserow/media

@@ -28,7 +28,6 @@ from baserow.contrib.builder.pages.models import Page
 from baserow.core.formula.types import BaserowFormulaObject
 from baserow.core.graph.exceptions import GraphPointReferencePointInvalid
 from baserow.core.graph.types import GraphPointPosition, GraphPointPositionType
-from baserow.core.models import Workspace
 from baserow.core.registry import (
     CustomFieldsInstanceMixin,
     CustomFieldsRegistryMixin,
@@ -40,8 +39,8 @@ from baserow.core.registry import (
 )
 from baserow.core.storage import ExportZipFile
 from baserow.core.user_files.handler import UserFileHandler
-from baserow.core.user_sources.constants import DEFAULT_USER_ROLE_PREFIX
 from baserow.core.user_sources.handler import UserSourceHandler
+from baserow.core.user_sources.utils import remap_user_source_roles
 
 from .models import CollectionField, Element
 from .types import ElementDictSubClass, ElementSubClass
@@ -83,12 +82,18 @@ class ElementType(
 
         return {"": {"label": ""}}
 
-    def is_deactivated(self, workspace: Workspace) -> bool:
+    def get_event_names(self, instance: ElementSubClass) -> List[str]:
         """
-        Returns whether this element type is deactivated for the given workspace.
+        Returns the names of the events the given element can fire, which are the
+        only `event` values a workflow action attached to it may use. This mirrors
+        the `getEvents()` method of the frontend element types. By default an
+        element cannot fire any event.
+
+        :param instance: The (specific) element instance.
+        :return: The list of valid event names for this element.
         """
 
-        return False
+        return []
 
     def prepare_value_for_db(self, values: Dict, instance: Optional[Element] = None):
         """
@@ -389,25 +394,13 @@ class ElementType(
         the new User Source's ID.
         """
 
-        sanitized_roles = []
-        for role in roles:
-            if role in existing_roles:
-                sanitized_roles.append(role)
-                continue
-
-            # Ensure the default role is using the newly published UserSource ID
-            prefix = str(DEFAULT_USER_ROLE_PREFIX)
-            if role.startswith(prefix) and user_sources_mapping:
-                old_user_source_id = int(role[len(prefix) :])
-                # if the user source has been removed in the meantime we can't have
-                # a match so we just ignore it.
-                if old_user_source_id in user_sources_mapping:
-                    new_user_source_id = user_sources_mapping[old_user_source_id]
-                    new_role_name = f"{prefix}{new_user_source_id}"
-                    if new_role_name in existing_roles:
-                        sanitized_roles.append(new_role_name)
-
-        return sanitized_roles
+        return [
+            role
+            for role in remap_user_source_roles(
+                roles, existing_roles, user_sources_mapping
+            )
+            if role in existing_roles
+        ]
 
     def serialize_property(
         self,
@@ -548,6 +541,10 @@ class CollectionFieldType(
     SerializedDict: TypedDict
 
     model_class = CollectionField
+
+    # The events a collection field of this type can fire. They are exposed on the
+    # collection element as `<field uid>_<event name>` workflow action events.
+    event_names: List[str] = []
 
     def serialize_property(self, config: Dict[str, Any], prop_name: str):
         return config[prop_name]

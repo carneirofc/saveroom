@@ -446,15 +446,15 @@
   }
 
   &.grid-view__column--sorted::after {
-    background-color: rgba($color-warning-100, 0.8);
+    background-color: alpha($color-warning-100, 0.8);
   }
 
   &.grid-view__column--grouped::after {
-    background-color: rgba($color-purple-100, 0.5);
+    background-color: alpha($color-purple-100, 0.5);
   }
 
   &.grid-view__column--filtered::after {
-    background-color: rgba($color-success-100, 0.5);
+    background-color: alpha($color-success-100, 0.5);
   }
 }
 
@@ -948,7 +948,7 @@
   }
 
   &:hover {
-    background-color: rgba($palette-neutral-1300, 0.06);
+    background-color: alpha($palette-neutral-1300, 0.06);
     color: $palette-neutral-1200;
   }
 }
@@ -1007,7 +1007,7 @@
   }
 
   .grid-view__column--multi-select & {
-    background-color: rgba($palette-blue-500, 0.12);
+    background-color: alpha($palette-blue-500, 0.12);
   }
 
   .grid-view__cell-error {
@@ -1169,7 +1169,7 @@
   @include absolute(0, auto);
 
   z-index: 4;
-  background-color: rgba($palette-neutral-1300, 0.04);
+  background-color: alpha($palette-neutral-1300, 0.04);
 }
 
 .grid-view__field-target {
@@ -1190,7 +1190,7 @@
 .grid-view__row-dragging {
   @include absolute(auto, auto, auto, 0);
 
-  background-color: rgba($palette-neutral-1300, 0.04);
+  background-color: alpha($palette-neutral-1300, 0.04);
   height: $grid-view-row-height-small;
 
   .grid-view--row-height-medium & {

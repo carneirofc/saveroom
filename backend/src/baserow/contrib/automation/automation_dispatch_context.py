@@ -103,7 +103,7 @@ class AutomationDispatchContext(DispatchContext):
     def get_timezone_name(self) -> str:
         """
         TODO: Get the timezone from the application settings. For now, returns
-            the default of "UTC". See: https://github.com/baserow/baserow/issues/4157
+            the default of "UTC". See: https://github.com/carneirofc/baserow/issues/4157
         """
 
         return super().get_timezone_name()

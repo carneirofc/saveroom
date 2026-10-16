@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Import into a table can now update, upsert or replace rows and preview the changes first",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "database",
+    "bullet_points": [],
+    "created_at": "2026-09-14"
+}

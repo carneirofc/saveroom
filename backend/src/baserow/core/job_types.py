@@ -244,7 +244,7 @@ class ExportApplicationsJobType(JobType):
         ApplicationDoesNotExist: ERROR_APPLICATION_DOES_NOT_EXIST,
     }
 
-    job_exceptions_map = {PermissionDenied: ERROR_PERMISSION_DENIED}
+    job_exceptions_map = {PermissionDenied: ERROR_PERMISSION_DENIED[2]}
 
     request_serializer_field_names = [
         "application_ids",
@@ -272,7 +272,13 @@ class ExportApplicationsJobType(JobType):
     }
 
     serializer_mixins = [ExportWorkspaceExportedFileURLSerializerMixin]
-    serializer_field_names = ["exported_file_name", "url", "created_on", "workspace_id"]
+    serializer_field_names = [
+        "exported_file_name",
+        "url",
+        "download_url",
+        "created_on",
+        "workspace_id",
+    ]
 
     def transaction_atomic_context(self, job: "DuplicateApplicationJob"):
         """

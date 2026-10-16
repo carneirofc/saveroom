@@ -28,14 +28,6 @@ export class FakeDecoratorType extends ViewDecoratorType {
     return true
   }
 
-  isDeactivated(workspaceId) {
-    return false
-  }
-
-  getDeactivatedText() {
-    return 'unavailability reason'
-  }
-
   getComponent() {
     return (props) => h('div', `fake_decoration: ${props.value}`)
   }
@@ -229,31 +221,14 @@ describe('GridViewRows component with decoration', () => {
     expect(wrapper.element).toMatchSnapshot()
   })
 
-  test('Should show unavailable decorator tooltip', async () => {
-    const { application, table, fields, view } = await populateStore()
-
-    const fakeDecorator = new FakeDecoratorType({ app: testApp })
-    const fakeValueProvider = new FakeValueProviderType({ app: testApp })
-
-    fakeDecorator.isDeactivated = () => true
-
-    store.$registry.register('viewDecorator', fakeDecorator)
-    store.$registry.register('decoratorValueProvider', fakeValueProvider)
-
-    const wrapper = await mountComponent({
-      database: application,
-      view,
-      table,
-      fields,
-      readOnly: false,
-    })
-
-    await wrapper
-      .find('.decorator-list > div:first-child')
-      .trigger('mouseenter')
-
-    expect(document.body).toMatchSnapshot()
-  })
+  // Other suites can leave Nuxt's empty `#teleports` container on the shared
+  // `document.body`, so whether it exists depends on test order. Drop it from a
+  // copy of the body to keep the tooltip snapshots stable.
+  const bodyWithoutTeleports = () => {
+    const body = document.body.cloneNode(true)
+    body.querySelector('#teleports:empty')?.remove()
+    return body
+  }
 
   test('Should show cant add decorator tooltip', async () => {
     const { application, table, fields, view } = await populateStore()
@@ -278,6 +253,6 @@ describe('GridViewRows component with decoration', () => {
       .find('.decorator-list > div:first-child')
       .trigger('mouseenter')
 
-    expect(document.body).toMatchSnapshot()
+    expect(bodyWithoutTeleports()).toMatchSnapshot()
   })
 })

@@ -636,7 +636,7 @@ export class GridPage {
   private fieldVisibilityLink(): Locator {
     return this.page
       .locator(".header__filter-link", {
-        has: this.page.locator(".header__filter-icon.iconoir-eye-off"),
+        has: this.page.locator(".header__filter-icon.iconoir-eye-closed"),
       })
       .first();
   }

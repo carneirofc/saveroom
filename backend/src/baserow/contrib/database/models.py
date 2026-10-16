@@ -1,6 +1,7 @@
 from baserow.contrib.database.fields.dependencies.models import FieldDependency
 from baserow.core.models import Application
 
+from .access.models import DatabaseAccessGrant
 from .field_rules.models import FieldRule
 from .fields.models import (
     BooleanField,
@@ -64,6 +65,7 @@ __all__ = [
     "TableWebhookCall",
     "FieldDependency",
     "FieldRule",
+    "DatabaseAccessGrant",
 ]
 
 

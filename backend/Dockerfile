@@ -1,5 +1,8 @@
 # syntax=docker/dockerfile:1.4
-ARG PYTHON_BASE_IMAGE="python:3.14.6-slim-trixie"
+# Ubuntu 26.04 LTS ships Python 3.14 as the default `python3`, matching
+# requires-python in pyproject.toml, and carries five years of Canonical
+# security updates.
+ARG PYTHON_BASE_IMAGE="ubuntu:26.04"
 ARG UID="9999"
 ARG GID="9999"
 
@@ -7,13 +10,14 @@ ARG GID="9999"
 # Builder for su-exec (replaces gosu, safer with smaller footprint)
 # Pinned to v0.2 (commit 212b75144bbc) with SHA256 verification
 # =============================================================================
-FROM debian:trixie-slim AS tool-builder
+FROM ubuntu:26.04 AS tool-builder
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-ENV SU_EXEC_VERSION=212b75144bbc06722fbd7661f651390dc47a43d1 \
-    SU_EXEC_SHA256=d6c40440609a23483f12eb6295b5191e94baf08298a856bab6e15b10c3b82891
+ENV SU_EXEC_VERSION=89c016e6e08749d583efdeda04b9f73e1218e253 \
+    SU_EXEC_SHA256=0c90fe15804f2670037b90e72eb496579fe00d2c15765e5fe2ddec0f5afa35fa
 
+# Drop Ubuntu's unowned pebble binary (see the ci stage)
 # hadolint ignore=DL3008
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -23,88 +27,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     curl -fsSL -o /usr/local/bin/su-exec.c "https://github.com/ncopa/su-exec/raw/${SU_EXEC_VERSION}/su-exec.c" && \
     echo "${SU_EXEC_SHA256}  /usr/local/bin/su-exec.c" | sha256sum -c - && \
     gcc -Wall -Werror -static -o /usr/local/bin/su-exec /usr/local/bin/su-exec.c && \
-    chmod 0755 /usr/local/bin/su-exec
-
-
-# =============================================================================
-# Builder for Wasmtime (used to execute untrusted code in a separate WASI process)
-# =============================================================================
-FROM debian:trixie-slim AS wasmtime-builder
-ARG TARGETARCH
-ARG WASMTIME_VERSION=28.0.0
-
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
-# hadolint ignore=DL3008
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates curl xz-utils && \
-    case "${TARGETARCH}" in \
-        amd64) WASMTIME_ARCH="x86_64-linux" ;; \
-        arm64) WASMTIME_ARCH="aarch64-linux" ;; \
-        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
-    esac && \
-    curl -fsSL \
-        "https://github.com/bytecodealliance/wasmtime/releases/download/v${WASMTIME_VERSION}/wasmtime-v${WASMTIME_VERSION}-${WASMTIME_ARCH}.tar.xz" \
-        -o /tmp/wasmtime.tar.xz && \
-    tar -xJf /tmp/wasmtime.tar.xz -C /tmp && \
-    mv "/tmp/wasmtime-v${WASMTIME_VERSION}-${WASMTIME_ARCH}/wasmtime" /usr/local/bin/wasmtime && \
-    chmod 0755 /usr/local/bin/wasmtime
-
-
-# =============================================================================
-# Builder for QuickJS-NG WASI runtime
-# =============================================================================
-FROM debian:trixie-slim AS quickjs-wasi-builder
-ARG TARGETARCH
-ARG QUICKJS_NG_VERSION=0.15.0
-ARG WASI_SDK_VERSION=27
-
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
-# hadolint ignore=DL3008
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates cmake curl make tar && \
-    case "${TARGETARCH}" in \
-        amd64) WASI_SDK_ARCH="x86_64" ;; \
-        arm64) WASI_SDK_ARCH="arm64" ;; \
-        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
-    esac && \
-    curl -fsSL \
-        "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_SDK_VERSION}/wasi-sdk-${WASI_SDK_VERSION}.0-${WASI_SDK_ARCH}-linux.tar.gz" \
-        -o /tmp/wasi-sdk.tar.gz && \
-    tar -xzf /tmp/wasi-sdk.tar.gz -C /opt && \
-    mv "/opt/wasi-sdk-${WASI_SDK_VERSION}.0-${WASI_SDK_ARCH}-linux" /opt/wasi-sdk && \
-    curl -fsSL \
-        "https://github.com/quickjs-ng/quickjs/archive/refs/tags/v${QUICKJS_NG_VERSION}.tar.gz" \
-        -o /tmp/quickjs-ng.tar.gz && \
-    mkdir -p /tmp/quickjs-ng && \
-    tar -xzf /tmp/quickjs-ng.tar.gz -C /tmp/quickjs-ng --strip-components=1 && \
-    cmake \
-        -S /tmp/quickjs-ng \
-        -B /tmp/quickjs-ng/build \
-        -DCMAKE_TOOLCHAIN_FILE=/opt/wasi-sdk/share/cmake/wasi-sdk.cmake \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DQJS_BUILD_WERROR=OFF && \
-    cmake --build /tmp/quickjs-ng/build --target qjs_exe --parallel && \
-    mkdir -p /usr/local/lib/baserow && \
-    if [[ -f /tmp/quickjs-ng/build/qjs.wasm ]]; then \
-        cp /tmp/quickjs-ng/build/qjs.wasm /usr/local/lib/baserow/qjs.wasm; \
-    else \
-        cp /tmp/quickjs-ng/build/qjs /usr/local/lib/baserow/qjs.wasm; \
-    fi
-
-
-# =============================================================================
-# Local/export target for code runner artifacts
-# =============================================================================
-FROM scratch AS code-runner-artifacts
-
-COPY --from=wasmtime-builder /usr/local/bin/wasmtime /bin/wasmtime
-COPY --from=quickjs-wasi-builder /usr/local/lib/baserow/qjs.wasm /lib/baserow/qjs.wasm
+    chmod 0755 /usr/local/bin/su-exec && \
+    rm -f /usr/bin/pebble && rm -rf /var/lib/pebble
 
 
 # =============================================================================
@@ -115,6 +39,7 @@ ARG UID
 ARG GID
 
 # Runtime dependencies only - this layer is always cached
+# Drop Ubuntu's unowned pebble binary (see the ci stage)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
@@ -122,8 +47,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
-    # uv needs the git CLI to fetch git-sourced dependencies (pysaml2 fork)
-    git
+    # Ubuntu's default python3 is 3.14; uv builds the venv against it
+    python3 \
+    python3-dev \
+    python3-venv && \
+    rm -f /usr/bin/pebble && rm -rf /var/lib/pebble
 
 ENV UV_PYTHON_DOWNLOADS=0 \
     UV_COMPILE_BYTECODE=1 \
@@ -133,10 +61,10 @@ ENV UV_PYTHON_DOWNLOADS=0 \
     UV_VERBOSE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/baserow/venv/bin:$PATH" \
-    PYTHONPATH="/baserow/backend/src:/baserow/premium/backend/src:/baserow/enterprise/backend/src"
+    PYTHONPATH="/baserow/backend/src"
 
 # hadolint ignore=DL3022
-COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.12.23 /uv /uvx /bin/
 
 # Create baserow directory structure (including subdirs for COPY targets)
 RUN mkdir -p /baserow/ && chown -R $UID:$GID /baserow/
@@ -148,10 +76,6 @@ RUN --mount=type=cache,target=$UV_CACHE_DIR,sharing=locked,uid=$UID,gid=$GID \
     --mount=type=bind,source=LICENSE,target=/baserow/LICENSE \
     --mount=type=bind,source=backend/uv.lock,target=/baserow/backend/uv.lock \
     --mount=type=bind,source=backend/pyproject.toml,target=/baserow/backend/pyproject.toml \
-    --mount=type=bind,source=premium/LICENSE,target=/baserow/premium/LICENSE \
-    --mount=type=bind,source=premium/backend/pyproject.toml,target=/baserow/premium/backend/pyproject.toml \
-    --mount=type=bind,source=enterprise/LICENSE,target=/baserow/enterprise/LICENSE \
-    --mount=type=bind,source=enterprise/backend/pyproject.toml,target=/baserow/enterprise/backend/pyproject.toml \
     uv sync --frozen --no-dev --no-install-workspace --no-install-project \
     && find /baserow/venv -type f \( -name "*.c" -o -name "*.h" \) -not -path "*/autobahn/*" -delete \
     # Strip test/doc directories from site-packages (keep django/drf tests - used at runtime)
@@ -173,15 +97,11 @@ USER $UID:$GID
 WORKDIR /baserow/backend
 
 COPY --chown=$UID:$GID LICENSE /baserow/LICENSE
-COPY --chown=$UID:$GID premium/LICENSE /baserow/premium/LICENSE
-COPY --chown=$UID:$GID enterprise/LICENSE /baserow/enterprise/LICENSE
 
 # Install dev dependencies before copying source code to leverage caching
 RUN --mount=type=cache,target=$UV_CACHE_DIR,sharing=locked,uid=$UID,gid=$GID \
     --mount=type=bind,source=backend/uv.lock,target=/baserow/backend/uv.lock \
     --mount=type=bind,source=backend/pyproject.toml,target=/baserow/backend/pyproject.toml \
-    --mount=type=bind,source=premium/backend/pyproject.toml,target=/baserow/premium/backend/pyproject.toml \
-    --mount=type=bind,source=enterprise/backend/pyproject.toml,target=/baserow/enterprise/backend/pyproject.toml \
     uv sync --frozen --no-install-workspace --no-install-project \
     && find /baserow/venv -type f \( -name "*.c" -o -name "*.h" \) -not -path "*/autobahn/*" -delete \
     # Strip test/doc directories from site-packages (keep django/drf tests - used at runtime)
@@ -196,8 +116,6 @@ COPY --from=tool-builder /usr/bin/dos2unix /usr/local/bin/dos2unix
 # Copy source code and tests
 
 COPY --chown=$UID:$GID backend /baserow/backend
-COPY --chown=$UID:$GID premium/backend /baserow/premium/backend
-COPY --chown=$UID:$GID enterprise/backend /baserow/enterprise/backend
 
 COPY --chown=$UID:$GID tests /baserow/tests
 
@@ -207,7 +125,7 @@ WORKDIR /baserow/backend
 RUN dos2unix /baserow/backend/docker/docker-entrypoint.sh \
     && chmod a+x /baserow/backend/docker/docker-entrypoint.sh
 
-# Install the project with premium and enterprise plugins
+# Install the project
 RUN --mount=type=cache,target=$UV_CACHE_DIR,sharing=locked,uid=$UID,gid=$GID \
     uv sync --frozen \
     && find /baserow/venv -type f \( -name "*.c" -o -name "*.h" \) -not -path "*/autobahn/*" -delete \
@@ -234,16 +152,12 @@ WORKDIR /baserow/backend
 COPY --chown=$UID:$GID LICENSE /baserow/LICENSE
 COPY --chown=$UID:$GID backend /baserow/backend
 
-COPY --chown=$UID:$GID premium/LICENSE /baserow/premium/LICENSE
-COPY --chown=$UID:$GID premium/backend /baserow/premium/backend
 
-COPY --chown=$UID:$GID enterprise/LICENSE /baserow/enterprise/LICENSE
-COPY --chown=$UID:$GID enterprise/backend /baserow/enterprise/backend
 
 RUN dos2unix /baserow/backend/docker/docker-entrypoint.sh \
     && chmod a+x /baserow/backend/docker/docker-entrypoint.sh
 
-# Install the project with premium and enterprise workspaces
+# Install the project
 RUN --mount=type=cache,target=$UV_CACHE_DIR,sharing=locked,uid=$UID,gid=$GID \
     uv sync --frozen --no-dev \
     && find /baserow/venv -type f \( -name "*.c" -o -name "*.h" \) -not -path "*/autobahn/*" -delete \
@@ -262,12 +176,19 @@ FROM ${PYTHON_BASE_IMAGE} AS ci
 ARG UID
 ARG GID
 
+# Ubuntu drops /usr/bin/pebble into the base layer without a dpkg package
+# owning it, so apt can neither patch nor purge the CVEs vendored into it
+# (CVE-2026-39821). No stage here runs it, so every ubuntu-based stage
+# deletes it.
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
+    python3 \
+    python3-venv \
     gettext \
     xmlsec1 \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    && rm -f /usr/bin/pebble && rm -rf /var/lib/pebble
 
 ENV DOCKER_USER=baserow_docker_user \
     BASEROW_IMAGE_TYPE="backend" \
@@ -275,7 +196,7 @@ ENV DOCKER_USER=baserow_docker_user \
     UV_PROJECT_ENVIRONMENT=/baserow/venv \
     UV_CACHE_DIR=/tmp/baserow_uv_cache \
     PATH="/baserow/venv/bin:$PATH" \
-    PYTHONPATH="/baserow/backend/src:/baserow/premium/backend/src:/baserow/enterprise/backend/src:/baserow/backend/tests:/baserow/premium/backend/tests:/baserow/enterprise/backend/tests" \
+    PYTHONPATH="/baserow/backend/src:/baserow/backend/tests" \
     DJANGO_SETTINGS_MODULE='baserow.config.settings.test'
 
 RUN groupadd --system --gid $GID ${DOCKER_USER} && \
@@ -284,13 +205,11 @@ RUN groupadd --system --gid $GID ${DOCKER_USER} && \
 
 COPY --from=tool-builder /usr/local/bin/su-exec /usr/local/bin/su-exec
 COPY --from=tool-builder /usr/bin/tini /usr/bin/tini
-COPY --from=wasmtime-builder /usr/local/bin/wasmtime /usr/local/bin/wasmtime
-COPY --from=quickjs-wasi-builder /usr/local/lib/baserow/qjs.wasm /usr/local/lib/baserow/qjs.wasm
 # hadolint ignore=DL3022
-COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.12.23 /uv /uvx /bin/
 
 # Create baserow directory structure (including subdirs for COPY targets)
-RUN mkdir -p /baserow/backend/reports /baserow/premium/backend /baserow/enterprise/backend /baserow/media && \
+RUN mkdir -p /baserow/backend/reports /baserow/media && \
     chown -R $UID:$GID /baserow/
 
 # Copy the virtual environment and source code with tests
@@ -315,30 +234,32 @@ ARG GID="9999"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Build dependencies - this layer is always cached
+# Drop Ubuntu's unowned pebble binary (see the ci stage)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends curl ca-certificates gnupg \
-    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --batch --dearmor -o /usr/share/keyrings/pgdg.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/pgdg.gpg] https://apt.postgresql.org/pub/repos/apt trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
+    apt-get install -y --no-install-recommends \
     build-essential \
+    python3 \
     python3-dev \
+    python3-venv \
     ca-certificates \
-    postgresql-client-15 \
+    # Ubuntu 26.04 ships postgresql-client 18, which dumps and connects to
+    # every server version Baserow supports. Using it drops the third-party
+    # apt.postgresql.org repository from the image entirely.
+    postgresql-client-18 \
     gettext \
     xmlsec1 \
     curl \
-    # uv needs the git CLI to fetch git-sourced dependencies (pysaml2 fork)
     git \
     graphviz \
     procps \
     tmux \
     vim \
     lsof \
-    sudo
+    sudo && \
+    rm -f /usr/bin/pebble && rm -rf /var/lib/pebble
 
 ENV DOCKER_USER=baserow_docker_user \
     BASEROW_IMAGE_TYPE="backend" \
@@ -349,7 +270,7 @@ ENV DOCKER_USER=baserow_docker_user \
     UV_CACHE_DIR=/tmp/baserow_uv_cache_dev \
     PYTHONUNBUFFERED=1 \
     PATH=/baserow/venv/bin:$PATH \
-    PYTHONPATH=/baserow/backend/src:/baserow/premium/backend/src:/baserow/enterprise/backend/src:/baserow/backend/tests:/baserow/premium/backend/tests:/baserow/enterprise/backend/tests \
+    PYTHONPATH=/baserow/backend/src:/baserow/backend/tests \
     DJANGO_SETTINGS_MODULE=baserow.config.settings.dev
 
 RUN getent group $GID || groupadd --system --gid $GID ${DOCKER_USER} && \
@@ -361,13 +282,11 @@ RUN getent group $GID || groupadd --system --gid $GID ${DOCKER_USER} && \
 COPY --from=tool-builder /usr/local/bin/su-exec /usr/local/bin/su-exec
 COPY --from=tool-builder /usr/bin/tini /usr/bin/tini
 COPY --from=tool-builder /usr/bin/dos2unix /usr/local/bin/dos2unix
-COPY --from=wasmtime-builder /usr/local/bin/wasmtime /usr/local/bin/wasmtime
-COPY --from=quickjs-wasi-builder /usr/local/lib/baserow/qjs.wasm /usr/local/lib/baserow/qjs.wasm
 # hadolint ignore=DL3022
-COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.12.23 /uv /uvx /bin/
 
 # Create directory structure to install dependencies
-RUN mkdir -p /baserow/backend/docker /baserow/premium/ /baserow/enterprise/ /baserow/media && \
+RUN mkdir -p /baserow/backend/docker /baserow/media && \
     chown -R $UID:$GID /baserow/
 
 USER $UID:$GID
@@ -375,14 +294,10 @@ WORKDIR /baserow/backend
 
 # Install all dependencies
 COPY --chown=$UID:$GID LICENSE /baserow/LICENSE
-COPY --chown=$UID:$GID premium/LICENSE /baserow/premium/LICENSE
-COPY --chown=$UID:$GID enterprise/LICENSE /baserow/enterprise/LICENSE
 
 RUN --mount=type=cache,target=$UV_CACHE_DIR,sharing=locked,uid=$UID,gid=$GID \
     --mount=type=bind,source=backend/uv.lock,target=/baserow/backend/uv.lock \
     --mount=type=bind,source=backend/pyproject.toml,target=/baserow/backend/pyproject.toml \
-    --mount=type=bind,source=premium/backend/pyproject.toml,target=/baserow/premium/backend/pyproject.toml \
-    --mount=type=bind,source=enterprise/backend/pyproject.toml,target=/baserow/enterprise/backend/pyproject.toml \
     uv sync --frozen --no-install-workspace --no-install-project
 
 # Configure tmux and bashrc
@@ -418,27 +333,30 @@ ARG GID
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-ENV POSTGRES_VERSION=15 \
+ENV POSTGRES_VERSION=18 \
     DOCKER_USER=baserow_docker_user \
     BASEROW_IMAGE_TYPE="backend" \
     UV_PROJECT_ENVIRONMENT=/baserow/venv \
     PYTHONUNBUFFERED=1 \
     PATH="/baserow/venv/bin:$PATH" \
-    PYTHONPATH="/baserow/backend/src:/baserow/premium/backend/src:/baserow/enterprise/backend/src" \
+    PYTHONPATH="/baserow/backend/src" \
     DJANGO_SETTINGS_MODULE='baserow.config.settings.base'
 
-# Runtime dependencies only
+# Runtime dependencies only. postgresql-client comes from Ubuntu itself, so the
+# image carries no third-party apt repository. pg_dump 18 can dump every server
+# version Baserow supports (>= 14).
+# Drop Ubuntu's unowned pebble binary (see the ci stage)
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends curl ca-certificates gnupg \
-    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --batch --dearmor -o /usr/share/keyrings/pgdg.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/pgdg.gpg] https://apt.postgresql.org/pub/repos/apt trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    python3 \
+    python3-venv \
     xmlsec1 \
     gettext \
     postgresql-client-${POSTGRES_VERSION} \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    && rm -f /usr/bin/pebble && rm -rf /var/lib/pebble
 
 RUN groupadd --system --gid $GID ${DOCKER_USER} && \
       useradd --shell /bin/bash -l -u $UID -g $GID -o -c "" -d /baserow -m ${DOCKER_USER} && \
@@ -448,8 +366,6 @@ RUN groupadd --system --gid $GID ${DOCKER_USER} && \
 COPY ./backend/docker/mime.types /etc/
 COPY --from=tool-builder /usr/local/bin/su-exec /usr/local/bin/su-exec
 COPY --from=tool-builder /usr/bin/tini /usr/bin/tini
-COPY --from=wasmtime-builder /usr/local/bin/wasmtime /usr/local/bin/wasmtime
-COPY --from=quickjs-wasi-builder /usr/local/lib/baserow/qjs.wasm /usr/local/lib/baserow/qjs.wasm
 
 RUN mkdir -p /baserow/media && chown -R $UID:$GID /baserow/
 
@@ -458,15 +374,25 @@ COPY --chown=$UID:$GID --from=builder-prod /baserow/venv /baserow/venv/
 
 COPY --chown=$UID:$GID LICENSE /baserow/LICENSE
 COPY --chown=$UID:$GID --from=builder-prod /baserow/backend /baserow/backend/
-COPY --chown=$UID:$GID --from=builder-prod /baserow/premium /baserow/premium/
-COPY --chown=$UID:$GID --from=builder-prod /baserow/enterprise /baserow/enterprise/
 COPY --chown=$UID:$GID ./docs /baserow/docs/
 
 # Remove application tests and dev-only directories
-RUN rm -rf /baserow/backend/tests /baserow/premium/backend/tests \
-        /baserow/enterprise/backend/tests /baserow/backend/email_compiler
+RUN rm -rf /baserow/backend/tests /baserow/backend/email_compiler
 
 COPY --chown=$UID:$GID deploy/plugins/*.sh /baserow/plugins/
+
+# Build metadata, so a running instance can state which source it came from.
+# Empty unless the publishing workflow passes them.
+# Declared last on purpose: the build date changes on every release run, so
+# an ENV layer above the layers below would invalidate the build cache on
+# every tag cut.
+ARG BASEROW_BUILD_VERSION=""
+ARG BASEROW_BUILD_COMMIT=""
+ARG BASEROW_BUILD_DATE=""
+
+ENV BASEROW_BUILD_VERSION=${BASEROW_BUILD_VERSION} \
+    BASEROW_BUILD_COMMIT=${BASEROW_BUILD_COMMIT} \
+    BASEROW_BUILD_DATE=${BASEROW_BUILD_DATE}
 
 USER $UID:$GID
 WORKDIR /baserow/backend

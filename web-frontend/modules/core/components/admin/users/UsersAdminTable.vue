@@ -95,11 +95,9 @@ export default {
         new CrudTableColumn('more', '', MoreField, false, false, true),
       ]
       for (const plugin of this.membersPagePlugins) {
-        if (!plugin.isDeactivated()) {
-          columns = plugin.mutateAdminUsersTableColumns(columns, {
-            client: this.$client,
-          })
-        }
+        columns = plugin.mutateAdminUsersTableColumns(columns, {
+          client: this.$client,
+        })
       }
       return columns
     },

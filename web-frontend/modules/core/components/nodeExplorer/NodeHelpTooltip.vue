@@ -4,7 +4,7 @@
       <div class="node-help-tooltip__header">
         <div class="node-help-tooltip__icon">
           <i
-            :class="node.icon || 'iconoir-function'"
+            :class="node.icon || 'iconoir-sigma-function'"
             class="node-help-tooltip__icon-symbol"
           ></i>
         </div>

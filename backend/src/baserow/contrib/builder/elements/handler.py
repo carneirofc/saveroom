@@ -18,9 +18,10 @@ from django.core.files.storage import Storage
 from django.db import transaction
 from django.db.models import QuerySet
 
+from loguru import logger
+
 from baserow.contrib.builder.elements.exceptions import (
     ElementDoesNotExist,
-    ElementTypeDeactivated,
 )
 from baserow.contrib.builder.elements.models import ContainerElement, Element
 from baserow.contrib.builder.elements.permission_manager import (
@@ -403,36 +404,30 @@ class ElementHandler:
         graph_patch: Dict[str, Any],
     ) -> None:
         """
-        Surface a graph reconciliation in Sentry so we know it happened. Drift means
-        the page graph diverged from the DB — typically element rows written or
-        hard-deleted by older code during a non-zero-downtime deploy — and has now
-        been repaired. Reported at "warning" level (it signals an upstream
-        inconsistency, even though it's self-corrected), with the counts, ids and
-        the applied patch.
+        Log a graph reconciliation so we know it happened. Drift means the page graph
+        diverged from the DB — typically element rows written or hard-deleted by older
+        code during a non-zero-downtime deploy — and has now been repaired. Logged at
+        "warning" level (it signals an upstream inconsistency, even though it's
+        self-corrected), with the counts, ids and the applied patch.
         """
 
-        import sentry_sdk
-
-        with sentry_sdk.new_scope() as scope:
-            scope.set_context(
-                "graph_heal",
-                {
-                    "page_id": page.id,
-                    "builder_id": page.builder_id,
-                    "shared": page.shared,
-                    "healed_element_count": len(healed_ids),
-                    "healed_element_ids": sorted(healed_ids),
-                    "pruned_stale_count": len(pruned_ids),
-                    "pruned_stale_ids": sorted(pruned_ids),
-                    "graph_patch": graph_patch,
-                },
-            )
-            sentry_sdk.capture_message(
-                f"Healed {len(healed_ids)} orphan element(s) and pruned "
-                f"{len(pruned_ids)} stale point(s) from the graph of builder "
-                f"page {page.id}.",
-                level="warning",
-            )
+        logger.warning(
+            "Healed {healed_count} orphan element(s) and pruned {pruned_count} stale "
+            "point(s) from the graph of builder page {page_id}. Context: {context}",
+            healed_count=len(healed_ids),
+            pruned_count=len(pruned_ids),
+            page_id=page.id,
+            context={
+                "page_id": page.id,
+                "builder_id": page.builder_id,
+                "shared": page.shared,
+                "healed_element_count": len(healed_ids),
+                "healed_element_ids": sorted(healed_ids),
+                "pruned_stale_count": len(pruned_ids),
+                "pruned_stale_ids": sorted(pruned_ids),
+                "graph_patch": graph_patch,
+            },
+        )
 
     def _get_builder_elements_cache_key(self, builder_id: int, specific: bool) -> str:
         return f"ab_get_{builder_id}_builder_elements_{specific}"
@@ -527,9 +522,6 @@ class ElementHandler:
         :param kwargs: Additional attributes of the element.
         :return: The created element.
         """
-
-        if element_type.is_deactivated(page.builder.workspace):
-            raise ElementTypeDeactivated()
 
         allowed_values = extract_allowed(
             kwargs, self.allowed_fields_create + element_type.allowed_fields

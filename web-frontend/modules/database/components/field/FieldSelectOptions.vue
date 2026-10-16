@@ -33,7 +33,7 @@
         />
         <ButtonIcon
           tag="a"
-          icon="iconoir-cancel"
+          icon="iconoir-xmark"
           @click.stop.prevent="remove(index)"
         ></ButtonIcon>
       </div>

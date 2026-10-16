@@ -206,7 +206,7 @@ class APIGroupedFiltersAdapter(GroupedFiltersAdapter):
                     field_id = filter["field"]
 
                 if (
-                    only_filter_by_field_ids
+                    only_filter_by_field_ids is not None
                     and field_id not in only_filter_by_field_ids
                 ):
                     raise FilterFieldNotFound(
@@ -234,7 +234,7 @@ class APIGroupedFiltersAdapter(GroupedFiltersAdapter):
             )
             extract_filters_and_groups(serialized_filter_tree)
 
-        except (KeyError, AttributeError, ValueError, TypeError):
+        except KeyError, AttributeError, ValueError, TypeError:
             raise InvalidAPIGroupedFiltersFormatException()
 
         return APIGroupedFiltersAdapter(

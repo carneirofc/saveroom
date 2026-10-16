@@ -300,7 +300,7 @@
           class="context__menu-item"
         >
           <a class="context__menu-item-link" @click="hide($event, view, field)">
-            <i class="context__menu-item-icon iconoir-eye-off"></i>
+            <i class="context__menu-item-icon iconoir-eye-closed"></i>
             {{ $t('gridViewFieldType.hideField') }}
           </a>
         </li>

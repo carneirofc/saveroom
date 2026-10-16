@@ -175,6 +175,7 @@ import {
 } from '@baserow/modules/database/fieldConstraintTypes'
 
 import { APITokenSettingsType } from '@baserow/modules/database/settingsTypes'
+import { DatabaseAccessMembersPagePluginType } from '@baserow/modules/database/membersPagePluginTypes'
 
 import { CSVTableExporterType } from '@baserow/modules/database/exporterTypes'
 import {
@@ -345,7 +346,6 @@ import {
   ScratchDatabaseOnboardingStepType,
   ImportDatabaseOnboardingStepType,
   AirtableDatabaseOnboardingStepType,
-  TemplateDatabaseOnboardingStepType,
 } from '@baserow/modules/database/databaseOnboardingStepTypes'
 
 import {
@@ -722,6 +722,10 @@ export default defineNuxtPlugin({
     $registry.register('dataSync', new ICalCalendarDataSyncType(context))
     $registry.register('dataSync', new PostgreSQLDataSyncType(context))
     $registry.register('settings', new APITokenSettingsType(context))
+    $registry.register(
+      'membersPagePlugins',
+      new DatabaseAccessMembersPagePluginType(context)
+    )
     $registry.register('exporter', new CSVTableExporterType(context))
     $registry.register('webhookEvent', new RowsCreatedWebhookEventType(context))
     $registry.register('webhookEvent', new RowsUpdatedWebhookEventType(context))
@@ -1032,10 +1036,6 @@ export default defineNuxtPlugin({
     $registry.register(
       'databaseOnboardingStep',
       new AirtableDatabaseOnboardingStepType(context)
-    )
-    $registry.register(
-      'databaseOnboardingStep',
-      new TemplateDatabaseOnboardingStepType(context)
     )
 
     $registry.register(

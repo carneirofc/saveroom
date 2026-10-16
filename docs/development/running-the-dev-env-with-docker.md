@@ -1,6 +1,6 @@
 # Running the Dev Environment with Docker
 
-This guide covers running the Baserow development environment using Docker. This is the recommended approach for most developers as it requires minimal local setup and ensures a consistent environment.
+This guide covers running the Saveroom development environment using Docker. This is the recommended approach for most developers as it requires minimal local setup and ensures a consistent environment.
 
 ## Prerequisites
 
@@ -32,7 +32,7 @@ just --version
 
 ```bash
 # Clone the repository
-git clone --branch develop https://github.com/baserow/baserow.git
+git clone --branch develop https://github.com/carneirofc/baserow.git
 cd baserow
 
 # Build and start the dev environment
@@ -63,7 +63,6 @@ The Docker dev environment runs these services:
 | `caddy` | Reverse proxy for media files | 4000 |
 | `mailhog` | Email testing UI | 8025 |
 | `mjml-email-compiler` | MJML to HTML email compiler | 28101 |
-| `otel-collector` | OpenTelemetry metrics | 4317 |
 | `volume-permissions-fixer` | Fixes media file permissions on startup | - |
 | `web-frontend-storybook` | Component development UI | 6006 |
 | `celery-flower` | Celery task monitoring | 5555 |
@@ -135,7 +134,7 @@ just dc-dev exec web-frontend yarn test
 ### Terminal Tabs and Tmux
 
 ```bash
-# Open terminal tabs for each service (like the old dev.sh)
+# Open terminal tabs for each service
 just dc-dev tabs                    # or: just dct
 
 # Start a tmux session with all services
@@ -155,7 +154,7 @@ just dc-dev build backend
 just dc-dev build --no-cache --parallel
 
 # Clear Docker builder cache completely
-# WARNING: This clears ALL Docker builder cache, not just Baserow!
+# WARNING: This clears ALL Docker builder cache, not just Saveroom!
 just prune
 ```
 

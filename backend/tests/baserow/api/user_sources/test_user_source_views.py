@@ -12,6 +12,31 @@ from rest_framework.status import (
 from baserow.core.app_auth_providers.models import AppAuthProvider
 from baserow.core.app_auth_providers.registries import app_auth_provider_type_registry
 from baserow.core.user_sources.models import UserSource
+from baserow.core.user_sources.registries import user_source_type_registry
+
+
+def first_user_source_type():
+    """
+    Concrete user source types (like "local_baserow") ship as plugins, so this
+    fork registers none out of the box. Skip instead of asserting against a type
+    that can't exist.
+    """
+
+    user_source_types = list(user_source_type_registry.get_all())
+    if not user_source_types:
+        pytest.skip("No user source type is registered (needs a plugin).")
+    return user_source_types[0]
+
+
+def first_app_auth_provider_type():
+    """
+    Same as `first_user_source_type`, for app auth provider types.
+    """
+
+    app_auth_provider_types = list(app_auth_provider_type_registry.get_all())
+    if not app_auth_provider_types:
+        pytest.skip("No app auth provider type is registered (needs a plugin).")
+    return app_auth_provider_types[0]
 
 
 @pytest.mark.django_db
@@ -110,18 +135,23 @@ def test_create_user_source(api_client, data_fixture):
     workspace = data_fixture.create_workspace(user=user)
     application = data_fixture.create_builder_application(workspace=workspace)
     integration = data_fixture.create_local_baserow_integration(application=application)
+    user_source_type = first_user_source_type()
 
     url = reverse("api:user_sources:list", kwargs={"application_id": application.id})
     response = api_client.post(
         url,
-        {"type": "local_baserow", "name": "test", "integration_id": integration.id},
+        {
+            "type": user_source_type.type,
+            "name": "test",
+            "integration_id": integration.id,
+        },
         format="json",
         HTTP_AUTHORIZATION=f"JWT {token}",
     )
 
     response_json = response.json()
     assert response.status_code == HTTP_200_OK
-    assert response_json["type"] == "local_baserow"
+    assert response_json["type"] == user_source_type.type
     assert response_json["user_count"] is None
     assert response_json["user_count_updated_at"] is None
 
@@ -186,17 +216,19 @@ def test_create_user_source_w_auth_providers(api_client, data_fixture):
     workspace = data_fixture.create_workspace(user=user)
     application = data_fixture.create_builder_application(workspace=workspace)
     integration = data_fixture.create_local_baserow_integration(application=application)
+    user_source_type = first_user_source_type()
+    app_auth_provider_type = first_app_auth_provider_type()
 
     url = reverse("api:user_sources:list", kwargs={"application_id": application.id})
     response = api_client.post(
         url,
         {
-            "type": "local_baserow",
+            "type": user_source_type.type,
             "name": "test",
             "integration_id": integration.id,
             "auth_providers": [
                 {
-                    "type": "local_baserow_password",
+                    "type": app_auth_provider_type.type,
                     "enabled": False,
                 },
             ],
@@ -211,14 +243,9 @@ def test_create_user_source_w_auth_providers(api_client, data_fixture):
     assert AppAuthProvider.objects.count() == 1
     first = AppAuthProvider.objects.first()
 
-    assert response_json["auth_providers"] == [
-        {
-            "id": first.id,
-            "password_field_id": None,
-            "type": "local_baserow_password",
-            "domain": None,
-        },
-    ]
+    assert response_json["auth_providers"][0]["id"] == first.id
+    assert response_json["auth_providers"][0]["type"] == app_auth_provider_type.type
+    assert response_json["auth_providers"][0]["domain"] is None
 
 
 @pytest.mark.django_db
@@ -227,18 +254,20 @@ def test_create_user_source_w_auth_providers_w_domain(api_client, data_fixture):
     workspace = data_fixture.create_workspace(user=user)
     application = data_fixture.create_builder_application(workspace=workspace)
     integration = data_fixture.create_local_baserow_integration(application=application)
+    user_source_type = first_user_source_type()
+    app_auth_provider_type = first_app_auth_provider_type()
 
     url = reverse("api:user_sources:list", kwargs={"application_id": application.id})
     response = api_client.post(
         url,
         {
-            "type": "local_baserow",
+            "type": user_source_type.type,
             "name": "test",
             "integration_id": integration.id,
             "auth_providers": [
                 {
                     "domain": "domain.com",
-                    "type": "local_baserow_password",
+                    "type": app_auth_provider_type.type,
                     "enabled": False,
                 },
             ],
@@ -253,14 +282,9 @@ def test_create_user_source_w_auth_providers_w_domain(api_client, data_fixture):
     assert AppAuthProvider.objects.count() == 1
     first = AppAuthProvider.objects.first()
 
-    assert response_json["auth_providers"] == [
-        {
-            "id": first.id,
-            "password_field_id": None,
-            "type": "local_baserow_password",
-            "domain": "domain.com",
-        },
-    ]
+    assert response_json["auth_providers"][0]["id"] == first.id
+    assert response_json["auth_providers"][0]["type"] == app_auth_provider_type.type
+    assert response_json["auth_providers"][0]["domain"] == "domain.com"
 
 
 @pytest.mark.django_db
@@ -301,7 +325,8 @@ def test_create_user_source_w_auth_provider_wrong_type(api_client, data_fixture)
     application = data_fixture.create_builder_application(workspace=workspace)
     integration = data_fixture.create_local_baserow_integration(application=application)
 
-    app_auth_provider_type = list(app_auth_provider_type_registry.get_all())[0]
+    user_source_type = first_user_source_type()
+    app_auth_provider_type = first_app_auth_provider_type()
 
     original_compatible = app_auth_provider_type.compatible_user_source_types
     app_auth_provider_type.compatible_user_source_types = []
@@ -310,7 +335,7 @@ def test_create_user_source_w_auth_provider_wrong_type(api_client, data_fixture)
     response = api_client.post(
         url,
         {
-            "type": "local_baserow",
+            "type": user_source_type.type,
             "name": "test",
             "integration_id": integration.id,
             "auth_providers": [
@@ -337,12 +362,13 @@ def test_create_user_source_w_auth_provider_missing_type(api_client, data_fixtur
     workspace = data_fixture.create_workspace(user=user)
     application = data_fixture.create_builder_application(workspace=workspace)
     integration = data_fixture.create_local_baserow_integration(application=application)
+    user_source_type = first_user_source_type()
 
     url = reverse("api:user_sources:list", kwargs={"application_id": application.id})
     response = api_client.post(
         url,
         {
-            "type": "local_baserow",
+            "type": user_source_type.type,
             "name": "test",
             "integration_id": integration.id,
             "auth_providers": [
@@ -368,12 +394,17 @@ def test_create_user_source_permission_denied(
     user, token = data_fixture.create_user_and_token()
     application = data_fixture.create_builder_application(user=user)
     integration = data_fixture.create_local_baserow_integration(application=application)
+    user_source_type = first_user_source_type()
 
     url = reverse("api:user_sources:list", kwargs={"application_id": application.id})
     with stub_check_permissions(raise_permission_denied=True):
         response = api_client.post(
             url,
-            {"type": "local_baserow", "name": "test", "integration_id": integration.id},
+            {
+                "type": user_source_type.type,
+                "name": "test",
+                "integration_id": integration.id,
+            },
             format="json",
             HTTP_AUTHORIZATION=f"JWT {token}",
         )
@@ -385,11 +416,12 @@ def test_create_user_source_permission_denied(
 @pytest.mark.django_db
 def test_create_user_source_application_does_not_exist(api_client, data_fixture):
     user, token = data_fixture.create_user_and_token()
+    user_source_type = first_user_source_type()
 
     url = reverse("api:user_sources:list", kwargs={"application_id": 0})
     response = api_client.post(
         url,
-        {"type": "local_baserow", "name": "test", "integration_id": 42},
+        {"type": user_source_type.type, "name": "test", "integration_id": 42},
         format="json",
         HTTP_AUTHORIZATION=f"JWT {token}",
     )
@@ -402,11 +434,16 @@ def test_create_user_source_bad_application_type(api_client, data_fixture):
     user, token = data_fixture.create_user_and_token()
     application = data_fixture.create_database_application(user=user)
     integration = data_fixture.create_local_baserow_integration(application=application)
+    user_source_type = first_user_source_type()
 
     url = reverse("api:user_sources:list", kwargs={"application_id": application.id})
     response = api_client.post(
         url,
-        {"type": "local_baserow", "name": "test", "integration_id": integration.id},
+        {
+            "type": user_source_type.type,
+            "name": "test",
+            "integration_id": integration.id,
+        },
         format="json",
         HTTP_AUTHORIZATION=f"JWT {token}",
     )

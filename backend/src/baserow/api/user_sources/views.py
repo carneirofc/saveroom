@@ -616,7 +616,7 @@ class UserSourceTokenRefreshView(APIView):
         operation_id="user_source_token_refresh",
         description=(
             "Generate a new access_token that can be used to continue operating "
-            "on Baserow with a user source user starting from a valid refresh token."
+            "on Saveroom with a user source user starting from a valid refresh token."
         ),
         responses={
             200: refresh_schema,

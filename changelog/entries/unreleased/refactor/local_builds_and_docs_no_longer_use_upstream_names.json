@@ -1,0 +1,9 @@
+{
+    "type": "refactor",
+    "message": "Local `just build` images and the CI and e2e images are now tagged `saveroom/*` (the all-in-one as `saveroom/all-in-one`) instead of `baserow/*`, which is upstream's Docker Hub namespace, so a missing local image can no longer be pulled from upstream by mistake. The docs name the published `ghcr.io/carneirofc/baserow` images, drop the outdated upstream plugin boilerplate, and the architecture diagram is redrawn without the upstream license server.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-09"
+}

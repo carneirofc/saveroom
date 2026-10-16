@@ -21,7 +21,7 @@
       </div>
 
       <button v-if="closeButton" class="alert__close" @click="close">
-        <i class="iconoir-cancel"></i>
+        <i class="iconoir-xmark"></i>
       </button>
     </div>
   </div>
@@ -117,7 +117,7 @@ export default {
     iconClass() {
       const classObj = {
         'iconoir-warning-triangle': this.isWarningAlert,
-        'iconoir-info-empty': this.isInfoAlert,
+        'iconoir-info-circle': this.isInfoAlert,
         'iconoir-check-circle': this.isSuccessAlert,
         'iconoir-warning-circle': this.isErrorAlert,
       }

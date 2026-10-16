@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Import modes that move existing rows to the trash now require the new replace rows permission, so an editor can import without being able to wipe a table.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "database",
+    "bullet_points": [],
+    "created_at": "2026-09-21"
+}

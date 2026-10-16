@@ -4,7 +4,6 @@ import AccountSettings from '@baserow/modules/core/components/settings/AccountSe
 import DeleteAccountSettings from '@baserow/modules/core/components/settings/DeleteAccountSettings'
 import EmailSettings from '@baserow/modules/core/components/settings/EmailSettings'
 import EmailNotifications from '@baserow/modules/core/components/settings/EmailNotifications'
-import McpEndpointSettings from '@baserow/modules/core/components/settings/McpEndpointSettings.vue'
 import TwoFactorAuthSettings from '@baserow/modules/core/components/settings/TwoFactorAuthSettings.vue'
 
 /**
@@ -179,32 +178,13 @@ export class TwoFactorAuthSettingsType extends SettingsType {
   }
 }
 
-export class MCPEndpointSettingsType extends SettingsType {
-  static getType() {
-    return 'mcp-endpoint'
-  }
-
-  getIconClass() {
-    return 'iconoir-magic-wand'
-  }
-
-  getName() {
-    const { $i18n: i18n } = this.app
-    return i18n.t('settingType.mcpEndpoint')
-  }
-
-  getComponent() {
-    return McpEndpointSettings
-  }
-}
-
 export class DeleteAccountSettingsType extends SettingsType {
   static getType() {
     return 'delete-account'
   }
 
   getIconClass() {
-    return 'iconoir-cancel'
+    return 'iconoir-xmark'
   }
 
   getName() {

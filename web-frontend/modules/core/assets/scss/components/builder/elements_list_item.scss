@@ -18,7 +18,7 @@
   }
 
   &.active:not(.elements-list-item--loading) {
-    background-color: rgba($palette-neutral-1300, 0.04);
+    background-color: alpha($palette-neutral-1300, 0.04);
   }
 
   &.disabled {

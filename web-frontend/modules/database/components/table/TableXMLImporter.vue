@@ -19,8 +19,7 @@
     &lt;email&gt;jane@example.com&lt;/email&gt;
     &lt;phone&gt;987-654-3210&lt;/phone&gt;
   &lt;/record&gt;
-&lt;/data&gt;</pre
-          >
+&lt;/data&gt;</pre>
         </div>
       </template>
       <div class="control__elements">

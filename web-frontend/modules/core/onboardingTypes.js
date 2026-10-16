@@ -2,7 +2,6 @@ import { Registerable } from '@baserow/modules/core/registry'
 
 import UserPreview from '@baserow/modules/core/components/onboarding/UserPreview'
 import MoreStep from '@baserow/modules/core/components/onboarding/MoreStep'
-import AuthService from '@baserow/modules/core/services/auth'
 
 export class OnboardingType extends Registerable {
   /**
@@ -105,20 +104,5 @@ export class MoreOnboardingType extends OnboardingType {
 
   canSkip() {
     return true
-  }
-
-  async complete(data, responses) {
-    const moreData = data[this.getType()]
-    const share = moreData?.share
-
-    if (share) {
-      await AuthService(this.app.$client).shareOnboardingDetailsWithBaserow(
-        moreData.team,
-        'undefined',
-        'undefined',
-        moreData.country,
-        moreData.how
-      )
-    }
   }
 }

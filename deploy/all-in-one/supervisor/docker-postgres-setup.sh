@@ -103,7 +103,9 @@ _main() {
         if [ "$PGDATA_VERSION" != "$POSTGRES_VERSION" ]; then
           echo
           echo "Your PostgreSQL data directory was initialized with version $PGDATA_VERSION, but this image is running version $POSTGRES_VERSION."
-          echo "Please look into official Baserow documentation at https://baserow.io/docs/installation%2Finstall-with-docker#upgrading-postgresql-database-from-a-previous-version for more information on how to upgrade your database using a different Baserow image ('baserow/baserow-pgautoupgrade:1.30.1') or how to run Baserow using legacy PostgreSQL 11 image ('baserow/baserow-pg11:1.30.1')."
+          echo "A PostgreSQL data directory can only be read by the major version that created it, so this image will not start against it."
+          echo "Follow the upgrade runbook to dump your data with your previous image and restore it into a fresh volume:"
+          echo "https://github.com/carneirofc/baserow/blob/develop/docs/runbooks/upgrade-embedded-postgres.md"
           echo
           exit 1
         fi

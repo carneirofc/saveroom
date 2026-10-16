@@ -1,7 +1,8 @@
 services:
   db:
-    # use lowest supported version for dev to check compatibility
-    image: pgvector/pgvector:pg${POSTGRES_IMAGE_VERSION:-14}
+    # Matches the PostgreSQL major the images target, so dev reproduces what CI
+    # and production run. Set POSTGRES_IMAGE_VERSION to test an older major.
+    image: pgvector/pgvector:pg${POSTGRES_IMAGE_VERSION:-18}
     ports:
       - "${BASEROW_HOST_PUBLISH_IP:-127.0.0.1}:${BASEROW_POSTGRES_PORT:-5432}:5432"
     command: "${POSTGRES_DEV_EXTRA_ARGS}"
@@ -27,8 +28,7 @@ services:
       - BASEROW_BACKEND_DEBUGGER_ENABLED
       - BASEROW_BACKEND_DEBUGGER_PORT=${BASEROW_BACKEND_DEBUGGER_PORT:-5678}
       - BASEROW_DANGEROUS_SILKY_ANALYZE_QUERIES
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-      - BASEROW_EMBEDDINGS_API_URL=${BASEROW_EMBEDDINGS_API_URL}
+      - OTEL_EXPORTER_OTLP_ENDPOINT
     build:
       dockerfile: ./backend/Dockerfile
       context: .
@@ -44,15 +44,11 @@ services:
     volumes:
       - ./docs:/baserow/docs
       - ./backend:/baserow/backend
-      - ./premium/backend/:/baserow/premium/backend
-      - ./enterprise/backend/:/baserow/enterprise/backend
       - ./deploy/plugins/:/baserow/plugins/
       - ./tests:/baserow/tests
     # Open stdin and tty so when attaching key input works as expected.
     stdin_open: true
     tty: true
-    depends_on:
-      - otel-collector
 
   web-frontend:
     image: baserow_web-frontend:dev
@@ -70,8 +66,6 @@ services:
       - "${BASEROW_HOST_PUBLISH_IP:-127.0.0.1}:${BASEROW_WEB_FRONTEND_DEV_PORT:-3000}:3000"
     volumes:
       - ./web-frontend:/baserow/web-frontend
-      - ./premium/web-frontend/:/baserow/premium/web-frontend
-      - ./enterprise/web-frontend/:/baserow/enterprise/web-frontend
       - ./tests/:/baserow/tests
       - ./deploy/plugins:/baserow/plugins
       # dev volumes to avoid polluting your local filesystem with build files or
@@ -100,8 +94,6 @@ services:
       - "${BASEROW_HOST_PUBLISH_IP:-127.0.0.1}:${BASEROW_STORYBOOK_PORT:-6006}:6006"
     volumes:
       - ./web-frontend:/baserow/web-frontend
-      - ./premium/web-frontend/:/baserow/premium/web-frontend
-      - ./enterprise/web-frontend/:/baserow/enterprise/web-frontend
       - ./tests/:/baserow/tests
       - ./deploy/plugins:/baserow/plugins
       # dev volumes to avoid polluting your local filesystem with build files or
@@ -122,49 +114,39 @@ services:
     user: "${UID}:${GID}"
     command: "watch-py celery-worker"
     environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_ENDPOINT
       - BASEROW_DANGEROUS_SILKY_ANALYZE_QUERIES
     volumes:
       - ./docs:/baserow/docs
       - ./backend:/baserow/backend
-      - ./premium/backend/:/baserow/premium/backend
-      - ./enterprise/backend/:/baserow/enterprise/backend
       - ./deploy/plugins:/baserow/plugins
     # Open stdin and tty so when attaching key input works as expected.
     stdin_open: true
     tty: true
-    depends_on:
-      - otel-collector
 
   celery-export-worker:
     image: baserow_backend:dev
     user: "${UID}:${GID}"
     command: "watch-py celery-exportworker"
     environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_ENDPOINT
       - BASEROW_DANGEROUS_SILKY_ANALYZE_QUERIES
     volumes:
       - ./docs:/baserow/docs
       - ./backend:/baserow/backend
-      - ./premium/backend/:/baserow/premium/backend
-      - ./enterprise/backend/:/baserow/enterprise/backend
       - ./deploy/plugins:/baserow/plugins
     # Open stdin and tty so when attaching key input works as expected.
     stdin_open: true
     tty: true
-    depends_on:
-      - otel-collector
 
   celery-beat-worker:
     image: baserow_backend:dev
     user: "${UID}:${GID}"
     command: "watch-py celery-beat"
     environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_ENDPOINT
     volumes:
       - ./backend:/baserow/backend
-      - ./premium/backend/:/baserow/premium/backend
-      - ./enterprise/backend/:/baserow/enterprise/backend
       - ./deploy/plugins:/baserow/plugins
     # Open stdin and tty so when attaching key input works as expected.
     stdin_open: true
@@ -193,8 +175,6 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?}
     volumes:
       - ./backend:/baserow/backend
-      - ./premium/backend/:/baserow/premium/backend
-      - ./enterprise/backend/:/baserow/enterprise/backend
       - ./deploy/plugins:/baserow/plugins
       - media:/baserow/media
     ports:
@@ -235,7 +215,7 @@ services:
   # owned by different users. Ensure that we chown them to the user appropriate for the
   # environment here.
   volume-permissions-fixer:
-    image: bash:4.4
+    image: bash:5.3
     command: chown ${UID:-9999}:${GID:-9999}  -R /baserow/media
     volumes:
       - media:/baserow/media
@@ -243,41 +223,6 @@ services:
       - caddy_data:/data
     networks:
       local:
-
-  otel-collector:
-    image: otel/opentelemetry-collector:0.106.1
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    environment:
-      HONEYCOMB_API_KEY:
-      HONEYCOMB_METRICS_DATASET: baserow-dev-metrics
-    volumes:
-      - $PWD/deploy/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    networks:
-      local:
-    ports:
-      - "${BASEROW_HOST_PUBLISH_IP:-127.0.0.1}:${BASEROW_OTEL_COLLECTOR_PORT:-4318}:4318"
-
-  embeddings:
-    profiles: ["ai"]
-    build:
-      context: ./embeddings
-      dockerfile: Dockerfile
-    ports:
-      - "${BASEROW_HOST_PUBLISH_IP:-127.0.0.1}:${BASEROW_EMBEDDINGS_PORT:-7999}:80"
-    networks:
-      local:
-    restart: unless-stopped
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "python",
-          "-c",
-          "import requests; requests.get('http://localhost/health').raise_for_status()",
-        ]
-      interval: 1m30s
-      timeout: 10s
-      retries: 3
 
 volumes:
   pgdatadev:

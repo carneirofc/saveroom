@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Add a staff-only admin UI to manage, schedule, and restore workspace backups across all workspaces, including ones staff do not belong to.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-15"
+}

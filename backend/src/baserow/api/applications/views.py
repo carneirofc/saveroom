@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from baserow.api.applications.errors import (
     ERROR_APPLICATION_DOES_NOT_EXIST,
     ERROR_APPLICATION_NOT_IN_GROUP,
+    ERROR_APPLICATION_TYPE_DISABLED,
     ERROR_APPLICATION_TYPE_DOES_NOT_EXIST,
 )
 from baserow.api.decorators import map_exceptions, validate_body
@@ -34,6 +35,7 @@ from baserow.core.actions import (
 from baserow.core.exceptions import (
     ApplicationDoesNotExist,
     ApplicationNotInWorkspace,
+    ApplicationTypeDisabled,
     ApplicationTypeDoesNotExist,
     UserNotInWorkspace,
     WorkspaceDoesNotExist,
@@ -196,6 +198,7 @@ class ApplicationsView(APIView):
             WorkspaceDoesNotExist: ERROR_GROUP_DOES_NOT_EXIST,
             UserNotInWorkspace: ERROR_USER_NOT_IN_GROUP,
             ApplicationTypeDoesNotExist: ERROR_APPLICATION_TYPE_DOES_NOT_EXIST,
+            ApplicationTypeDisabled: ERROR_APPLICATION_TYPE_DISABLED,
         }
     )
     @validate_body(PolymorphicApplicationCreateSerializer)

@@ -154,7 +154,7 @@ def _validate_field_name(
     if name in RESERVED_BASEROW_FIELD_NAMES:
         raise ReservedBaserowFieldNameException(
             f"A field named {name} cannot be created as it already exists as a "
-            f"reserved Baserow field name."
+            f"reserved field name."
         )
 
 

@@ -1,0 +1,139 @@
+.api-client__head {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.api-client__name {
+  min-width: 0;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.api-client__more {
+  flex: 0 0;
+  font-size: 14px;
+  padding: 0 6px;
+  margin-left: 6px;
+  color: $color-neutral-900;
+
+  @include rounded($rounded);
+
+  &:hover {
+    text-decoration: none;
+    background-color: $color-neutral-200;
+  }
+}
+
+.api-client__meta {
+  display: flex;
+  align-items: center;
+}
+
+.api-client__scopes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-right: 12px;
+  color: $color-neutral-600;
+  font-size: 12px;
+}
+
+.api-client__toggle {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.api-client__scope-description {
+  color: $color-neutral-600;
+  font-size: 11px;
+  margin-left: 24px;
+}
+
+.api-client__keys {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 6px 8px 6px 0;
+    color: $color-neutral-600;
+  }
+
+  td {
+    padding: 8px 8px 8px 0;
+    border-top: 1px solid $color-neutral-200;
+    font-size: 12px;
+    vertical-align: middle;
+  }
+}
+
+.api-client__key-prefix {
+  font-family: monospace;
+}
+
+.api-client__key-revoke {
+  color: $palette-red-600;
+
+  &--loading {
+    @include loading(14px);
+
+    color: transparent;
+  }
+}
+
+.api-client__empty {
+  color: $color-neutral-600;
+  font-size: 12px;
+}
+
+.api-client__key-reveal {
+  display: flex;
+  width: 100%;
+  align-items: center;
+}
+
+.api-client__key-box {
+  @extend %ellipsis;
+
+  background-color: $palette-neutral-100;
+  line-height: 32px;
+  padding: 0 8px;
+  font-family: monospace;
+  font-size: 11px;
+  border: solid 1px $palette-neutral-400;
+  height: 32px;
+  min-width: 0;
+  flex-basis: 100%;
+
+  @include scrollable-overflow;
+  @include rounded($rounded);
+}
+
+.api-client__key-copy {
+  flex-shrink: 0;
+  position: relative;
+  width: 32px;
+  height: 32px;
+  margin-left: 4px;
+  line-height: 32px;
+  font-size: 14px;
+  text-align: center;
+  color: $palette-neutral-900;
+
+  @include rounded($rounded);
+
+  &:hover {
+    background-color: $color-neutral-100;
+  }
+}
+
+.api-client__key-usage {
+  color: $color-neutral-600;
+  font-size: 12px;
+}
+
+.api-client__scopes-editor {
+  margin-bottom: 12px;
+}

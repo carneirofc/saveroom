@@ -5,16 +5,18 @@
   "private": true,
   "main": "baserowEmailCompiler.js",
   "dependencies": {
-    "chalk": "^5.0.0",
-    "chokidar": "^3.5.3",
-    "eta": "^2.0.0",
-    "glob": "^9.0.0",
-    "mjml": "^4.15.0"
+    "chokidar": "^5.0.0",
+    "eta": "^4.6.0",
+    "glob": "^13.0.6",
+    "mjml": "^5.4.1"
   },
   "author": "Bram Wiepjes (Baserow)",
   "license": "MIT",
   "scripts": {
     "watch": "node ./baserowEmailCompiler.js watch",
     "compile": "node ./baserowEmailCompiler.js"
+  },
+  "resolutions": {
+    "lodash": "^4.18.1"
   }
 }

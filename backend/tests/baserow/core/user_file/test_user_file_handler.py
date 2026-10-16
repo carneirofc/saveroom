@@ -353,7 +353,7 @@ def test_upload_user_file_by_url(data_fixture, tmpdir):
 
     responses.add(
         responses.GET,
-        "https://baserow.io/test.txt",
+        "https://example.com/test.txt",
         body=b"Hello World",
         status=200,
         content_type="text/plain",
@@ -361,25 +361,25 @@ def test_upload_user_file_by_url(data_fixture, tmpdir):
 
     responses.add(
         responses.GET,
-        "https://baserow.io/not-found.pdf",
+        "https://example.com/not-found.pdf",
         status=404,
     )
 
     # Could not be reached because it it responds with a 404
     with pytest.raises(FileURLCouldNotBeReached):
         handler.upload_user_file_by_url(
-            user, "https://baserow.io/not-found.pdf", storage=storage
+            user, "https://example.com/not-found.pdf", storage=storage
         )
 
     # Only the http and https protocol are supported.
     with pytest.raises(InvalidFileURLError):
         handler.upload_user_file_by_url(
-            user, "ftp://baserow.io/not-found.pdf", storage=storage
+            user, "ftp://example.com/not-found.pdf", storage=storage
         )
 
     with freeze_time("2020-01-01 12:00"):
         user_file = handler.upload_user_file_by_url(
-            user, "https://baserow.io/test.txt", storage=storage
+            user, "https://example.com/test.txt", storage=storage
         )
 
     assert user_file.original_name == "test.txt"
@@ -429,7 +429,7 @@ def test_upload_user_file_by_url_with_querystring(data_fixture, tmpdir) -> None:
     storage = FileSystemStorage(location=str(tmpdir), base_url="http://localhost")
     handler = UserFileHandler()
 
-    remote_file = "https://baserow.io/test.txt?utm_source=google&utm_medium=email&utm_campaign=fall"
+    remote_file = "https://example.com/test.txt?utm_source=google&utm_medium=email&utm_campaign=fall"
 
     responses.add(
         responses.GET,
@@ -465,7 +465,7 @@ def test_upload_user_file_by_url_with_image_without_extension_with_wrong_content
     storage = FileSystemStorage(location=str(tmpdir), base_url="http://localhost")
     handler = UserFileHandler()
 
-    remote_file = "https://baserow.io/image-without-url"
+    remote_file = "https://example.com/image-without-url"
 
     responses.add(
         responses.GET,
@@ -558,7 +558,7 @@ def test_upload_user_file_by_url_with_slash(data_fixture, tmpdir) -> None:
     storage = FileSystemStorage(location=str(tmpdir), base_url="http://localhost")
     handler = UserFileHandler()
 
-    remote_file = "https://baserow.io/test.txt/"
+    remote_file = "https://example.com/test.txt/"
 
     responses.add(
         responses.GET,
@@ -592,7 +592,7 @@ def test_upload_user_file_by_url_without_path(data_fixture, tmpdir) -> None:
     storage = FileSystemStorage(location=str(tmpdir), base_url="http://localhost")
     handler = UserFileHandler()
 
-    remote_file = "https://baserow.io/"
+    remote_file = "https://example.com/"
 
     responses.add(
         responses.GET,
@@ -629,15 +629,15 @@ def test_upload_user_file_by_url_without_path(data_fixture, tmpdir) -> None:
         # that UseFileHandler receives because
         # http client will translate `/.`, `/..`, `/../` paths to `/`
         (
-            "https://baserow.io/",
-            "https://baserow.io/../",
+            "https://example.com/",
+            "https://example.com/../",
         ),
-        ("https://baserow.io/", "https://baserow.io/../.."),
-        ("https://baserow.io/", "https://baserow.io/../."),
-        ("https://baserow.io/", "https://baserow.io/.."),
+        ("https://example.com/", "https://example.com/../.."),
+        ("https://example.com/", "https://example.com/../."),
+        ("https://example.com/", "https://example.com/.."),
         (
-            "https://baserow.io/",
-            "https://baserow.io/.",
+            "https://example.com/",
+            "https://example.com/.",
         ),
     ],
 )
@@ -674,11 +674,11 @@ def test_upload_user_file_by_url_with_invalid_content_type(
     storage = FileSystemStorage(location=str(tmpdir), base_url="http://localhost")
     handler = UserFileHandler()
 
-    remote_file = "https://baserow.io//"
+    remote_file = "https://example.com//"
 
     responses.add(
         responses.GET,
-        re.compile(r"https://baserow.io.*"),
+        re.compile(r"https://example.com.*"),
         body=b"Hello World",
         status=200,
         content_type="foobar/barfoo",

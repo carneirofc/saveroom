@@ -21,7 +21,7 @@ from baserow.contrib.database.fields.exceptions import (
     ReservedBaserowFieldNameException,
 )
 from baserow.contrib.database.fields.handler import FieldHandler
-from baserow.contrib.database.fields.models import Field
+from baserow.contrib.database.fields.models import Field, SelectOption
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.models import Database
 from baserow.contrib.database.operations import (
@@ -589,27 +589,46 @@ class TableHandler(metaclass=baserow_trace_methods(tracer)):
         data = []
         return fields, data
 
-    def update_table_by_id(self, user: AbstractUser, table_id: int, name: str) -> Table:
+    def update_table_by_id(
+        self,
+        user: AbstractUser,
+        table_id: int,
+        name: Optional[str] = None,
+        require_edit_confirmation: Optional[bool] = None,
+    ) -> Table:
         """
         Updates an existing table instance.
 
         :param user: The user on whose behalf the table is updated.
         :param table_id: The id of the table that needs to be updated.
-        :param name: The name to be updated.
+        :param name: The name to be updated, if provided.
+        :param require_edit_confirmation: The new protected editing state, if
+            provided.
         :raises ValueError: When the provided table is not an instance of Table.
         :return: The updated table instance.
         """
 
         table = self.get_table_for_update(table_id)
-        return self.update_table(user, table, name)
+        return self.update_table(
+            user, table, name=name, require_edit_confirmation=require_edit_confirmation
+        )
 
-    def update_table(self, user: AbstractUser, table: Table, name: str) -> Table:
+    def update_table(
+        self,
+        user: AbstractUser,
+        table: Table,
+        name: Optional[str] = None,
+        require_edit_confirmation: Optional[bool] = None,
+    ) -> Table:
         """
-        Updates an existing table instance.
+        Updates an existing table instance. Only the provided values are changed.
 
         :param user: The user on whose behalf the table is updated.
         :param table: The table instance that needs to be updated.
-        :param name: The name to be updated.
+        :param name: The name to be updated, if provided.
+        :param require_edit_confirmation: Whether the web frontend must stage row
+            edits until they're explicitly saved, if provided. This is a UI
+            safeguard only and is never enforced by the API.
         :raises ValueError: When the provided table is not an instance of Table.
         :return: The updated table instance.
         """
@@ -624,7 +643,10 @@ class TableHandler(metaclass=baserow_trace_methods(tracer)):
             context=table,
         )
 
-        table.name = name
+        if name is not None:
+            table.name = name
+        if require_edit_confirmation is not None:
+            table.require_edit_confirmation = require_edit_confirmation
         table.save()
 
         table_updated.send(self, table=table, user=user)
@@ -768,6 +790,7 @@ class TableHandler(metaclass=baserow_trace_methods(tracer)):
             include_permission_data=True,
             reduce_disk_space_usage=False,
             is_duplicate=True,
+            exclude_sensitive_data=False,
         )
 
         serialized_tables = database_type.export_tables_serialized([table], config)
@@ -787,6 +810,17 @@ class TableHandler(metaclass=baserow_trace_methods(tracer)):
         ).values_list("dependency_id", flat=True)
         all_table_dependency_field_ids = {
             field_id: field_id for field_id in all_table_dependency_field_ids
+        }
+        # Filters on lookup fields can reference select options of fields in other
+        # tables, possibly through several lookups, so all the select options
+        # outside of the duplicated table are added to the mapping as well.
+        all_other_table_select_option_ids = (
+            SelectOption.objects.filter(field__table__database_id=database.id)
+            .exclude(field__table_id=table.id)
+            .values_list("id", flat=True)
+        )
+        all_other_table_select_option_ids = {
+            option_id: option_id for option_id in all_other_table_select_option_ids
         }
 
         # It can happen that a field has a reference to another view. We would
@@ -812,7 +846,7 @@ class TableHandler(metaclass=baserow_trace_methods(tracer)):
             "database_view_decorations": {},
             # We have to create the `database_field_select_options` because that's
             # otherwise not created later on.
-            "database_field_select_options": {},
+            "database_field_select_options": all_other_table_select_option_ids,
         }
 
         link_fields_to_import_to_existing_tables = (

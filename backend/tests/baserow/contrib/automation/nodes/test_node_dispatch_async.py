@@ -327,8 +327,8 @@ def test_dispatch_node_expected_error(mock_logger, mock_dispatch, data_fixture):
     )
 
     mock_logger.warning.assert_called_once_with(error)
-    # Ensure error/exception are not logged, since that would cause
-    # Sentry to create an issue.
+    # Ensure error/exception are not logged, since an expected workflow failure
+    # is not an application error.
     mock_logger.error.assert_not_called()
     mock_logger.exception.assert_not_called()
 

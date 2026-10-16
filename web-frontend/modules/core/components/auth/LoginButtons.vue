@@ -18,7 +18,6 @@
         :name="loginButton.name"
         :icon="getLoginButtonIcon(loginButton)"
         :small="showSmallLoginButtons"
-        :invitation="invitation"
       >
       </component>
     </template>
@@ -40,11 +39,6 @@ export default {
     hideIfNoButtons: {
       type: Boolean,
       default: false,
-    },
-    invitation: {
-      required: false,
-      validator: (prop) => typeof prop === 'object' || prop === null,
-      default: null,
     },
   },
   setup() {

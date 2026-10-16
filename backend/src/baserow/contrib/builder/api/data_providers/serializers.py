@@ -37,7 +37,7 @@ class DispatchDataSourceDataSourceContextSerializer(serializers.Serializer):
             if user is not None:
                 try:
                     data["element"] = ElementService().get_element(user, element.id)
-                except (ElementDoesNotExist, PermissionException):
+                except ElementDoesNotExist, PermissionException:
                     raise DataSourceRefinementForbidden(
                         "The data source is not available for the dispatched element."
                     ) from None

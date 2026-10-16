@@ -1,0 +1,21 @@
+.audit-log-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.audit-log-filters__field {
+  min-width: 160px;
+  flex: 1 1 160px;
+}
+
+.audit-log-filters__actions {
+  flex: 0 0 auto;
+}
+
+.audit-log__retention {
+  color: $color-neutral-400;
+  margin-right: 12px;
+}

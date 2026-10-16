@@ -3,6 +3,7 @@ import responses
 
 from baserow.contrib.database.data_sync.handler import DataSyncHandler
 from baserow.contrib.database.data_sync.models import ICalCalendarDataSync
+from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.core.registries import ImportExportConfig, application_type_registry
 
 ICAL_FEED_WITH_ONE_ITEMS = """BEGIN:VCALENDAR
@@ -37,7 +38,7 @@ UID:1725220374375-34056@ical.marudot.com
 DTSTART;TZID=Europe/Berlin:20240901T100000
 DTEND;TZID=Europe/Berlin:20240901T110000
 SUMMARY:Test event 0
-URL:https://baserow.io
+URL:https://example.com
 DESCRIPTION:Test description 1
 LOCATION:Amsterdam
 END:VEVENT
@@ -49,7 +50,7 @@ END:VCALENDAR"""
 def test_import_export_data_sync(data_fixture):
     responses.add(
         responses.GET,
-        "https://baserow.io/ical.ics",
+        "https://example.com/ical.ics",
         status=200,
         body=ICAL_FEED_WITH_ONE_ITEMS,
     )
@@ -66,7 +67,7 @@ def test_import_export_data_sync(data_fixture):
         table_name="Test",
         type_name="ical_calendar",
         synced_properties=["uid", "dtstart", "dtend", "summary"],
-        ical_url="https://baserow.io/ical.ics",
+        ical_url="https://example.com/ical.ics",
     )
     properties = data_sync.synced_properties.all().order_by("key")
     handler.sync_data_sync_table(user=user, data_sync=data_sync)
@@ -120,7 +121,7 @@ def test_import_export_data_sync(data_fixture):
 def test_base_data_sync_settings_are_preserved_on_import_export(data_fixture):
     responses.add(
         responses.GET,
-        "https://baserow.io/ical.ics",
+        "https://example.com/ical.ics",
         status=200,
         body=ICAL_FEED_WITH_ONE_ITEMS,
     )
@@ -139,7 +140,7 @@ def test_base_data_sync_settings_are_preserved_on_import_export(data_fixture):
         synced_properties=["uid"],
         auto_add_new_properties=True,  # default False
         delete_unmatched_rows=False,  # default True
-        ical_url="https://baserow.io/ical.ics",
+        ical_url="https://example.com/ical.ics",
     )
     # `two_way_sync` can't be enabled through the handler for iCal (no two-way sync
     # strategy), so set it directly to still cover it in the serialization round-trip.
@@ -172,3 +173,55 @@ def test_base_data_sync_settings_are_preserved_on_import_export(data_fixture):
     assert imported_data_sync.auto_add_new_properties is True
     assert imported_data_sync.delete_unmatched_rows is False
     assert imported_data_sync.two_way_sync is True
+
+
+@pytest.mark.django_db
+@responses.activate
+def test_import_export_data_sync_with_trashed_property_field(data_fixture):
+    responses.add(
+        responses.GET,
+        "https://example.com/ical.ics",
+        status=200,
+        body=ICAL_FEED_WITH_ONE_ITEMS,
+    )
+
+    user = data_fixture.create_user()
+    workspace = data_fixture.create_workspace(user=user)
+    database = data_fixture.create_database_application(workspace=workspace)
+
+    handler = DataSyncHandler()
+
+    data_sync = handler.create_data_sync_table(
+        user=user,
+        database=database,
+        table_name="Test",
+        type_name="ical_calendar",
+        synced_properties=["uid", "dtstart", "dtend", "summary"],
+        ical_url="https://example.com/ical.ics",
+    )
+    handler.sync_data_sync_table(user=user, data_sync=data_sync)
+
+    fields = list(data_sync.table.field_set.all().order_by("id"))
+    FieldHandler().delete_field(user, fields[1].specific)
+
+    database_type = application_type_registry.get("database")
+    config = ImportExportConfig(include_permission_data=True)
+    serialized = database_type.export_serialized(database, config)
+
+    imported_workspace = data_fixture.create_workspace()
+    data_fixture.create_user_workspace(workspace=imported_workspace, user=user)
+
+    imported_database = database_type.import_serialized(
+        imported_workspace,
+        serialized,
+        config,
+        {},
+        None,
+        None,
+    )
+
+    imported_table = imported_database.table_set.all().first()
+    imported_data_sync = imported_table.data_sync.specific
+    imported_properties = imported_data_sync.synced_properties.all()
+    non_trashed_fields = data_sync.table.field_set.all()
+    assert imported_properties.count() == non_trashed_fields.count()

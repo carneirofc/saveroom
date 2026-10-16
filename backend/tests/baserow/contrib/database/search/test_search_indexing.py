@@ -150,10 +150,10 @@ def test_urlfield_get_search_expression(data_fixture):
     )
     field = table.field_set.get(name="URL")
     row = RowHandler().force_create_row(
-        user=user, table=table, values={f"field_{field.id}": "https://baserow.io"}
+        user=user, table=table, values={f"field_{field.id}": "https://example.com"}
     )
     model = table.get_model()
-    qs = model.objects.all().pg_search("https://baserow.io")
+    qs = model.objects.all().pg_search("https://example.com")
     assert qs.exists()
     matching_row = qs.get()
     assert matching_row.id == row.id
@@ -173,10 +173,10 @@ def test_emailfield_get_search_expression(data_fixture):
     )
     field = table.field_set.get(name="Email")
     row = RowHandler().force_create_row(
-        user=user, table=table, values={f"field_{field.id}": "dev@baserow.io"}
+        user=user, table=table, values={f"field_{field.id}": "dev@example.com"}
     )
     model = table.get_model()
-    qs = model.objects.all().pg_search("dev@baserow.io")
+    qs = model.objects.all().pg_search("dev@example.com")
     assert qs.exists()
     matching_row = qs.get()
     assert matching_row.id == row.id
@@ -586,12 +586,12 @@ def test_massive_textfield_get_search_expression(data_fixture):
 @pytest.mark.field_last_modified_by
 @pytest.mark.django_db(transaction=True)
 def test_last_modified_by_field_get_search_expression(data_fixture):
-    user_adam = data_fixture.create_user(email="user1@baserow.io", first_name="Adam")
+    user_adam = data_fixture.create_user(email="user1@example.com", first_name="Adam")
     user_john_smith = data_fixture.create_user(
-        email="user2@baserow.io", first_name="John Smith"
+        email="user2@example.com", first_name="John Smith"
     )
     user_mary_black = data_fixture.create_user(
-        email="user3@baserow.io", first_name="Mary Black"
+        email="user3@example.com", first_name="Mary Black"
     )
 
     database = data_fixture.create_database_application(user=user_adam)

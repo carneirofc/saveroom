@@ -3,11 +3,11 @@
 A field is an abstraction that defines how table data is stored per column. More
 information can be found on the
 [database plugin page](../technical/database-plugin.md). This is a tutorial about how to
-create your own custom table field type for Baserow via a plugin. We are going to create
+create your own custom table field type for Saveroom via a plugin. We are going to create
 a integer field which displays as "hello world". Of course a number field with the more
 features already exists, this is just for example purposes. In the end the user can
-create an integer field that only shows a hello world message. We expect that you are
-using the [plugin boilerplate](./boilerplate.md).
+create an integer field that only shows a hello world message. We expect that you have a plugin laid out as described in
+[plugin architecture](./creation.md#plugin-architecture).
 
 ## Backend
 
@@ -34,7 +34,7 @@ the data. The serializer field is used when exposing the data via the REST API t
 web-frontend. For more information about the properties and methods related to the field
 type you can check the
 `backend/src/baserow/contrib/database/fields/registries.py::FieldType` class in the
-Baserow repository.
+Saveroom repository.
 
 Create `plugins/my_baserow_plugin/backend/src/my_baserow_plugin/field_types.py`
 
@@ -146,21 +146,26 @@ export class IntegerFieldType extends FieldType {
 `plugins/my_baserow_plugin/web-frontend/plugin.js`
 
 ```javascript
+import { defineNuxtPlugin } from '#app'
 import { PluginNamePlugin } from "@my-baserow-plugin/plugins";
 import { IntegerFieldType } from "@my-baserow-plugin/fieldTypes";
 
-export default (context) => {
-    const { app } = context;
-    app.$registry.register("plugin", new PluginNamePlugin(context));
-    app.$registry.register("field", new IntegerFieldType(context));
-};
+export default defineNuxtPlugin({
+  dependsOn: ['core'],
+  setup(nuxtApp) {
+    const { $registry } = nuxtApp
+    const context = { app: nuxtApp }
+    $registry.register('plugin', new PluginNamePlugin(context))
+    $registry.register('field', new IntegerFieldType(context))
+  },
+})
 ```
 
 The GridViewIntegerField component is returned by the `getGridViewFieldComponent`
 method of the `IntegerFieldType` class which means that this component is added for each
 data row field that has the `integer` type. For now we only add "Hello World" for
 example purposes so it doesn't actually display the number, but there are plenty of
-examples in the Baserow repository in the directory
+examples in the Saveroom repository in the directory
 `web-frontend/modules/database/components/view/grid`.
 
 plugins/my_baserow_plugin/web-frontend/components/GridViewIntegerField.vue
@@ -185,7 +190,7 @@ The `RowEditIntegerField` component is returned by the `getRowEditFieldComponent
 method of the `IntegerFieldType` class which means that this component is added in the
 popup row form. This form is shown when the expand icon on the left side of row has been
 clicked by the user. For now, we only add "Hello World" for example purposes, but there
-are plenty of examples in the Baserow repository in the
+are plenty of examples in the Saveroom repository in the
 directory `web-frontend/modules/database/components/row`.
 
 `plugins/my_baserow_plugin/web-frontend/components/RowEditIntegerField.vue`

@@ -56,7 +56,6 @@ if TYPE_CHECKING:
         Application,
         Template,
         Workspace,
-        WorkspaceInvitation,
     )
 
 
@@ -180,7 +179,6 @@ class Plugin(APIUrlsInstanceMixin, Instance):
         self,
         user: "AbstractUser",
         workspace: "Workspace" = None,
-        workspace_invitation: "WorkspaceInvitation" = None,
         template: "Template" = None,
     ):
         """
@@ -193,9 +191,6 @@ class Plugin(APIUrlsInstanceMixin, Instance):
         :type user: User
         :param workspace: The newly created workspace for the user.
         :type workspace: Workspace or None
-        :param workspace_invitation: Is provided if the user has signed up using a valid
-            workspace invitation token.
-        :type workspace_invitation: WorkspaceInvitation or None
         :param template: The template that is installed right after creating the
             account. Is `None` if the template was not created.
         :type template: Template or None
@@ -1407,6 +1402,41 @@ class EmailContextRegistry(Registry[EmailContextType]):
         return context
 
 
+class WorkspaceUsersAddOptionType(Instance):
+    """
+    An extra option accepted when adding existing users to a workspace. It is applied
+    in the same transaction as the memberships, so other apps can extend the add flow
+    (for example with a default access level) without core depending on them.
+    """
+
+    def get_serializer_field(self) -> Any:
+        """
+        Returns the request serializer field of this option, which is added to the
+        request body under the type name.
+        """
+
+        raise NotImplementedError("Must be implemented by the option type.")
+
+    def apply(
+        self,
+        actor: "AbstractUser",
+        workspace: "Workspace",
+        users: List["AbstractUser"],
+        value: Any,
+    ):
+        """
+        Applies the option to the users that are being added. Called only when a
+        non-null value was provided. Must check the actor's permissions for what it
+        changes.
+        """
+
+        raise NotImplementedError("Must be implemented by the option type.")
+
+
+class WorkspaceUsersAddOptionTypeRegistry(Registry[WorkspaceUsersAddOptionType]):
+    name = "workspace_users_add_option"
+
+
 # A default plugin and application registry is created here, this is the one that is
 # used throughout the whole Baserow application. To add a new plugin or application use
 # these registries.
@@ -1424,3 +1454,6 @@ serialization_processor_registry: SerializationProcessorRegistry = (
     SerializationProcessorRegistry()
 )
 email_context_registry: EmailContextRegistry = EmailContextRegistry()
+workspace_users_add_option_registry: WorkspaceUsersAddOptionTypeRegistry = (
+    WorkspaceUsersAddOptionTypeRegistry()
+)

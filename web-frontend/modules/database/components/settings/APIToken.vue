@@ -42,9 +42,7 @@
                 @click.prevent="tokenVisible = !tokenVisible"
               >
                 <i
-                  :class="
-                    tokenVisible ? 'iconoir-eye-off' : 'iconoir-eye-empty'
-                  "
+                  :class="tokenVisible ? 'iconoir-eye-closed' : 'iconoir-eye'"
                 ></i>
               </a>
               <a

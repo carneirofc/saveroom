@@ -1,13 +1,11 @@
 <template>
   <a
-    href="https://baserow.io"
+    v-if="$branding.showAttribution"
+    :href="$branding.siteUrl"
     target="_blank"
-    title="Baserow - open source no-code database tool and Airtable alternative"
+    :title="$branding.siteTitle"
   >
-    <Logo
-      height="14"
-      alt="Baserow - open source no-code database tool and Airtable alternative"
-    />
+    <Logo height="14" :alt="$branding.siteTitle" />
   </a>
 </template>
 

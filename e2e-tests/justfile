@@ -8,10 +8,10 @@
 # Docker settings
 network := "baserow-e2e"
 # Use same image names as `just build backend ci` and `just build web-frontend ci`
-backend_image := "baserow/backend:ci"
-frontend_image := "baserow/web-frontend:ci"
-db_image := "pgvector/pgvector:pg${POSTGRES_IMAGE_VERSION:-14}"
-redis_image := "redis:6"
+backend_image := "saveroom/backend:ci"
+frontend_image := "saveroom/web-frontend:ci"
+db_image := "pgvector/pgvector:pg${POSTGRES_IMAGE_VERSION:-18}"
+redis_image := "redis:8"
 
 # Host ports (override with env vars to avoid collisions with a running dev stack).
 # Keep these well above the documented dev ranges so 8030-8060/3030-3060 stay
@@ -199,6 +199,7 @@ up: _ensure-images
             -e DJANGO_SETTINGS_MODULE=baserow.config.settings.e2e \
             -e MIGRATE_ON_STARTUP=true \
             -e FEATURE_FLAGS="*" \
+            -e BASEROW_FRONTEND_COOKIE_PREFIX={{ frontend_cookie_prefix }} \
             -e PRIVATE_BACKEND_URL=http://e2e-backend:8000 \
             -p {{ backend_port }}:8000 \
             {{ backend_image }} gunicorn

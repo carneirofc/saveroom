@@ -1,11 +1,3 @@
-import en from '@baserow/modules/builder/locales/en.json'
-import fr from '@baserow/modules/builder/locales/fr.json'
-import nl from '@baserow/modules/builder/locales/nl.json'
-import de from '@baserow/modules/builder/locales/de.json'
-import es from '@baserow/modules/builder/locales/es.json'
-import it from '@baserow/modules/builder/locales/it.json'
-import pl from '@baserow/modules/builder/locales/pl.json'
-import ko from '@baserow/modules/builder/locales/ko.json'
 import {
   GeneralBuilderSettingsType,
   DomainsBuilderSettingsType,
@@ -123,7 +115,6 @@ import {
   CoreHTTPRequestWorkflowActionType,
   CoreSMTPEmailWorkflowActionType,
   CoreStartWorkflowWorkflowActionType,
-  AIAgentWorkflowActionType,
   LocalBaserowCreateRowsWorkflowActionType,
   SlackWriteMessageWorkflowActionType,
 } from '@baserow/modules/builder/workflowActionTypes'
@@ -367,7 +358,6 @@ export default defineNuxtPlugin({
       'workflowAction',
       new CoreStartWorkflowWorkflowActionType(context)
     )
-    $registry.register('workflowAction', new AIAgentWorkflowActionType(context))
     $registry.register(
       'workflowAction',
       new CreateRowWorkflowActionType(context)

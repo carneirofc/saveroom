@@ -1,7 +1,9 @@
 /* stylelint-disable scss/operator-no-unspaced */
+// Served by the runtime branding assets route, so an icon can be replaced by
+// dropping a same-named SVG into the branding directory's `icons/` folder.
 @mixin baserow-icon($name) {
   &::before {
-    mask-image: url('@baserow/modules/core/assets/icons/' + $name + '.svg');
+    mask-image: url('/_branding/assets/icons/' + $name + '.svg');
   }
 }
 

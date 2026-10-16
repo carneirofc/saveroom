@@ -64,7 +64,7 @@ import {
   CollectionElementTypeMixin,
   MultiPageElementTypeMixin,
 } from '@baserow/modules/builder/elementTypeMixins'
-import { isNumeric, isValidEmail } from '@baserow/modules/core/utils/string'
+import { isValidEmail } from '@baserow/modules/core/utils/string'
 
 import {
   VISIBILITY_NOT_LOGGED,
@@ -214,9 +214,6 @@ export class ElementType extends Registerable {
     placeInContainer,
     pagePlace,
   }) {
-    if (this.isDeactivatedReason({ workspace }) !== null) {
-      return this.isDeactivatedReason({ workspace })
-    }
     if (!parentElement) {
       const sharedPage = this.app.$store.getters['page/getSharedPage'](builder)
 
@@ -257,18 +254,6 @@ export class ElementType extends Registerable {
         }
       }
     }
-    return null
-  }
-
-  isDeactivatedReason({ workspace }) {
-    return null
-  }
-
-  isDeactivated({ workspace }) {
-    return !!this.isDeactivatedReason({ workspace })
-  }
-
-  getDeactivatedClickModal({ workspace }) {
     return null
   }
 
@@ -374,12 +359,6 @@ export class ElementType extends Registerable {
    * @returns A string that represent the current error.
    */
   getErrorMessage(element, applicationContext) {
-    const { workspace } = applicationContext
-
-    if (this.isDeactivatedReason({ workspace }) !== null) {
-      return this.isDeactivatedReason({ workspace })
-    }
-
     if (
       this.getEvents(element).length > 0 &&
       this.workflowActionsInError(element, applicationContext)
@@ -1431,12 +1410,13 @@ export class InputTextElementType extends FormElementType {
   }
 
   isValid(element, value) {
-    if (!value && value !== 0) {
+    if (value === null || value === undefined || value === '') {
       return !element.required
     }
     switch (element.validation_type) {
       case 'integer':
-        return isNumeric(value)
+        // Failed parsing leaves raw text in form data for display.
+        return Number.isFinite(value)
       case 'email':
         return isValidEmail(value)
       default:
@@ -1950,7 +1930,8 @@ export class ChoiceElementType extends FormElementType {
     ).map(({ value }) => value)
 
     const validOption = element.multiple
-      ? optionValues.some((option) => value.includes(option))
+      ? Array.isArray(value) &&
+        optionValues.some((option) => value.includes(option))
       : optionValues.includes(value)
 
     return !(element.required && !validOption)

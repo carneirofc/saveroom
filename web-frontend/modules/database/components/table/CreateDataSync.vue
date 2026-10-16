@@ -100,19 +100,11 @@
         v-model="twoWaySync"
         class="margin-top-2"
         small
-        :disabled="jobIsRunning || jobIsFinished || isTwoWaySyncDeactivated"
-        @click="clickTwoWaySync"
+        :disabled="jobIsRunning || jobIsFinished"
       >
         {{ $t('createDataSync.twoWaySyncLabel') }}
-        <i v-if="isTwoWaySyncDeactivated" class="iconoir-lock"></i>
       </SwitchInput>
     </FormGroup>
-    <component
-      :is="twoWaySyncDeactivatedModal[0]"
-      v-if="twoWaySyncDeactivatedModal !== null"
-      ref="twoWaySyncDeactivatedModal"
-      v-bind="twoWaySyncDeactivatedModal[1]"
-    ></component>
     <Error :error="error"></Error>
     <div class="modal-progress__actions margin-top-2">
       <ProgressBar
@@ -207,12 +199,6 @@ export default {
 
       return this.$registry.get('twoWaySyncStrategy', strategy)
     },
-    isTwoWaySyncDeactivated() {
-      if (!this.twoWaySyncStrategy) {
-        return true
-      }
-      return this.twoWaySyncStrategy.isDeactivated(this.database.workspace.id)
-    },
     syncInProgress() {
       return this.creatingTable || this.jobIsRunning
     },
@@ -220,12 +206,6 @@ export default {
     // Once created, the user can close the modal and the job will restore on reopen.
     uploadingBeforeJobCreated() {
       return this.creatingTable && this.job === null
-    },
-    twoWaySyncDeactivatedModal() {
-      if (!this.twoWaySyncStrategy) {
-        return null
-      }
-      return this.twoWaySyncStrategy.getDeactivatedClickModal()
     },
   },
   watch: {
@@ -278,7 +258,11 @@ export default {
     },
     async submitted(formValues) {
       this.formValues = formValues
-      await this.fetchNonExistingProperties(this.chosenType, formValues)
+      await this.fetchNonExistingProperties(
+        this.chosenType,
+        formValues,
+        this.database.id
+      )
     },
     async create() {
       this.hideError()
@@ -351,11 +335,6 @@ export default {
 
       this.restoredFromStore = false
       this.job = null
-    },
-    clickTwoWaySync() {
-      if (this.isTwoWaySyncDeactivated) {
-        this.$refs.twoWaySyncDeactivatedModal.show()
-      }
     },
   },
 }

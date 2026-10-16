@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "The Helm chart now supports Amazon EKS. S3 media can authenticate through IRSA or EKS Pod Identity instead of static access keys, in which case no AWS credentials are stored or handed to the pods at all. A new ALB ingress mode puts the backend and web-frontend behind a single load balancer while giving each its own health check, and a values-eks.yaml preset covers the internal-ALB-behind-CloudFront setup. The chart also validates its values before anything reaches the cluster, and now restarts pods when only the configuration changed.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-11"
+}

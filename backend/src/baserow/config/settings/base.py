@@ -27,6 +27,14 @@ from baserow.core.telemetry.utils import otel_is_enabled
 from baserow.throttling.types import RateLimit
 from baserow.version import VERSION
 
+# Build metadata, injected as docker build args when an image is published. They
+# identify the exact source the running instance was built from, which the version
+# number alone cannot: VERSION tracks the upstream Baserow codebase, while these
+# track this fork's release tag and commit. Empty in a development checkout.
+BASEROW_BUILD_VERSION = os.getenv("BASEROW_BUILD_VERSION", "")
+BASEROW_BUILD_COMMIT = os.getenv("BASEROW_BUILD_COMMIT", "")
+BASEROW_BUILD_DATE = os.getenv("BASEROW_BUILD_DATE", "")
+
 # A comma separated list of feature flags used to enable in-progress or not ready
 # features for developers. See docs/development/feature-flags.md for more info.
 FEATURE_FLAGS = [
@@ -47,11 +55,9 @@ else:
     BASEROW_PLUGIN_FOLDERS = []
 
 BASEROW_BACKEND_PLUGIN_NAMES = [d.name for d in BASEROW_PLUGIN_FOLDERS]
-BASEROW_OSS_ONLY = bool(os.getenv("BASEROW_OSS_ONLY", ""))
-if BASEROW_OSS_ONLY:
-    BASEROW_BUILT_IN_PLUGINS = []
-else:
-    BASEROW_BUILT_IN_PLUGINS = ["baserow_premium", "baserow_enterprise"]
+# This fork ships no built-in plugins. Third party plugins are still discovered
+# through BASEROW_PLUGIN_DIR above.
+BASEROW_BUILT_IN_PLUGINS = []
 
 # SECURITY WARNING: keep the secret key used in production secret!
 if "SECRET_KEY" in os.environ:
@@ -60,9 +66,7 @@ if "SECRET_KEY" in os.environ:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("BASEROW_BACKEND_DEBUG", "off") == "on"
 
-# The `testserver` is needed for the
-# `src/baserow/core/mcp/utils.py::internal_api_request`.
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 ALLOWED_HOSTS += os.getenv("BASEROW_EXTRA_ALLOWED_HOSTS", "").split(",")
 
 INSTALLED_APPS = [
@@ -189,6 +193,8 @@ CELERY_TASK_ROUTES = {
     "baserow.core.usage.tasks": {"queue": BASEROW_GROUP_STORAGE_USAGE_QUEUE},
     "baserow.contrib.database.table.tasks.run_row_count_job": {"queue": "export"},
     "baserow.core.jobs.tasks.clean_up_jobs": {"queue": "export"},
+    "baserow.core.backups.tasks.run_due_backup_schedules": {"queue": "export"},
+    "baserow.core.backups.tasks.apply_backup_retention": {"queue": "export"},
 }
 CELERY_TASK_SOFT_TIME_LIMIT = int(
     os.getenv("CELERY_TASK_SOFT_TIME_LIMIT") or 60 * 5
@@ -321,7 +327,7 @@ CACHES = {
 BUILDER_PUBLICLY_USED_PROPERTIES_CACHE_TTL_SECONDS = int(
     # Default TTL is 2 hours
     os.getenv("BASEROW_BUILDER_PUBLICLY_USED_PROPERTIES_CACHE_TTL_SECONDS")
-    or 60 * 10 * 2
+    or 60 * 60 * 2
 )
 BUILDER_DISPATCH_ACTION_CACHE_TTL_SECONDS = int(
     # Default TTL is 5 minutes
@@ -365,16 +371,11 @@ AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.AllowAllUsersModelBacke
 
 LANGUAGE_CODE = "en"
 
+# Must stay in sync with `locales` in web-frontend/config/locales.js: the account
+# language endpoint validates against these codes (baserow.api.user.validators).
 LANGUAGES = [
     ("en", "English"),
-    ("fr", "French"),
-    ("nl", "Dutch"),
-    ("de", "German"),
-    ("es", "Spanish"),
-    ("it", "Italian"),
-    ("pl", "Polish"),
-    ("ko", "Korean"),
-    ("uk", "Ukrainian"),
+    ("pt-BR", "Portuguese (Brazil)"),
 ]
 
 TIME_ZONE = "UTC"
@@ -404,7 +405,7 @@ REST_FRAMEWORK = {
         "baserow.api.user_sources.authentication.UserSourceJSONWebTokenAuthentication",
         "baserow.api.authentication.JSONWebTokenAuthentication",
     ),
-    "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
+    "DEFAULT_RENDERER_CLASSES": ("baserow.api.renderers.BaserowJSONRenderer",),
     "DEFAULT_SCHEMA_CLASS": "baserow.api.openapi.AutoSchema",
 }
 
@@ -483,16 +484,22 @@ SIMPLE_JWT = {
     "USER_AUTHENTICATION_RULE": lambda user: user is not None,
 }
 
+# The product name shown in emails and the API docs. It reads the same variable
+# as the web-frontend's runtime branding (docs/installation/branding.md), so one
+# value renames both halves. An empty value counts as unset because Compose
+# passes unset variables through as empty strings.
+BRANDING_APP_NAME = os.getenv("BASEROW_BRANDING_APP_NAME") or "Saveroom"
+
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Baserow API spec",
+    "TITLE": f"{BRANDING_APP_NAME} API spec",
     "DESCRIPTION": "For more information about our REST API, please visit "
-    "[this page](https://baserow.io/docs/apis%2Frest-api).\n\n"
+    "[this page](https://github.com/carneirofc/baserow).\n\n"
     "For more information about our deprecation policy, please visit "
-    "[this page](https://baserow.io/docs/apis%2Fdeprecations).",
-    "CONTACT": {"url": "https://baserow.io/contact"},
+    "[this page](https://github.com/carneirofc/baserow).",
+    "CONTACT": {"url": "https://github.com/carneirofc/baserow"},
     "LICENSE": {
         "name": "MIT",
-        "url": "https://github.com/baserow/baserow/blob/develop/LICENSE",
+        "url": "https://github.com/carneirofc/baserow/blob/develop/LICENSE",
     },
     "VERSION": "2.3.2",
     "SERVE_INCLUDE_SCHEMA": False,
@@ -501,7 +508,6 @@ SPECTACULAR_SETTINGS = {
         {"name": "User"},
         {"name": "User files"},
         {"name": "Workspaces"},
-        {"name": "Workspace invitations"},
         {"name": "Templates"},
         {"name": "Trash"},
         {"name": "Applications"},
@@ -611,6 +617,15 @@ BASEROW_FILE_UPLOAD_SIZE_LIMIT_MB = int(
     Decimal(os.getenv("BASEROW_FILE_UPLOAD_SIZE_LIMIT_MB", 1024 * 1024)) * 1024 * 1024
 )  # ~1TB by default
 
+# Django rejects any request body above this size. Since DRF 3.17.2 the JSON parser
+# reads the body through `request.body`, so this also caps JSON payloads. Table
+# imports send the parsed file as JSON, and the web-frontend accepts import files up
+# to BASEROW_MAX_IMPORT_FILE_SIZE_MB (512 by default), so this must stay well above
+# that once JSON overhead is added. Django's own 2.5MB default breaks imports.
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(
+    Decimal(os.getenv("BASEROW_MAX_REQUEST_BODY_SIZE_MB", 1024)) * 1024 * 1024
+)
+
 FILE_UPLOAD_ACTIVE_CONTENT_POLICY = os.getenv(
     "BASEROW_FILE_UPLOAD_ACTIVE_CONTENT_POLICY", "download"
 ).lower()
@@ -619,10 +634,6 @@ if FILE_UPLOAD_ACTIVE_CONTENT_POLICY not in ("download", "block"):
         "BASEROW_FILE_UPLOAD_ACTIVE_CONTENT_POLICY must be set to "
         "'download' or 'block'."
     )
-
-BASEROW_OPENAI_UPLOADED_FILE_SIZE_LIMIT_MB = int(
-    os.getenv("BASEROW_OPENAI_UPLOADED_FILE_SIZE_LIMIT_MB", 512)
-)
 
 # Allows accessing and setting values on a dictionary like an object. Using this
 # we can pass plugin authors and other functions a `settings` object which can modify
@@ -786,6 +797,8 @@ else:
 BASEROW_EMBEDDED_SHARE_URL = os.getenv("BASEROW_EMBEDDED_SHARE_URL")
 if not BASEROW_EMBEDDED_SHARE_URL:
     BASEROW_EMBEDDED_SHARE_URL = PUBLIC_WEB_FRONTEND_URL
+
+FRONTEND_COOKIE_PREFIX = os.getenv("BASEROW_FRONTEND_COOKIE_PREFIX", "")
 
 MEDIA_URL_PATH = "/media/"
 MEDIA_URL = os.getenv("MEDIA_URL", urljoin(PUBLIC_BACKEND_URL, MEDIA_URL_PATH))
@@ -1000,9 +1013,36 @@ USER_THUMBNAILS_DIRECTORY = "thumbnails"
 
 EXPORT_FILES_DIRECTORY = "export_files"
 EXPORT_CLEANUP_INTERVAL_MINUTES = 5
-EXPORT_FILE_EXPIRE_MINUTES = 60
+# If you change this default please also update the default for the web-frontend
+# found in web-frontend/modules/core/module.js, which tells the user how long an
+# export stays downloadable.
+EXPORT_FILE_EXPIRE_MINUTES = int(os.getenv("EXPORT_FILE_EXPIRE_MINUTES", 60))
+
+# Exported files and backups are downloaded through the API, streamed straight out of
+# the storage, so that a download works regardless of whether the storage is a shared
+# volume or an object store the browser cannot reach. The link handed to the browser
+# carries a signed token instead of a JWT, because a plain anchor cannot send an
+# Authorization header. It is short lived: it is minted when the list is rendered and
+# clicked seconds later, and an expired one is reported as such.
+BASEROW_EXPORT_DOWNLOAD_TOKEN_MAX_AGE_SECONDS = int(
+    os.getenv("BASEROW_EXPORT_DOWNLOAD_TOKEN_MAX_AGE_SECONDS", "") or 600
+)
+# How much is read from the storage per chunk while streaming a download. Django's
+# FileResponse default of 4096 bytes turns a multi gigabyte backup into hundreds of
+# thousands of chunks.
+BASEROW_EXPORT_DOWNLOAD_BLOCK_SIZE = int(
+    os.getenv("BASEROW_EXPORT_DOWNLOAD_BLOCK_SIZE", "") or 64 * 1024
+)
 
 IMPORT_FILES_DIRECTORY = "import_files"
+
+# How often a worker writes a probe file into the export directory so the web process
+# can confirm it is looking at the same storage. Without this an export produced by a
+# worker on one volume and served by a web process on another finishes successfully
+# and then cannot be downloaded, with nothing anywhere saying why.
+BASEROW_SHARED_STORAGE_PROBE_INTERVAL_MINUTES = int(
+    os.getenv("BASEROW_SHARED_STORAGE_PROBE_INTERVAL_MINUTES", "") or 5
+)
 
 # The interval in minutes that the mentions cleanup job should run. This job will
 # remove mentions that are no longer used.
@@ -1116,10 +1156,9 @@ USER_THUMBNAILS = {"tiny": [None, 21], "small": [48, 48], "card_cover": [300, 16
 # the `sync_templates` management command is called, then the templates in the
 # database will be synced with these files.
 APPLICATION_TEMPLATES_DIR = os.path.join(BASE_DIR, "../../../templates")
-# The template that must be selected when the user first opens the templates select
-# modal.
-# IF CHANGING KEEP IN SYNC WITH e2e-tests/wait-for-services.sh
-DEFAULT_APPLICATION_TEMPLATES = ["project-tracker", "ab_ivory_theme"]
+# The slugs of the templates that are highlighted by default in the templates select
+# modal. This fork ships no built-in templates, so the list is empty.
+DEFAULT_APPLICATION_TEMPLATES = []
 BASEROW_SYNC_TEMPLATES_PATTERN = os.getenv("BASEROW_SYNC_TEMPLATES_PATTERN", None)
 
 MAX_FIELD_LIMIT = int(os.getenv("BASEROW_MAX_FIELD_LIMIT", 600))
@@ -1217,6 +1256,9 @@ OAUTH_BACKEND_URL = os.getenv("BASEROW_OAUTH_BACKEND_URL") or PUBLIC_BACKEND_URL
 INTEGRATIONS_ALLOW_PRIVATE_ADDRESS = bool(
     os.getenv("BASEROW_INTEGRATIONS_ALLOW_PRIVATE_ADDRESS", False)
 )
+BASEROW_DATA_SYNC_ALLOW_PRIVATE_ADDRESS = str_to_bool(
+    os.getenv("BASEROW_DATA_SYNC_ALLOW_PRIVATE_ADDRESS") or "true"
+)
 INTEGRATIONS_PERIODIC_TASK_CRONTAB = crontab(minute="*")
 # The minimum amount of minutes the periodic task's "minute" interval
 # supports. Self-hosters can run every minute, if they choose to.
@@ -1224,7 +1266,42 @@ INTEGRATIONS_PERIODIC_MINUTE_MIN = int(
     os.getenv("BASEROW_INTEGRATIONS_PERIODIC_MINUTE_MIN") or 1
 )
 
-TOTP_ISSUER_NAME = os.getenv("BASEROW_TOTP_ISSUER_NAME", "Baserow")
+# How often the periodic task looks for backup schedules that became due. Every
+# minute by default so a schedule fires close to the moment its cron expression says.
+BASEROW_BACKUP_SCHEDULE_TICK_CRONTAB = get_crontab_from_env(
+    "BASEROW_BACKUP_SCHEDULE_TICK_CRONTAB", default_crontab="* * * * *"
+)
+
+# Datalake (Parquet) table exports. The tick is how often due schedules are looked
+# for; rows are read in chunks and split over part files of a bounded row count.
+BASEROW_TABLE_EXPORT_SCHEDULE_TICK_CRONTAB = get_crontab_from_env(
+    "BASEROW_TABLE_EXPORT_SCHEDULE_TICK_CRONTAB", default_crontab="* * * * *"
+)
+BASEROW_DATA_EXPORT_CHUNK_SIZE = int(
+    os.getenv("BASEROW_DATA_EXPORT_CHUNK_SIZE", "5000")
+)
+BASEROW_DATA_EXPORT_MAX_ROWS_PER_FILE = int(
+    os.getenv("BASEROW_DATA_EXPORT_MAX_ROWS_PER_FILE", "1000000")
+)
+# How far an incremental export reaches back before the previous snapshot, to catch
+# rows committed with an older `updated_on` while that export was running.
+BASEROW_DATA_EXPORT_WATERMARK_OVERLAP_SECONDS = int(
+    os.getenv("BASEROW_DATA_EXPORT_WATERMARK_OVERLAP_SECONDS", "300")
+)
+# Where part files are written before they are uploaded. Empty uses the system default.
+BASEROW_DATA_EXPORT_TMP_DIR = os.getenv("BASEROW_DATA_EXPORT_TMP_DIR", "") or None
+BASEROW_DATA_EXPORT_SOFT_TIME_LIMIT = int(
+    os.getenv("BASEROW_DATA_EXPORT_SOFT_TIME_LIMIT", str(6 * 60 * 60))
+)
+
+# The maximum amount of rows the `/api/contents/` endpoints return in one synchronous
+# response. Larger requests are refused with ERROR_CONTENTS_TOO_LARGE and should use
+# `/api/backups/` instead. Set to 0 to disable the limit.
+BASEROW_CONTENTS_API_MAX_ROWS = int(
+    os.getenv("BASEROW_CONTENTS_API_MAX_ROWS", "100000")
+)
+
+TOTP_ISSUER_NAME = os.getenv("BASEROW_TOTP_ISSUER_NAME") or BRANDING_APP_NAME
 
 # ======== WARNING ========
 # Please read and understand everything at:
@@ -1263,6 +1340,8 @@ BASEROW_JOB_CLEANUP_INTERVAL_MINUTES = int(
 BASEROW_ROW_HISTORY_CLEANUP_INTERVAL_MINUTES = int(
     os.getenv("BASEROW_ROW_HISTORY_CLEANUP_INTERVAL_MINUTES", 30)  # 30 minutes
 )
+# Mirrored in web-frontend/modules/core/module.js so the row history panel can say
+# how far back it reaches. Keep both defaults in sync.
 BASEROW_ROW_HISTORY_RETENTION_DAYS = int(
     os.getenv("BASEROW_ROW_HISTORY_RETENTION_DAYS", 180)
 )
@@ -1270,13 +1349,17 @@ BASEROW_MAX_ROW_REPORT_ERROR_COUNT = int(
     os.getenv("BASEROW_MAX_ROW_REPORT_ERROR_COUNT", 30)
 )
 BASEROW_MAX_SNAPSHOTS_PER_GROUP = int(os.getenv("BASEROW_MAX_SNAPSHOTS_PER_GROUP", 50))
+# Mirrored in web-frontend/modules/core/module.js so the snapshot list can show how
+# long each snapshot has left. Keep both defaults in sync.
 BASEROW_SNAPSHOT_EXPIRATION_TIME_DAYS = int(
     os.getenv("BASEROW_SNAPSHOT_EXPIRATION_TIME_DAYS", 360)  # 360 days
 )
 BASEROW_USER_LOG_ENTRY_CLEANUP_INTERVAL_MINUTES = int(
     os.getenv("BASEROW_USER_LOG_ENTRY_CLEANUP_INTERVAL_MINUTES", 60)  # 60 minutes
 )
-# 61 days to accommodate timezone changes in admin dashboard
+# 61 days to accommodate timezone changes in admin dashboard. Mirrored in
+# web-frontend/modules/core/module.js so the audit log can state its own window.
+# Keep both defaults in sync.
 BASEROW_USER_LOG_ENTRY_RETENTION_DAYS = int(
     os.getenv("BASEROW_USER_LOG_ENTRY_RETENTION_DAYS", 61)
 )
@@ -1294,27 +1377,26 @@ BASEROW_IMPORT_EXPORT_TABLE_ROWS_COUNT_LIMIT = int(
 )
 
 PERMISSION_MANAGERS = [
-    "view_ownership",
+    # Must stay first: an application type disabled through the instance settings is
+    # denied before any manager can allow the operation for another reason, such as the
+    # workspace being a template or the builder application being published publicly.
+    "application_type_enabled",
     "core",
     "setting_operation",
     "staff",
+    "staff_bypass",
     "allow_if_template",
     "allow_public_builder",
     "element_visibility",
     "member",
+    # In-app database/table access levels given to members and teams.
+    "database_access",
     "token",
     "write_field_values",
-    "role",
     "basic",
     "automation_workflow",
     "automation_node",
 ]
-
-if "baserow_enterprise" not in INSTALLED_APPS:
-    PERMISSION_MANAGERS.remove("write_field_values")
-    PERMISSION_MANAGERS.remove("role")
-if "baserow_premium" not in INSTALLED_APPS:
-    PERMISSION_MANAGERS.remove("view_ownership")
 
 
 OLD_ACTION_CLEANUP_INTERVAL_MINUTES = os.getenv(
@@ -1388,14 +1470,44 @@ BASEROW_NOWAIT_FOR_LOCKS = not bool(
     os.getenv("BASEROW_WAIT_INSTEAD_OF_409_CONFLICT_ERROR", False)
 )
 
-BASEROW_PERSONAL_VIEW_LOWEST_ROLE_ALLOWED = (
-    os.getenv("BASEROW_PERSONAL_VIEW_LOWEST_ROLE_ALLOWED", "viewer").strip().upper()
+# How often the user source user count is recalculated. Used to spread the counting
+# of registered user source types across that interval instead of doing it all at once.
+BASEROW_USER_SOURCE_COUNTING_TASK_INTERVAL_MINUTES = int(
+    os.getenv("BASEROW_USER_SOURCE_COUNTING_TASK_INTERVAL_MINUTES", "") or 15
 )
 
-LICENSE_AUTHORITY_CHECK_TIMEOUT_SECONDS = 10
-ADDITIONAL_INFORMATION_TIMEOUT_SECONDS = 10
+# Set this to True to enable users to login with auth providers different than the one
+# they were originally created with. Read by `AuthProviderType.get_user_and_sign_in`,
+# which third party authentication plugins inherit.
+BASEROW_ALLOW_MULTIPLE_SSO_PROVIDERS_FOR_SAME_ACCOUNT = str_to_bool(
+    os.getenv("BASEROW_ALLOW_MULTIPLE_SSO_PROVIDERS_FOR_SAME_ACCOUNT", "")
+)
 
-MAX_NUMBER_CALENDAR_DAYS = 45
+# Env-configured OpenID Connect providers. Declared as a JSON list; parsed and
+# structurally validated here so an invalid configuration fails fast at startup.
+from baserow.core.sso.oidc.config import (  # noqa: E402
+    parse_oidc_providers_env,
+)
+
+BASEROW_OIDC_PROVIDERS = parse_oidc_providers_env(
+    os.getenv("BASEROW_OIDC_PROVIDERS", "")
+)
+
+# When enabled, the instance is OIDC-only for normal users: self-service password
+# signup is disabled and password login is refused for non-staff accounts. A staff /
+# superuser (break-glass admin) can still log in with a password.
+BASEROW_OIDC_ONLY = str_to_bool(os.getenv("BASEROW_OIDC_ONLY", ""))
+
+# Env-declared external data destinations (S3, Azure Blob Storage or a mounted
+# filesystem) that backups and datalake table exports are written to. Declared as a
+# JSON list so credentials never live in the database; validated here to fail fast.
+from baserow.core.data_destinations.config import (  # noqa: E402
+    parse_data_destinations_env,
+)
+
+BASEROW_DATA_DESTINATIONS = parse_data_destinations_env(
+    os.getenv("BASEROW_DATA_DESTINATIONS", "")
+)
 
 MIGRATION_LOCK_ID = os.getenv("BASEROW_MIGRATION_LOCK_ID", 123456)
 DEFAULT_SEARCH_MODE = os.getenv("BASEROW_DEFAULT_SEARCH_MODE", "compat")
@@ -1416,10 +1528,6 @@ PG_FULLTEXT_SEARCH_CONFIG = os.getenv("BASEROW_PG_SEARCH_CONFIG", "simple")
 PG_FULLTEXT_SEARCH_UPDATE_DATA_THROTTLE_SECONDS = float(
     os.getenv("BASEROW_PG_FULLTEXT_SEARCH_UPDATE_DATA_THROTTLE_SECONDS", 2)  # seconds
 )
-
-POSTHOG_PROJECT_API_KEY = os.getenv("POSTHOG_PROJECT_API_KEY", "")
-POSTHOG_HOST = os.getenv("POSTHOG_HOST") or None
-POSTHOG_ENABLED = bool(POSTHOG_PROJECT_API_KEY)
 
 BASEROW_BUILDER_DOMAINS = os.getenv("BASEROW_BUILDER_DOMAINS", None)
 BASEROW_BUILDER_DOMAINS = (
@@ -1448,106 +1556,12 @@ for plugin in [*BASEROW_BUILT_IN_PLUGINS, *BASEROW_BACKEND_PLUGIN_NAMES]:
 # a warning will be shown suggesting to either lazy-load them or remove them from this
 # list if they're legitimately needed at startup.
 BASEROW_LAZY_LOADED_LIBRARIES = [
-    "openai",
-    "anthropic",
-    "mistralai",
-    "ollama",
     "jira2markdown",
     "saml2",
     "openpyxl",
     "numpy",
 ]
 
-
-SENTRY_BACKEND_DSN = os.getenv("SENTRY_BACKEND_DSN")
-SENTRY_DSN = SENTRY_BACKEND_DSN or os.getenv("SENTRY_DSN")
-
-if SENTRY_DSN:
-    import sentry_sdk
-    import sentry_sdk.integrations as _sentry_integrations
-    from loguru import logger
-    from sentry_sdk.integrations.django import DjangoIntegration
-    from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
-
-    from baserow.core.sentry import (
-        ConsoleSentryTransport,
-        drop_expected_asyncio_websocket_disconnect_events,
-    )
-
-    # Exclude integrations whose module-level imports are incompatible:
-    # - pydantic_ai: sentry-sdk patches ToolManager._call_tool which was
-    #   removed in pydantic-ai >= 1.x (now execute_tool_call)
-
-    _sentry_integrations._AUTO_ENABLING_INTEGRATIONS[:] = [
-        entry
-        for entry in _sentry_integrations._AUTO_ENABLING_INTEGRATIONS
-        if "pydantic_ai" not in entry
-    ]
-
-    SENTRY_DENYLIST = DEFAULT_DENYLIST + ["username", "email", "name"]
-    sentry_transport = None
-
-    if SENTRY_DSN == "fake":
-        logger.info(
-            "[SENTRY] Using fake backend Sentry DSN, events will be logged to the "
-            "console."
-        )
-        SENTRY_DSN = "https://public@example.invalid/1"
-        sentry_transport = ConsoleSentryTransport()
-
-    # Sample rate for performance tracing (transactions), disabled when the console transport is used
-    # (fake DSN in dev) to avoid spamming transaction envelopes to the console.
-    sentry_traces_sample_rate = (
-        0 if sentry_transport else float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", 0.01))
-    )
-
-    sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        integrations=[DjangoIntegration(signals_spans=False, middleware_spans=False)],
-        traces_sample_rate=sentry_traces_sample_rate,
-        send_default_pii=False,
-        before_send=drop_expected_asyncio_websocket_disconnect_events,
-        event_scrubber=EventScrubber(recursive=True, denylist=SENTRY_DENYLIST),
-        environment=os.getenv("SENTRY_ENVIRONMENT", ""),
-        transport=sentry_transport,
-    )
-else:
-    BASEROW_LAZY_LOADED_LIBRARIES.append("sentry_sdk")
-
-BASEROW_OPENAI_API_KEY = os.getenv("BASEROW_OPENAI_API_KEY", None)
-BASEROW_OPENAI_ORGANIZATION = os.getenv("BASEROW_OPENAI_ORGANIZATION", "") or None
-BASEROW_OPENAI_BASE_URL = os.getenv("BASEROW_OPENAI_BASE_URL", None) or None
-BASEROW_OPENAI_MODELS = os.getenv("BASEROW_OPENAI_MODELS", "")
-BASEROW_OPENAI_MODELS = (
-    BASEROW_OPENAI_MODELS.split(",") if BASEROW_OPENAI_MODELS else []
-)
-
-BASEROW_OPENROUTER_API_KEY = os.getenv("BASEROW_OPENROUTER_API_KEY", None)
-BASEROW_OPENROUTER_ORGANIZATION = (
-    os.getenv("BASEROW_OPENROUTER_ORGANIZATION", "") or None
-)
-BASEROW_OPENROUTER_MODELS = os.getenv("BASEROW_OPENROUTER_MODELS", "")
-BASEROW_OPENROUTER_MODELS = (
-    BASEROW_OPENROUTER_MODELS.split(",") if BASEROW_OPENROUTER_MODELS else []
-)
-
-BASEROW_ANTHROPIC_API_KEY = os.getenv("BASEROW_ANTHROPIC_API_KEY", None)
-BASEROW_ANTHROPIC_MODELS = os.getenv("BASEROW_ANTHROPIC_MODELS", "")
-BASEROW_ANTHROPIC_MODELS = (
-    BASEROW_ANTHROPIC_MODELS.split(",") if BASEROW_ANTHROPIC_MODELS else []
-)
-
-BASEROW_MISTRAL_API_KEY = os.getenv("BASEROW_MISTRAL_API_KEY", None)
-BASEROW_MISTRAL_MODELS = os.getenv("BASEROW_MISTRAL_MODELS", "")
-BASEROW_MISTRAL_MODELS = (
-    BASEROW_MISTRAL_MODELS.split(",") if BASEROW_MISTRAL_MODELS else []
-)
-
-BASEROW_OLLAMA_HOST = os.getenv("BASEROW_OLLAMA_HOST", None)
-BASEROW_OLLAMA_MODELS = os.getenv("BASEROW_OLLAMA_MODELS", "")
-BASEROW_OLLAMA_MODELS = (
-    BASEROW_OLLAMA_MODELS.split(",") if BASEROW_OLLAMA_MODELS else []
-)
 
 BASEROW_TWO_WAY_SYNC_MAX_CONSECUTIVE_FAILURES = int(
     os.getenv("BASEROW_TWO_WAY_SYNC_MAX_CONSECUTIVE_FAILURES", "") or 8
@@ -1567,6 +1581,9 @@ BASEROW_POSTGRESQL_DATA_SYNC_BLACKLIST = (
     if BASEROW_POSTGRESQL_DATA_SYNC_BLACKLIST
     else []
 )
+BASEROW_POSTGRESQL_DATA_SYNC_STATEMENT_TIMEOUT = int(
+    os.getenv("BASEROW_POSTGRESQL_DATA_SYNC_STATEMENT_TIMEOUT", "") or 180
+)
 
 # Default compression level for creating zip files. This setting balances the need to
 # save resources when compressing media files with the need to save space when
@@ -1578,8 +1595,6 @@ BASEROW_MAX_HEALTHY_CELERY_QUEUE_SIZE = int(
 )
 
 BASEROW_USE_LOCAL_CACHE = str_to_bool(os.getenv("BASEROW_USE_LOCAL_CACHE", "true"))
-
-BASEROW_EMBEDDINGS_API_URL = os.getenv("BASEROW_EMBEDDINGS_API_URL", "")
 
 # -- CACHALOT SETTINGS --
 
@@ -1608,7 +1623,6 @@ else:
         "core_trashentry",
         "core_workspace",
         "core_workspaceuser",
-        "core_workspaceuserinvitation",
         "core_authprovidermodel",
         "core_passwordauthprovidermodel",
         "database_database",
@@ -1617,12 +1631,6 @@ else:
         "database_fieldependency",
         "database_linkrowfield",
         "database_selectoption",
-        "baserow_premium_license",
-        "baserow_premium_licenseuser",
-        "baserow_enterprise_role",
-        "baserow_enterprise_roleassignment",
-        "baserow_enterprise_team",
-        "baserow_enterprise_teamsubject",
     ]
 
 # This list will have priority over CACHALOT_ONLY_CACHABLE_TABLES.
@@ -1641,7 +1649,6 @@ CACHALOT_UNCACHABLE_TABLES = [
     "django_migrations",
     "core_action",
     "database_token",
-    "baserow_enterprise_auditlogentry",
 ]
 
 
@@ -1677,8 +1684,8 @@ BASEROW_DEADLOCK_INITIAL_BACKOFF = max(
     0.1,
 )
 
-# Set to "all" to enable captcha everywhere, or comma-separated contexts like
-# "signup,invitations" to enable only in specific places.
+# Set to "all" to enable captcha everywhere, or a comma-separated list of contexts
+# (currently only "signup") to enable only in specific places.
 BASEROW_ENABLE_CAPTCHA = os.getenv("BASEROW_ENABLE_CAPTCHA", "")
 BASEROW_CAPTCHA_PROVIDER = os.getenv("BASEROW_CAPTCHA_PROVIDER", "cloudflare_turnstile")
 BASEROW_CLOUDFLARE_TURNSTILE_SITE_KEY = os.getenv(
@@ -1691,3 +1698,11 @@ BASEROW_CLOUDFLARE_TURNSTILE_SECRET_KEY = os.getenv(
 BASEROW_REALTIME_REPLAY_MAX_EVENTS = int(
     os.getenv("BASEROW_REALTIME_REPLAY_MAX_EVENTS", 200)
 )
+
+REALTIME_REPLAY_RETENTION_HOURS = int(
+    os.getenv("BASEROW_REALTIME_REPLAY_RETENTION_HOURS", 24)
+)
+if REALTIME_REPLAY_RETENTION_HOURS <= 0:
+    raise ImproperlyConfigured(
+        "BASEROW_REALTIME_REPLAY_RETENTION_HOURS must be a positive integer."
+    )

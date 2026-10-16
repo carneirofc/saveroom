@@ -3,7 +3,7 @@
     "title": "Workflow"
   },
   "automationWelcomeGuidedTourStep": {
-    "title": "Welcome to Baserow Automations!",
+    "title": "Welcome to @:{'app.name'} Automations!",
     "content": "Let's take a quick tour. You'll see how to set up triggers, add actions, test your workflow, and publish it — no coding required."
   },
   "automationGraphGuidedTourStep": {
@@ -28,7 +28,7 @@
   },
   "automationDocsGuidedTourStep": {
     "title": "Explore the documentation",
-    "content": "If you ever get stuck or want to learn more, click the highlighted button for detailed guides and FAQs about building automations in Baserow."
+    "content": "If you ever get stuck or want to learn more, click the highlighted button for detailed guides and FAQs about building automations in @:{'app.name'}."
   },
   "sidebarComponentAutomation": {
     "createAutomationWorkflow": "New workflow"
@@ -108,7 +108,7 @@
     "statusError": "Failed to run",
     "statusSuccessBadge": "Completed",
     "statusErrorBadge": "Failed",
-    "statusDisabled": "Disabled by Baserow",
+    "statusDisabled": "Disabled automatically",
     "successfulRuns": "Successful runs",
     "completedInSeconds": "Completed in {s} seconds.",
     "completedInLessThanSecond": "Completed in less than 1 second.",

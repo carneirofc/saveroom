@@ -299,9 +299,14 @@ describe('View Tests', () => {
       `/database/${application.id}/table/${table.id}/${gridView.id}?token=fake`
     )
 
-    // The Default view is the Grid view and it should be set (appended) in the cookie
+    // The Default view is the Grid view and it should be set (appended) in the
+    // cookie. Read it through a fresh ref: Nuxt only syncs an already created
+    // useCookie ref with writes made through another ref via the browser
+    // CookieStore API, which the test DOM does not implement.
     await nextTick()
-    const cookieValue = decodeDefaultViewIdPerTable(cookie.value)
+    const readCookie = () =>
+      useCookie(DEFAULT_VIEW_ID_COOKIE_NAME, { path: '/' }).value
+    const cookieValue = decodeDefaultViewIdPerTable(readCookie())
     expect(cookieValue.length).toBeGreaterThan(0)
 
     const defaultViewIdObject = cookieValue[cookieValue.length - 1]
@@ -314,7 +319,7 @@ describe('View Tests', () => {
     )
 
     // Ensure that the first element is removed from the cookie array
-    const updatedCookieValue = decodeDefaultViewIdPerTable(cookie.value)
+    const updatedCookieValue = decodeDefaultViewIdPerTable(readCookie())
     expect(updatedCookieValue).not.toContainEqual(randomData[0])
     expect(updatedCookieValue.length).toBeLessThan(originalDataLength)
   })

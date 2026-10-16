@@ -1,0 +1,17 @@
+{{- if not .Values.objectStorage.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "baserow.fullname" . }}-media
+  labels:
+    {{- include "baserow.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.mediaPersistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.mediaPersistence.size }}
+  {{- with .Values.mediaPersistence.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+{{- end }}

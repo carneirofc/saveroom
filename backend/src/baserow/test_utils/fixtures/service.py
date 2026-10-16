@@ -1,6 +1,5 @@
 from uuid import uuid4
 
-from baserow.contrib.integrations.ai.models import AIAgentService
 from baserow.contrib.integrations.core.models import (
     CoreCSVFileReaderService,
     CoreHTTPRequestService,
@@ -128,9 +127,6 @@ class ServiceFixtures:
 
         service = self.create_service(CoreSMTPEmailService, **kwargs)
         return service
-
-    def create_ai_agent_service(self, **kwargs):
-        return self.create_service(AIAgentService, **kwargs)
 
     def create_slack_write_message_service(self, **kwargs):
         return self.create_service(SlackWriteMessageService, **kwargs)

@@ -159,7 +159,6 @@ def test_get_builder_application(api_client, data_fixture):
     assert response_json["workspace"] == {
         "id": workspace.id,
         "name": workspace.name,
-        "generative_ai_models_enabled": {},
     }
     assert response_json["pages"] == [
         {
@@ -214,7 +213,6 @@ def test_list_builder_applications(api_client, data_fixture):
     assert response_json[0]["workspace"] == {
         "id": workspace.id,
         "name": workspace.name,
-        "generative_ai_models_enabled": {},
     }
     assert response_json[0]["pages"] == [
         {

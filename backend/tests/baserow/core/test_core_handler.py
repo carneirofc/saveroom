@@ -1,15 +1,13 @@
 import os
 from decimal import Decimal
 from io import BytesIO
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.db import OperationalError, transaction
+from django.db import OperationalError
 
 import pytest
-from itsdangerous.exc import BadSignature
 
 from baserow.contrib.database.application_types import DatabaseApplicationType
 from baserow.contrib.database.fields.models import (
@@ -23,8 +21,8 @@ from baserow.contrib.database.views.models import GridView, GridViewFieldOptions
 from baserow.core.exceptions import (
     ApplicationDoesNotExist,
     ApplicationNotInWorkspace,
+    ApplicationTypeDisabled,
     ApplicationTypeDoesNotExist,
-    BaseURLHostnameNotAllowed,
     DuplicateApplicationMaxLocksExceededException,
     IsNotAdminError,
     LastAdminOfWorkspace,
@@ -33,9 +31,6 @@ from baserow.core.exceptions import (
     UserInvalidWorkspacePermissionsError,
     UserNotInWorkspace,
     WorkspaceDoesNotExist,
-    WorkspaceInvitationDoesNotExist,
-    WorkspaceInvitationEmailMismatch,
-    WorkspaceUserAlreadyExists,
     WorkspaceUserDoesNotExist,
     WorkspaceUserIsLastAdmin,
 )
@@ -47,7 +42,6 @@ from baserow.core.models import (
     Template,
     TemplateCategory,
     Workspace,
-    WorkspaceInvitation,
     WorkspaceUser,
 )
 from baserow.core.operations import ReadWorkspaceOperationType
@@ -462,449 +456,6 @@ def test_get_workspaces_order(data_fixture):
 
 
 @pytest.mark.django_db
-def test_get_workspace_invitation_by_token(data_fixture):
-    user = data_fixture.create_user()
-    workspace_user = data_fixture.create_user_workspace(user=user)
-    invitation = data_fixture.create_workspace_invitation(
-        workspace=workspace_user.workspace, email=user.email
-    )
-
-    handler = CoreHandler()
-    signer = handler.get_workspace_invitation_signer()
-
-    with pytest.raises(BadSignature):
-        handler.get_workspace_invitation_by_token(token="INVALID")
-
-    with pytest.raises(WorkspaceInvitationDoesNotExist):
-        handler.get_workspace_invitation_by_token(token=signer.dumps(999999))
-
-    invitation2 = handler.get_workspace_invitation_by_token(
-        token=signer.dumps(invitation.id)
-    )
-
-    assert invitation.id == invitation2.id
-    assert invitation.invited_by_id == invitation2.invited_by_id
-    assert invitation.workspace_id == invitation2.workspace_id
-    assert invitation.email == invitation2.email
-    assert invitation.permissions == invitation2.permissions
-    assert isinstance(invitation2, WorkspaceInvitation)
-
-    with pytest.raises(AttributeError):
-        handler.get_workspace_invitation_by_token(
-            token=signer.dumps(invitation.id),
-            base_queryset=WorkspaceInvitation.objects.prefetch_related("UNKNOWN"),
-        )
-
-
-@pytest.mark.django_db
-def test_get_workspace_invitation(data_fixture):
-    user = data_fixture.create_user()
-    user_2 = data_fixture.create_user()
-    data_fixture.create_user()
-    workspace_user = data_fixture.create_user_workspace(user=user)
-    data_fixture.create_user_workspace(
-        user=user_2, workspace=workspace_user.workspace, permissions="MEMBER"
-    )
-    invitation = data_fixture.create_workspace_invitation(
-        workspace=workspace_user.workspace, email=user.email
-    )
-
-    handler = CoreHandler()
-
-    with pytest.raises(WorkspaceInvitationDoesNotExist):
-        handler.get_workspace_invitation(workspace_invitation_id=999999)
-
-    invitation2 = handler.get_workspace_invitation(
-        workspace_invitation_id=invitation.id
-    )
-
-    assert invitation.id == invitation2.id
-    assert invitation.invited_by_id == invitation2.invited_by_id
-    assert invitation.workspace_id == invitation2.workspace_id
-    assert invitation.email == invitation2.email
-    assert invitation.permissions == invitation2.permissions
-    assert isinstance(invitation2, WorkspaceInvitation)
-
-    with pytest.raises(AttributeError):
-        handler.get_field(
-            invitation_id=invitation.id,
-            base_queryset=WorkspaceInvitation.objects.prefetch_related("UNKNOWN"),
-        )
-
-
-@pytest.mark.django_db(transaction=True)
-def test_send_workspace_invitation_email(data_fixture, mailoutbox):
-    user = data_fixture.create_user(first_name="Nikolas", email="inviter@example.com")
-    workspace = data_fixture.create_workspace(user=user, name="Test workspace")
-    workspace_invitation = data_fixture.create_workspace_invitation(
-        invited_by=user, workspace=workspace
-    )
-    handler = CoreHandler()
-
-    with pytest.raises(BaseURLHostnameNotAllowed):
-        handler.send_workspace_invitation_email(
-            invitation=workspace_invitation, base_url="http://test.nl/workspace-invite"
-        )
-
-    signer = handler.get_workspace_invitation_signer()
-    handler.send_workspace_invitation_email(
-        invitation=workspace_invitation,
-        base_url="http://localhost:3000/workspace-invite",
-    )
-
-    assert len(mailoutbox) == 1
-    email = mailoutbox[0]
-
-    assert email.subject == "You've been invited to collaborate on Baserow"
-    assert email.from_email == "no-reply@localhost"
-    assert workspace_invitation.email in email.to
-
-    html_body = email.alternatives[0][0]
-    assert "Nikolas" in html_body
-    # The displayed email address gets a zero-width space inserted after every
-    # dot to prevent email clients from linkifying it.
-    assert "(inviter@example.\u200bcom)" in html_body
-    assert "Test workspace" in html_body
-    assert (
-        "If you don't recognize this sender, you can safely ignore this email."
-        in html_body
-    )
-    assert "Nikolas" in email.body
-    assert "(inviter@example.\u200bcom)" in email.body
-    search_url = "http://localhost:3000/workspace-invite/"
-    start_url_index = html_body.index(search_url)
-
-    assert start_url_index != -1
-
-    end_url_index = html_body.index('"', start_url_index)
-    token = html_body[start_url_index + len(search_url) : end_url_index]
-
-    invitation_id = signer.loads(token)
-    assert invitation_id == workspace_invitation.id
-
-
-@pytest.mark.django_db(transaction=True)
-def test_send_workspace_invitation_email_in_different_language(
-    data_fixture, mailoutbox
-):
-    user = data_fixture.create_user(language="fr", first_name="InviterXyz")
-    workspace = data_fixture.create_workspace(user=user, name="WorkspaceXyz")
-    workspace_invitation = data_fixture.create_workspace_invitation(
-        invited_by=user, workspace=workspace
-    )
-
-    handler = CoreHandler()
-    handler.send_workspace_invitation_email(
-        invitation=workspace_invitation,
-        base_url="http://localhost:3000/workspace-invite",
-    )
-
-    assert len(mailoutbox) == 1
-    # The subject must never contain user-controlled content, regardless of the
-    # language it is rendered in, because that can be abused for phishing.
-    subject = mailoutbox[0].subject
-    assert subject != ""
-    assert "InviterXyz" not in subject
-    assert "WorkspaceXyz" not in subject
-
-
-@pytest.mark.django_db(transaction=True)
-def test_send_workspace_invitation_email_truncates_long_names(data_fixture, mailoutbox):
-    user = data_fixture.create_user(first_name="x" * 150)
-    workspace = data_fixture.create_workspace(user=user, name="y" * 150)
-    workspace_invitation = data_fixture.create_workspace_invitation(
-        invited_by=user, workspace=workspace
-    )
-
-    CoreHandler().send_workspace_invitation_email(
-        invitation=workspace_invitation,
-        base_url="http://localhost:3000/workspace-invite",
-    )
-
-    assert len(mailoutbox) == 1
-    html_body = mailoutbox[0].alternatives[0][0]
-    assert "x" * 59 + "…" in html_body
-    assert "x" * 150 not in html_body
-    assert "y" * 59 + "…" in html_body
-    assert "y" * 150 not in html_body
-
-
-@pytest.mark.django_db(transaction=True)
-def test_send_workspace_invitation_email_prevents_domain_linkification(
-    data_fixture, mailoutbox
-):
-    # Workspace names may legitimately contain domains, and pre-existing user
-    # names and unverified email addresses can too. A zero-width space must be
-    # inserted after every dot so that email clients don't turn them into
-    # clickable links.
-    user = data_fixture.create_user(
-        first_name="Nikolas", email="scammer@evil-domain.com"
-    )
-    workspace = data_fixture.create_workspace(user=user, name="poshmark-helps.com")
-    workspace_invitation = data_fixture.create_workspace_invitation(
-        invited_by=user, workspace=workspace
-    )
-
-    CoreHandler().send_workspace_invitation_email(
-        invitation=workspace_invitation,
-        base_url="http://localhost:3000/workspace-invite",
-    )
-
-    assert len(mailoutbox) == 1
-    email = mailoutbox[0]
-    html_body = email.alternatives[0][0]
-
-    assert "poshmark-helps.com" not in html_body
-    assert "poshmark-helps.\u200bcom" in html_body
-    assert "scammer@evil-domain.com" not in html_body
-    assert "scammer@evil-domain.\u200bcom" in html_body
-
-    assert "poshmark-helps.com" not in email.body
-    assert "poshmark-helps.\u200bcom" in email.body
-
-
-@pytest.mark.django_db
-@patch("baserow.core.handler.CoreHandler.send_workspace_invitation_email")
-def test_create_workspace_invitation(mock_send_email, data_fixture):
-    user_workspace = data_fixture.create_user_workspace()
-    user = user_workspace.user
-    workspace = user_workspace.workspace
-    user_2 = data_fixture.create_user()
-    user_workspace_3 = data_fixture.create_user_workspace(
-        workspace=workspace, permissions="MEMBER"
-    )
-    user_3 = user_workspace_3.user
-
-    handler = CoreHandler()
-
-    with pytest.raises(UserNotInWorkspace):
-        handler.create_workspace_invitation(
-            user=user_2,
-            workspace=workspace,
-            email="test@test.nl",
-            permissions="ADMIN",
-            base_url="http://localhost:3000/invite",
-        )
-
-    with pytest.raises(UserInvalidWorkspacePermissionsError):
-        handler.create_workspace_invitation(
-            user=user_3,
-            workspace=workspace,
-            email="test@test.nl",
-            permissions="ADMIN",
-            base_url="http://localhost:3000/invite",
-        )
-
-    with pytest.raises(WorkspaceUserAlreadyExists):
-        handler.create_workspace_invitation(
-            user=user,
-            workspace=workspace,
-            email=user_3.email,
-            permissions="ADMIN",
-            base_url="http://localhost:3000/invite",
-        )
-
-    invitation = handler.create_workspace_invitation(
-        user=user,
-        workspace=workspace,
-        email="test@test.nl",
-        permissions="ADMIN",
-        base_url="http://localhost:3000/invite",
-    )
-    assert invitation.invited_by_id == user.id
-    assert invitation.workspace_id == workspace.id
-    assert invitation.email == "test@test.nl"
-    assert invitation.permissions == "ADMIN"
-    assert WorkspaceInvitation.objects.all().count() == 1
-
-    mock_send_email.assert_called_once()
-    assert mock_send_email.call_args[0][0].id == invitation.id
-    assert mock_send_email.call_args[0][1] == "http://localhost:3000/invite"
-
-    # Because there already is an invitation for this email and workspace, it must be
-    # updated instead of having duplicates.
-    invitation = handler.create_workspace_invitation(
-        user=user,
-        workspace=workspace,
-        email="test@test.nl",
-        permissions="MEMBER",
-        base_url="http://localhost:3000/invite",
-    )
-    assert invitation.invited_by_id == user.id
-    assert invitation.workspace_id == workspace.id
-    assert invitation.email == "test@test.nl"
-    assert invitation.permissions == "MEMBER"
-    assert WorkspaceInvitation.objects.all().count() == 1
-
-    invitation = handler.create_workspace_invitation(
-        user=user,
-        workspace=workspace,
-        email="test2@test.nl",
-        permissions="ADMIN",
-        base_url="http://localhost:3000/invite",
-    )
-    assert invitation.invited_by_id == user.id
-    assert invitation.workspace_id == workspace.id
-    assert invitation.email == "test2@test.nl"
-    assert invitation.permissions == "ADMIN"
-    assert WorkspaceInvitation.objects.all().count() == 2
-
-    invitation = handler.create_workspace_invitation(
-        user=user,
-        workspace=workspace,
-        email="test3@test.nl",
-        permissions="ADMIN",
-        base_url="http://localhost:3000/invite",
-    )
-    assert invitation.invited_by_id == user.id
-    assert invitation.workspace_id == workspace.id
-    assert invitation.email == "test3@test.nl"
-    assert invitation.permissions == "ADMIN"
-    assert WorkspaceInvitation.objects.all().count() == 3
-
-
-@pytest.mark.django_db
-def test_update_workspace_invitation(data_fixture):
-    workspace_invitation = data_fixture.create_workspace_invitation()
-    user = workspace_invitation.invited_by
-    user_2 = data_fixture.create_user()
-    handler = CoreHandler()
-
-    with pytest.raises(UserNotInWorkspace):
-        handler.update_workspace_invitation(
-            user=user_2, invitation=workspace_invitation, permissions="ADMIN"
-        )
-
-    invitation = handler.update_workspace_invitation(
-        user=user, invitation=workspace_invitation, permissions="MEMBER"
-    )
-
-    assert invitation.permissions == "MEMBER"
-    invitation = WorkspaceInvitation.objects.all().first()
-    assert invitation.permissions == "MEMBER"
-
-
-@pytest.mark.django_db
-def test_delete_workspace_invitation(data_fixture):
-    workspace_invitation = data_fixture.create_workspace_invitation()
-    user = workspace_invitation.invited_by
-    user_2 = data_fixture.create_user()
-    handler = CoreHandler()
-
-    with pytest.raises(UserNotInWorkspace):
-        handler.delete_workspace_invitation(
-            user=user_2,
-            invitation=workspace_invitation,
-        )
-
-    handler.delete_workspace_invitation(
-        user=user,
-        invitation=workspace_invitation,
-    )
-    assert WorkspaceInvitation.objects.all().count() == 0
-
-
-@pytest.mark.django_db
-def test_reject_workspace_invitation(data_fixture):
-    workspace_invitation = data_fixture.create_workspace_invitation(
-        email="test@test.nl"
-    )
-    user_1 = data_fixture.create_user(email="test@test.nl")
-    user_2 = data_fixture.create_user(email="test2@test.nl")
-
-    handler = CoreHandler()
-
-    with pytest.raises(WorkspaceInvitationEmailMismatch):
-        handler.reject_workspace_invitation(
-            user=user_2, invitation=workspace_invitation
-        )
-
-    assert WorkspaceInvitation.objects.all().count() == 1
-
-    handler.reject_workspace_invitation(user=user_1, invitation=workspace_invitation)
-    assert WorkspaceInvitation.objects.all().count() == 0
-    assert WorkspaceUser.objects.all().count() == 1
-
-
-@pytest.mark.django_db
-def test_accept_workspace_invitation(data_fixture):
-    workspace = data_fixture.create_workspace()
-    workspace_2 = data_fixture.create_workspace()
-    workspace_invitation = data_fixture.create_workspace_invitation(
-        email="test@test.nl", permissions="MEMBER", workspace=workspace
-    )
-    user_1 = data_fixture.create_user(email="test@test.nl")
-    user_2 = data_fixture.create_user(email="test2@test.nl")
-
-    handler = CoreHandler()
-
-    with pytest.raises(WorkspaceInvitationEmailMismatch):
-        handler.accept_workspace_invitation(
-            user=user_2, invitation=workspace_invitation
-        )
-
-    assert WorkspaceInvitation.objects.all().count() == 1
-
-    workspace_user = handler.accept_workspace_invitation(
-        user=user_1, invitation=workspace_invitation
-    )
-    assert workspace_user.workspace_id == workspace.id
-    assert workspace_user.permissions == "MEMBER"
-    assert WorkspaceInvitation.objects.all().count() == 0
-    assert WorkspaceUser.objects.all().count() == 1
-
-    # A second invitation must not change an existing member's permissions.
-    workspace_invitation = data_fixture.create_workspace_invitation(
-        email="test@test.nl", permissions="ADMIN", workspace=workspace
-    )
-    workspace_user = handler.accept_workspace_invitation(
-        user=user_1, invitation=workspace_invitation
-    )
-    assert workspace_user.workspace_id == workspace.id
-    assert workspace_user.permissions == "MEMBER"
-    assert WorkspaceInvitation.objects.all().count() == 0
-    assert WorkspaceUser.objects.all().count() == 1
-
-    workspace_invitation = data_fixture.create_workspace_invitation(
-        email="test@test.nl", permissions="MEMBER", workspace=workspace_2
-    )
-    workspace_user = handler.accept_workspace_invitation(
-        user=user_1, invitation=workspace_invitation
-    )
-    assert workspace_user.workspace_id == workspace_2.id
-    assert workspace_user.permissions == "MEMBER"
-    assert WorkspaceInvitation.objects.all().count() == 0
-    assert WorkspaceUser.objects.all().count() == 2
-
-
-@pytest.mark.django_db
-def test_accept_workspace_invitation_does_not_downgrade_last_admin(data_fixture):
-    # Accepting a stale MEMBER invitation must not demote an existing admin.
-    workspace = data_fixture.create_workspace()
-    user = data_fixture.create_user(email="admin@test.nl")
-    data_fixture.create_user_workspace(
-        workspace=workspace, user=user, permissions="ADMIN"
-    )
-    workspace_invitation = data_fixture.create_workspace_invitation(
-        email="admin@test.nl", permissions="MEMBER", workspace=workspace
-    )
-
-    handler = CoreHandler()
-
-    workspace_user = handler.accept_workspace_invitation(
-        user=user, invitation=workspace_invitation
-    )
-
-    assert workspace_user.permissions == "ADMIN"
-    assert (
-        WorkspaceUser.objects.filter(workspace=workspace, permissions="ADMIN").count()
-        == 1
-    )
-    assert WorkspaceUser.objects.filter(workspace=workspace).count() == 1
-    assert WorkspaceInvitation.objects.all().count() == 0
-
-
-@pytest.mark.django_db
 def test_get_application(data_fixture):
     user_1 = data_fixture.create_user()
     data_fixture.create_user()
@@ -959,6 +510,38 @@ def test_create_database_application(send_mock, data_fixture):
         handler.create_application(
             user=user, workspace=workspace, type_name="UNKNOWN", name=""
         )
+
+
+@pytest.mark.django_db
+def test_create_application_disabled_type(data_fixture):
+    user = data_fixture.create_user(is_staff=True)
+    workspace = data_fixture.create_workspace(user=user)
+    handler = CoreHandler()
+
+    handler.update_settings(user, enable_database=False)
+
+    assert handler.application_type_is_enabled("database") is False
+    assert handler.application_type_is_enabled("builder") is True
+
+    with pytest.raises(ApplicationTypeDisabled) as exc_info:
+        handler.create_application(
+            user=user, workspace=workspace, type_name="database", name="Test"
+        )
+    assert exc_info.value.application_type == "database"
+    assert Application.objects.count() == 0
+
+    # A different, still enabled, type can be created.
+    handler.create_application(
+        user=user, workspace=workspace, type_name="builder", name="Test builder"
+    )
+    assert Application.objects.count() == 1
+
+    # Re-enabling the type allows creation again.
+    handler.update_settings(user, enable_database=True)
+    handler.create_application(
+        user=user, workspace=workspace, type_name="database", name="Test database"
+    )
+    assert Application.objects.count() == 2
 
 
 @pytest.mark.django_db
@@ -1255,44 +838,6 @@ def test_export_import_workspace_application(data_fixture):
     assert imported_database.table_set.all().count() == 1
     assert database.id in id_mapping["applications"]
     assert id_mapping["applications"][database.id] == imported_database.id
-
-
-@pytest.mark.django_db(transaction=True)
-@pytest.mark.once_per_day_in_ci
-# You must add --run-once-per-day-in-ci to pytest's additional args to run this test,
-# you can do this in intellij by editing the run config for this test and adding
-# --run-once-per-day-in-ci to the additional args.
-def test_sync_and_install_all_templates(data_fixture, tmpdir):
-    storage = FileSystemStorage(location=str(tmpdir), base_url="http://localhost")
-    handler = CoreHandler()
-    handler.sync_templates(storage=storage)
-
-    assert Template.objects.count() == len(
-        list(Path(settings.APPLICATION_TEMPLATES_DIR).glob("*.json"))
-    )
-
-    workspace_user = data_fixture.create_user_workspace()
-    for template in Template.objects.all():
-        with transaction.atomic():
-            handler.install_template(
-                workspace_user.user, workspace_user.workspace, template, storage=storage
-            )
-
-
-@pytest.mark.django_db(transaction=True)
-def test_sync_and_install_single_template(data_fixture, tmpdir):
-    storage = FileSystemStorage(location=str(tmpdir), base_url="http://localhost")
-    handler = CoreHandler()
-
-    with transaction.atomic():
-        handler.sync_templates(storage=storage, pattern="new-hire-onboarding")
-
-    workspace_user = data_fixture.create_user_workspace()
-    template = Template.objects.get()
-    with transaction.atomic():
-        handler.install_template(
-            workspace_user.user, workspace_user.workspace, template, storage=storage
-        )
 
 
 @pytest.mark.django_db

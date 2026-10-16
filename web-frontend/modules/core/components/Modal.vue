@@ -46,7 +46,7 @@
                 class="modal__close"
                 @click="hide()"
               >
-                <i class="iconoir-cancel"></i>
+                <i class="iconoir-xmark"></i>
               </a>
 
               <a
@@ -85,7 +85,7 @@
               class="modal__close"
               @click="hide()"
             >
-              <i class="iconoir-cancel"></i>
+              <i class="iconoir-xmark"></i>
             </a>
             <slot name="actions"></slot>
           </div>

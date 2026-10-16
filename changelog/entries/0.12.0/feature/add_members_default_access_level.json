@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Admins can set a default database access level when adding workspace members, shown and editable in a new access column on the members table.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "database",
+    "bullet_points": [],
+    "created_at": "2026-09-15"
+}

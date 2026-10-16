@@ -29,7 +29,7 @@
       :node-selected="nodeSelected"
       :loading="loading"
       :mode="mode"
-      :has-value="value.length > 0"
+      :has-value="Boolean(value && value.length)"
       :allow-node-selection="allowNodeSelection"
       :nodes-hierarchy="nodesHierarchy"
       :enabled-modes="enabledModes"
@@ -474,8 +474,9 @@ export default {
       }
     },
     createEditor(formula = null) {
-      // Use provided formula or fall back to the prop value
-      this.content = this.toContent(formula || this.value)
+      // An empty string is an intentional value after switching from expert
+      // to basic mode, so only fall back when no formula was provided.
+      this.content = this.toContent(formula ?? this.value)
       this.editor = new Editor({
         content: this.content,
         editable: !this.disabled && !this.readOnly,
@@ -500,7 +501,7 @@ export default {
     },
     recreateEditor(formula = null) {
       const currentFormula =
-        formula ||
+        formula ??
         (this.editor ? this.toFormula(this.wrapperContent) : this.value)
 
       this.editor?.destroy()
@@ -541,7 +542,9 @@ export default {
       // this.wrapperContent can be stale content, so get the data
       // directly from the editor.
       const editorContent = this.editor.getJSON()
-      const formula = this.toFormula(editorContent)
+      // `toFormula` returns null when the content cannot be serialized; never
+      // emit null upstream, parents store it and feed it back as `value`.
+      const formula = this.toFormula(editorContent) ?? ''
 
       if (this.validateFormula(formula)) {
         this.$emit('input', formula)
@@ -706,7 +709,10 @@ export default {
         this.$emit('input', '')
         this.isFormulaInvalid = false
         this.formulaErrorContext = { scope: null, title: '', message: '' }
-        this.isHandlingModeChange = false
+        this.$nextTick(() => {
+          this.recreateEditor('')
+          this.isHandlingModeChange = false
+        })
       } else {
         // Otherwise (simple to advanced), keep the current formula
         // Get the formula BEFORE changing the mode, using the CURRENT mode

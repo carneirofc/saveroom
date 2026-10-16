@@ -38,3 +38,14 @@
   margin-right: 12px;
   color: $color-error-500;
 }
+
+.modal-progress__duration {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.modal-progress__hint {
+  color: $color-neutral-400;
+  margin: 8px 0 0;
+  text-align: right;
+}

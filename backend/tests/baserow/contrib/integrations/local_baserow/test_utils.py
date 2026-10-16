@@ -77,7 +77,7 @@ def test_guess_type_for_response_serialize_field_permutations():
 
         @extend_schema_field(OpenApiTypes.URI)
         def get_url(self, instance):
-            return "https://baserow.io"
+            return "https://example.com"
 
     assert guess_json_type_from_response_serializer_field(UUIDField()) == TYPE_STRING
     assert guess_json_type_from_response_serializer_field(CharField()) == TYPE_STRING

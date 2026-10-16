@@ -85,7 +85,6 @@
               v-for="(decorator, index) in builderPageDecorators"
               :key="index"
               :props="decorator.props"
-              show-paid-features-modal
             />
           </client-only>
         </ThemeProvider>

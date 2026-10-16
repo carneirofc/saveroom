@@ -19,7 +19,7 @@ SEARCH_MODE_API_PARAM = OpenApiParameter(
         f"If the default `{SearchMode.FT_WITH_COUNT}` is used, then Postgres "
         f"full-text search is used. If `{SearchMode.COMPAT}` is "
         "provided then the search term will be exactly searched for including "
-        "whitespace on each cell. This is the Baserow legacy search behaviour."
+        "whitespace on each cell. This is the Saveroom legacy search behaviour."
     ),
 )
 
@@ -215,6 +215,17 @@ ADHOC_SORTING_API_PARAM = OpenApiParameter(
     "separated by comma. By default a field is ordered in ascending (A-Z) "
     "order, but by prepending the field with a '-' it can be ordered "
     "descending (Z-A).",
+)
+
+ADHOC_GROUP_BY_API_PARAM = OpenApiParameter(
+    name="group_by",
+    location=OpenApiParameter.QUERY,
+    type=OpenApiTypes.STR,
+    description="Optionally the rows can be grouped by the provided field ids "
+    "separated by comma. By default a field is grouped in ascending (A-Z) "
+    "order, but by prepending the field with a '-' it can be grouped "
+    "descending (Z-A). Fields listed here use group-by ordering instead of "
+    "regular sort ordering.",
 )
 
 PAGINATION_API_PARAMS = (

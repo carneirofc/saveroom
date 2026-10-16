@@ -16,6 +16,9 @@
 
       {{ $t('importErrorReport.reportMessage') }}
       {{ errorReport.join(', ') }}
+      <p v-if="summary" class="margin-top-1">
+        {{ $t('importErrorReport.summary', summary) }}
+      </p>
     </Alert>
   </div>
 </template>
@@ -34,6 +37,9 @@ export default {
     },
   },
   computed: {
+    summary() {
+      return this.job?.report?.summary || null
+    },
     errorReport() {
       if (this.job && Object.keys(this.job.report.failing_rows).length > 0) {
         return Object.keys(this.job.report.failing_rows)

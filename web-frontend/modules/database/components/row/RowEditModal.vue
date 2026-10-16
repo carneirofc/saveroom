@@ -88,6 +88,12 @@
         >
         </RowEditModalFieldsList>
       </RowEditModalHiddenFieldsSection>
+      <PendingChangesBar
+        v-if="!readOnly && tableIsProtected"
+        inline
+        :table="table"
+        :fields="allFieldsInTable"
+      />
       <div
         v-if="
           !readOnly &&
@@ -151,10 +157,13 @@ import RowEditModalFieldsList from './RowEditModalFieldsList.vue'
 import RowEditModalHiddenFieldsSection from './RowEditModalHiddenFieldsSection.vue'
 import RowEditModalSidebar from './RowEditModalSidebar.vue'
 import { getPrimaryOrFirstField } from '@baserow/modules/database/utils/field'
+import { isProtected } from '@baserow/modules/database/utils/editConfirmation'
+import PendingChangesBar from './PendingChangesBar.vue'
 
 export default {
   name: 'RowEditModal',
   components: {
+    PendingChangesBar,
     CreateFieldContext,
     RowEditModalFieldsList,
     RowEditModalHiddenFieldsSection,
@@ -321,6 +330,9 @@ export default {
       const spaceData =
         this.$store.state.presence.spaces[this.presenceSpaceName]
       return spaceData ? Object.keys(spaceData.members).length > 0 : false
+    },
+    tableIsProtected() {
+      return isProtected(this.table)
     },
     rowModalActionComponents() {
       return this.activeSidebarTypes

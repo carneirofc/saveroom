@@ -56,12 +56,7 @@ export default {
       return this.allowEmptySelection || this.selectedMembersCount !== 0
     },
     actionLabel() {
-      return (
-        this.buttonLabel ??
-        this.$t('memberAssignmentModalFooter.invite', {
-          selectedMembersCount: this.selectedMembersCount,
-        })
-      )
+      return this.buttonLabel ?? this.$t('action.select')
     },
     getToggleLabel() {
       return this.allFilteredMembersSelected

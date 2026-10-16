@@ -1,0 +1,9 @@
+{
+    "type": "breaking_change",
+    "message": "Aligned every PostgreSQL container on `pgvector/pgvector:pg18`, matching the PostgreSQL 18 the images already target. The Compose stacks ran PostgreSQL 15 and the dev, e2e and CI databases ran PostgreSQL 14. `PGDATA` is pinned to `/var/lib/postgresql/data` everywhere, because the 18 images moved their default to `/var/lib/postgresql/<major>/docker` and refuse to start when a volume sits on the old path. Existing volumes still hold PostgreSQL 14/15 data directories that an 18 server will not start against: dump and restore before upgrading, or remove the volume for a fresh database. Set `POSTGRES_IMAGE_VERSION` to stay on an older major.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-08-28"
+}

@@ -15,6 +15,7 @@ from baserow.contrib.database.api.fields.errors import (
     ERROR_SELECT_OPTION_DOES_NOT_BELONG_TO_FIELD,
 )
 from baserow.contrib.database.api.tables.errors import (
+    ERROR_IMPORT_AMBIGUOUS_MATCHES,
     ERROR_INITIAL_TABLE_DATA_HAS_DUPLICATE_NAMES,
     ERROR_INITIAL_TABLE_DATA_LIMIT_EXCEEDED,
     ERROR_INVALID_INITIAL_TABLE_DATA,
@@ -29,7 +30,11 @@ from baserow.contrib.database.fields.exceptions import (
     SelectOptionDoesNotBelongToField,
 )
 from baserow.contrib.database.rows.actions import ImportRowsActionType
-from baserow.contrib.database.rows.exceptions import ReportMaxErrorCountExceeded
+from baserow.contrib.database.rows.constants import is_destructive_import
+from baserow.contrib.database.rows.exceptions import (
+    ImportAmbiguousMatches,
+    ReportMaxErrorCountExceeded,
+)
 from baserow.contrib.database.rows.types import FileImportDict
 from baserow.contrib.database.table.actions import CreateTableActionType
 from baserow.contrib.database.table.exceptions import (
@@ -37,7 +42,11 @@ from baserow.contrib.database.table.exceptions import (
     InitialTableDataLimitExceeded,
     InvalidInitialTableData,
 )
+from baserow.contrib.database.table.operations import (
+    ReplaceRowsDatabaseTableOperationType,
+)
 from baserow.core.action.registries import action_type_registry
+from baserow.core.handler import CoreHandler
 from baserow.core.jobs.exceptions import MaxJobCountExceeded
 from baserow.core.jobs.models import JobQuerySet
 from baserow.core.jobs.registries import JobType
@@ -65,6 +74,7 @@ class FileImportJobType(JobType):
         ReservedBaserowFieldNameException: ERROR_RESERVED_BASEROW_FIELD_NAME[2],
         InvalidBaserowFieldName: ERROR_INVALID_BASEROW_FIELD_NAME[2],
         FieldNotInTable: ERROR_FIELD_NOT_IN_TABLE[2],
+        ImportAmbiguousMatches: ERROR_IMPORT_AMBIGUOUS_MATCHES[2],
         SelectOptionDoesNotBelongToField: ERROR_SELECT_OPTION_DOES_NOT_BELONG_TO_FIELD[
             2
         ],
@@ -147,6 +157,17 @@ class FileImportJobType(JobType):
         See `.after_job_creation()`.
         """
 
+        table = values.get("table")
+        # The job is the only way an import reaches the rows, so trashing rows is
+        # checked here as well as in the API view.
+        if table is not None and is_destructive_import(values.get("configuration")):
+            CoreHandler().check_permissions(
+                user,
+                ReplaceRowsDatabaseTableOperationType.type,
+                workspace=table.database.workspace,
+                context=table,
+            )
+
         filtered_dict = dict(**values)
         filtered_dict.pop("data")
         filtered_dict.pop("configuration", None)
@@ -190,17 +211,25 @@ class FileImportJobType(JobType):
 
         return read_committed_single_table_transaction(job.table_id)
 
-    def cleanup_job(self, job: FileImportJob, error_report: dict[str, Any]):
+    def cleanup_job(
+        self,
+        job: FileImportJob,
+        error_report: dict[str, Any],
+        summary: dict[str, int] | None = None,
+    ):
         """
         Removes the data file to save space and save the error report.
 
         This will be executed when a job finished successfully.
         :param job: The job instance.
         :param error_report: The error report that should be saved.
+        :param summary: The number of rows created, updated, etc. by the import.
         """
 
         job.data_file.delete(save=False)
         job.report = {"failing_rows": error_report}
+        if summary is not None:
+            job.report["summary"] = summary
         job.save(
             update_fields=(
                 "report",
@@ -217,6 +246,7 @@ class FileImportJobType(JobType):
 
         with job.data_file.open("r") as fin:
             data: FileImportDict = json.load(fin)
+        summary = None
         try:
             if job.table is None:
                 new_table, error_report = action_type_registry.get_by_type(
@@ -233,14 +263,16 @@ class FileImportJobType(JobType):
                 job.table = new_table
                 job.save(update_fields=("table",))
             else:
-                _, error_report = action_type_registry.get_by_type(
+                result = action_type_registry.get_by_type(
                     ImportRowsActionType
-                ).do(
+                ).do_with_result(
                     job.user,
                     table=job.table,
                     data=data,
                     progress=progress,
                 )
+                error_report = result.error_report
+                summary = result.summary
         # when a job handler fails, celery worker will not commit and `after_commit`
         # won't be called. That's why we need to catch this specific error and
         # perform a bit of cleanup on the job.
@@ -257,6 +289,6 @@ class FileImportJobType(JobType):
             This will be executed when a job finished successfully.
             """
 
-            self.cleanup_job(job, error_report)
+            self.cleanup_job(job, error_report, summary)
 
         transaction.on_commit(after_commit)

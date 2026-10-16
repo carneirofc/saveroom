@@ -2,8 +2,6 @@ import { ApplicationType } from '@baserow/modules/core/applicationTypes'
 import BuilderForm from '@baserow/modules/builder/components/form/BuilderForm'
 import SidebarComponentBuilder from '@baserow/modules/builder/components/sidebar/SidebarComponentBuilder'
 import { populatePage } from '@baserow/modules/builder/store/page'
-import PageTemplate from '@baserow/modules/builder/components/page/PageTemplate'
-import PageTemplateSidebar from '@baserow/modules/builder/components/page/PageTemplateSidebar'
 import BuilderApplicationContext from '@baserow/modules/builder/components/application/BuilderApplicationContext'
 import { DataProviderType } from '@baserow/modules/core/dataProviderTypes'
 import { DEVELOPMENT_STAGES } from '@baserow/modules/core/constants'
@@ -53,25 +51,6 @@ export class BuilderApplicationType extends ApplicationType {
 
   getApplicationContextComponent() {
     return BuilderApplicationContext
-  }
-
-  getTemplateSidebarComponent() {
-    return PageTemplateSidebar
-  }
-
-  getTemplatesPageComponent() {
-    return PageTemplate
-  }
-
-  getTemplatePage(application) {
-    const notSharedPages = application.pages.filter((p) => p.shared === false)
-    if (notSharedPages.length === 0) {
-      return null
-    }
-    return {
-      builder: application,
-      page: notSharedPages[0],
-    }
   }
 
   populate(application) {

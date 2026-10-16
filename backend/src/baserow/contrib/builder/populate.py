@@ -47,7 +47,7 @@ def load_test_data():
             page.get_graph().insert(element, reference_element, position, output)
         return element
 
-    user = User.objects.get(email="admin@baserow.io")
+    user = User.objects.get(email="admin@example.com")
     workspace = user.workspaceuser_set.get(workspace__name="Acme Corp").workspace
 
     try:
@@ -59,17 +59,17 @@ def load_test_data():
             user, workspace, "builder", name="Back to local website"
         )
 
-    CustomDomain.objects.filter(domain_name="test1.getbaserow.io").delete()
-    CustomDomain.objects.filter(domain_name="test2.getbaserow.io").delete()
-    CustomDomain.objects.filter(domain_name="test3.getbaserow.io").delete()
+    CustomDomain.objects.filter(domain_name="test1.example.com").delete()
+    CustomDomain.objects.filter(domain_name="test2.example.com").delete()
+    CustomDomain.objects.filter(domain_name="test3.example.com").delete()
     CustomDomain.objects.create(
-        builder=builder, domain_name="test1.getbaserow.io", order=1
+        builder=builder, domain_name="test1.example.com", order=1
     )
     CustomDomain.objects.create(
-        builder=builder, domain_name="test2.getbaserow.io", order=2
+        builder=builder, domain_name="test2.example.com", order=2
     )
     CustomDomain.objects.create(
-        builder=builder, domain_name="test3.getbaserow.io", order=3
+        builder=builder, domain_name="test3.example.com", order=3
     )
 
     integration_type = integration_type_registry.get("local_baserow")
@@ -181,11 +181,11 @@ def load_test_data():
         create_element(
             link_element_type,
             homepage,
-            value='"Visit Baserow"',
+            value='"Visit Saveroom"',
             variant="link",
             navigation_type="custom",
             target="blank",
-            navigate_to_url='"https://baserow.io"',
+            navigate_to_url='"https://github.com/carneirofc/baserow"',
             styles={"link": {"link_text_alignment": "center"}},
         )
     table = Table.objects.get(

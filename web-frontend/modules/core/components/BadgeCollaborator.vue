@@ -6,7 +6,7 @@
 
     <i
       v-if="removeIcon"
-      class="badge-collaborator__remove-icon iconoir-cancel"
+      class="badge-collaborator__remove-icon iconoir-xmark"
       @click="$emit('remove')"
     ></i>
   </div>

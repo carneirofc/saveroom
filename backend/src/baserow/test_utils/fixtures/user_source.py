@@ -9,10 +9,31 @@ from baserow.core.user_sources.registries import (
 )
 
 
+def _get_local_baserow_user_source_type():
+    """
+    The "local_baserow" user source type ships only as part of the
+    enterprise edition, which this fork doesn't include. Skip instead of
+    raising InstanceTypeDoesNotExist so these fixtures degrade the same way
+    create_user_source_with_first_type() does when no plugin registers one.
+    """
+
+    if "local_baserow" not in user_source_type_registry.registry:
+        import pytest
+
+        pytest.skip(
+            "The local_baserow user source type isn't registered (enterprise-only)."
+        )
+    return user_source_type_registry.get("local_baserow")
+
+
 class UserSourceFixtures:
     def create_user_source_with_first_type(self, **kwargs):
-        first_user_source_type = list(user_source_type_registry.get_all())[0]
-        return self.create_user_source(first_user_source_type.model_class, **kwargs)
+        user_source_types = list(user_source_type_registry.get_all())
+        if not user_source_types:
+            import pytest
+
+            pytest.skip("No user source type is registered (needs a plugin).")
+        return self.create_user_source(user_source_types[0].model_class, **kwargs)
 
     def create_user_source(self, model_class, user=None, application=None, **kwargs):
         if not application:
@@ -66,7 +87,7 @@ class UserSourceFixtures:
             user=user, application=builder
         )
         user_source = self.create_user_source(
-            user_source_type_registry.get("local_baserow").model_class,
+            _get_local_baserow_user_source_type().model_class,
             application=builder,
             integration=integration,
             table=user_table,
@@ -80,6 +101,8 @@ class UserSourceFixtures:
     def create_local_baserow_table_user_source(
         self, application=None, integration=None, table=None, user=None, **kwargs
     ):
+        local_baserow_user_source_type = _get_local_baserow_user_source_type()
+
         if not application:
             if user is None:
                 user = self.create_user()
@@ -98,11 +121,11 @@ class UserSourceFixtures:
                     ("Role", "text"),
                 ],
                 rows=[
-                    ["bram@baserow.io", "Bram", ""],
-                    ["jrmi@baserow.io", "Jérémie", ""],
-                    ["peter@baserow.io", "Peter", ""],
-                    ["tsering@baserow.io", "Tsering", ""],
-                    ["evren@baserow.io", "Evren", ""],
+                    ["bram@example.com", "Bram", ""],
+                    ["jrmi@example.com", "Jérémie", ""],
+                    ["peter@example.com", "Peter", ""],
+                    ["tsering@example.com", "Tsering", ""],
+                    ["evren@example.com", "Evren", ""],
                 ],
             )
             email_field, name_field, role_field = fields
@@ -111,7 +134,6 @@ class UserSourceFixtures:
             name_field = table.field_set.get(name="Name")
             role_field = table.field_set.get(name="Role")
 
-        local_baserow_user_source_type = user_source_type_registry.get("local_baserow")
         return self.create_user_source(
             local_baserow_user_source_type.model_class,
             application=application,

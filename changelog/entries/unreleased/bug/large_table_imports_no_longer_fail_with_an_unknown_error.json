@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Importing a file of more than about 2.5MB into a new or existing table no longer fails with an unknown error. The largest accepted request body is now set by BASEROW_MAX_REQUEST_BODY_SIZE_MB (1024 by default).",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "database",
+    "bullet_points": [],
+    "created_at": "2026-10-04"
+}

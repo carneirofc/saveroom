@@ -5,14 +5,14 @@
   width: calc(100% - 40px);
   height: 120px;
   border: 1px dashed $palette-neutral-400;
-  background-color: rgba($palette-neutral-50, 0.5);
+  background-color: alpha($palette-neutral-50, 0.5);
   margin: 20px;
 
   @include rounded($rounded-md);
 
   &:hover {
     border: 1px solid $palette-blue-500;
-    background-color: rgba($palette-blue-50, 0.8);
+    background-color: alpha($palette-blue-50, 0.8);
     border-color: $palette-blue-300;
     cursor: pointer;
   }
@@ -61,15 +61,15 @@
 
 .add-element-zone--drag-active {
   border: 1px dashed $palette-blue-400;
-  background-color: rgba($palette-blue-50, 0.6);
+  background-color: alpha($palette-blue-50, 0.6);
 
   &:hover {
     border-color: $palette-green-400;
-    background-color: rgba($palette-green-50, 0.6);
+    background-color: alpha($palette-green-50, 0.6);
   }
 }
 
 .add-element-zone--drag-over {
-  background-color: rgba($palette-green-100, 0.7);
+  background-color: alpha($palette-green-100, 0.7);
   border: 1px dashed $palette-green-500;
 }

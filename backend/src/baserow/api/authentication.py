@@ -7,7 +7,6 @@ from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework_simplejwt.settings import api_settings as jwt_settings
 
 from baserow.api.user.errors import ERROR_INVALID_ACCESS_TOKEN
-from baserow.core.sentry import setup_user_in_sentry
 from baserow.core.telemetry.utils import setup_user_in_baggage_and_spans
 from baserow.core.user.cache import get_cached_user, set_cached_user
 from baserow.core.user.exceptions import DeactivatedUserException
@@ -76,7 +75,6 @@ class JSONWebTokenAuthentication(JWTAuthentication):
 
         set_user_session_data_from_request(user, request)
         with setup_user_in_baggage_and_spans(user, request):
-            setup_user_in_sentry(user)
             return user, token
 
 

@@ -473,7 +473,6 @@ def test_get_permissions(data_fixture):
     result = CoreHandler().get_permissions(admin)
 
     assert result == [
-        {"name": "view_ownership", "permissions": {}},
         {"name": "core", "permissions": ["list_workspaces"]},
         {
             "name": "setting_operation",
@@ -531,7 +530,6 @@ def test_get_permissions(data_fixture):
     result = CoreHandler().get_permissions(admin, workspace)
 
     assert result == [
-        {"name": "view_ownership", "permissions": {}},
         {"name": "core", "permissions": ["list_workspaces"]},
         {
             "name": "setting_operation",
@@ -587,16 +585,18 @@ def test_get_permissions(data_fixture):
             "name": "basic",
             "permissions": {
                 "admin_only_operations": [
-                    "workspace.list_invitations",
-                    "workspace.create_invitation",
-                    "invitation.read",
-                    "invitation.update",
-                    "invitation.delete",
                     "workspace.list_workspace_users",
                     "workspace.update",
                     "workspace.delete",
                     "workspace_user.update",
                     "workspace_user.delete",
+                    "workspace.add_workspace_users",
+                    "workspace.list_teams",
+                    "workspace.create_team",
+                    "workspace.update_team",
+                    "workspace.delete_team",
+                    "workspace.manage_team_members",
+                    "workspace.manage_database_access",
                 ],
                 "is_admin": True,
             },
@@ -606,7 +606,6 @@ def test_get_permissions(data_fixture):
     result = CoreHandler().get_permissions(user_2)
 
     assert result == [
-        {"name": "view_ownership", "permissions": {}},
         {"name": "core", "permissions": ["list_workspaces"]},
         {
             "name": "setting_operation",
@@ -664,7 +663,6 @@ def test_get_permissions(data_fixture):
     result = CoreHandler().get_permissions(user_2, workspace)
 
     assert result == [
-        {"name": "view_ownership", "permissions": {}},
         {"name": "core", "permissions": ["list_workspaces"]},
         {
             "name": "setting_operation",
@@ -720,16 +718,18 @@ def test_get_permissions(data_fixture):
             "name": "basic",
             "permissions": {
                 "admin_only_operations": [
-                    "workspace.list_invitations",
-                    "workspace.create_invitation",
-                    "invitation.read",
-                    "invitation.update",
-                    "invitation.delete",
                     "workspace.list_workspace_users",
                     "workspace.update",
                     "workspace.delete",
                     "workspace_user.update",
                     "workspace_user.delete",
+                    "workspace.add_workspace_users",
+                    "workspace.list_teams",
+                    "workspace.create_team",
+                    "workspace.update_team",
+                    "workspace.delete_team",
+                    "workspace.manage_team_members",
+                    "workspace.manage_database_access",
                 ],
                 "is_admin": True,
             },
@@ -739,7 +739,6 @@ def test_get_permissions(data_fixture):
     result = CoreHandler().get_permissions(user_3)
 
     assert result == [
-        {"name": "view_ownership", "permissions": {}},
         {"name": "core", "permissions": ["list_workspaces"]},
         {
             "name": "setting_operation",
@@ -797,7 +796,6 @@ def test_get_permissions(data_fixture):
     result = CoreHandler().get_permissions(user_3, workspace)
 
     assert result == [
-        {"name": "view_ownership", "permissions": {}},
         {"name": "core", "permissions": ["list_workspaces"]},
         {
             "name": "setting_operation",
@@ -853,16 +851,18 @@ def test_get_permissions(data_fixture):
             "name": "basic",
             "permissions": {
                 "admin_only_operations": [
-                    "workspace.list_invitations",
-                    "workspace.create_invitation",
-                    "invitation.read",
-                    "invitation.update",
-                    "invitation.delete",
                     "workspace.list_workspace_users",
                     "workspace.update",
                     "workspace.delete",
                     "workspace_user.update",
                     "workspace_user.delete",
+                    "workspace.add_workspace_users",
+                    "workspace.list_teams",
+                    "workspace.create_team",
+                    "workspace.update_team",
+                    "workspace.delete_team",
+                    "workspace.manage_team_members",
+                    "workspace.manage_database_access",
                 ],
                 "is_admin": False,
             },
@@ -872,7 +872,6 @@ def test_get_permissions(data_fixture):
     result = CoreHandler().get_permissions(user_4, workspace)
 
     assert result == [
-        {"name": "view_ownership", "permissions": {}},
         {"name": "core", "permissions": ["list_workspaces"]},
         {
             "name": "setting_operation",

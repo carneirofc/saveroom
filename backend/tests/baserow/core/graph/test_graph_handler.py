@@ -737,3 +737,21 @@ def test_replace_root_point():
     assert model.graph["0"] == 3
     assert "1" not in model.graph
     assert model.graph["3"]["next"][""] == [2]
+
+
+def test_migrate_graph_preserves_outputs_when_they_have_no_id_mapping():
+    model = make_graph_model(
+        {
+            "0": 1,
+            "1": {"next": {"0": [2]}},
+            "2": {},
+        }
+    )
+
+    model.get_graph().migrate_graph({"": {1: 41, 2: 42}})
+
+    assert model.graph == {
+        "0": 41,
+        "41": {"next": {"0": [42]}},
+        "42": {},
+    }

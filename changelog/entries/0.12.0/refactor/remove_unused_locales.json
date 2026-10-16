@@ -1,0 +1,9 @@
+{
+    "type": "refactor",
+    "message": "Only English and Brazilian Portuguese translations are shipped in the core module now; removed the other locale files, which were never registered and had drifted out of sync.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-15"
+}

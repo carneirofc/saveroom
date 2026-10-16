@@ -1,4 +1,5 @@
 import { notifyIf } from '@baserow/modules/core/utils/error'
+import { confirmDataChange } from '@baserow/modules/database/utils/editConfirmation'
 
 /**
  * This mixin can be used in combination with a view component that uses the
@@ -153,7 +154,22 @@ export default {
      */
     async rowUp() {
       if (this.dragAndDropDraggingRow !== null) {
+        const draggingRow = this.dragAndDropDraggingRow
         this.rowCancel()
+
+        if (
+          !(await confirmDataChange(this.$store, this.table, {
+            title: this.$t('confirmDataChange.moveRowTitle'),
+            message: this.$t('confirmDataChange.moveRowMessage'),
+          }))
+        ) {
+          // Put the row back at its original position.
+          await this.$store.dispatch(
+            `${this.getDragAndDropStoreName(this)}/cancelRowDrag`,
+            { view: this.view, fields: this.fields, row: draggingRow }
+          )
+          return
+        }
 
         try {
           await this.$store.dispatch(

@@ -1,6 +1,6 @@
 <template>
   <div v-if="workspaceExists">
-    <div class="dashboard__header" ph-autocapture="dashboard-header">
+    <div class="dashboard__header">
       <div class="dashboard__header-left">
         <h1
           ref="contextLink"
@@ -58,49 +58,17 @@
         </span>
       </div>
     </div>
-    <div
-      class="dashboard__scroll-container"
-      ph-autocapture="dashboard-container"
-    >
+    <div class="dashboard__scroll-container">
       <div class="dashboard__main">
         <DashboardVerifyEmail
           class="margin-top-0 margin-bottom-0"
         ></DashboardVerifyEmail>
-        <WorkspaceInvitation
-          v-for="invitation in workspaceInvitations"
-          :key="'invitation-' + invitation.id"
-          :invitation="invitation"
-          class="margin-top-0 margin-bottom-0"
-        ></WorkspaceInvitation>
         <div class="dashboard__extras">
-          <div
-            v-if="canCreateCreateApplication"
-            class="dashboard__suggested-templates"
-          >
-            <h4>{{ $t('dashboard.suggestedTemplates') }}</h4>
-
-            <div class="dashboard__suggested-templates-wrapper">
-              <TemplateCard
-                v-for="(template, index) in templates"
-                :key="index"
-                :template="template"
-                class="dashboard__suggested-template"
-                @click="$refs.templateModal.show(template.slug)"
-              ></TemplateCard>
-
-              <TemplateCard
-                class="dashboard__suggested-template"
-                view-more
-                @click="$refs.templateModal.show()"
-              >
-              </TemplateCard>
-            </div>
-          </div>
           <div class="dashboard__resources">
             <h4>{{ $t('dashboard.resources') }}</h4>
             <div class="dashboard__resources-wrapper">
               <a
-                href="https://baserow.io/user-docs"
+                :href="$branding.docsUrl"
                 target="_new"
                 class="dashboard__resource dashboard__resource--large"
               >
@@ -125,7 +93,7 @@
                 :key="index"
               ></component>
               <a
-                href="https://baserow.io/blog/category/tutorials"
+                :href="$branding.docsUrl"
                 target="_new"
                 class="dashboard__resource"
               >
@@ -203,18 +171,11 @@
       >
       </CreateApplicationContext>
     </div>
-    <DashboardHelp v-if="dashboardHelpComponents.length === 0"></DashboardHelp>
-    <template v-else>
-      <component
-        :is="component"
-        v-for="(component, index) in dashboardHelpComponents"
-        :key="index"
-      ></component>
-    </template>
-    <TemplateModal
-      ref="templateModal"
-      :workspace="selectedWorkspace"
-    ></TemplateModal>
+    <component
+      :is="component"
+      v-for="(component, index) in dashboardHelpComponents"
+      :key="index"
+    ></component>
   </div>
 </template>
 
@@ -226,12 +187,8 @@ import { useHead, useAsyncData } from '#imports'
 import WorkspaceContext from '@baserow/modules/core/components/workspace/WorkspaceContext'
 import CreateApplicationContext from '@baserow/modules/core/components/application/CreateApplicationContext'
 import DashboardApplication from '@baserow/modules/core/components/dashboard/DashboardApplication'
-import WorkspaceInvitation from '@baserow/modules/core/components/workspace/WorkspaceInvitation'
-import TemplateCard from '@baserow/modules/core/components/template/TemplateCard'
 import editWorkspace from '@baserow/modules/core/mixins/editWorkspace'
 import DashboardVerifyEmail from '@baserow/modules/core/components/dashboard/DashboardVerifyEmail'
-import TemplateModal from '@baserow/modules/core/components/template/TemplateModal'
-import DashboardHelp from '@baserow/modules/core/components/dashboard/DashboardHelp'
 
 definePageMeta({
   layout: 'app',
@@ -259,20 +216,6 @@ const { $store, $registry, $i18n, $hasPermission } = nuxtApp
 // ----------------------------------------------------------------------------
 const selectedWorkspace = ref(null)
 const workspaceComponentArguments = ref({})
-const templates = ref([
-  {
-    name: 'Project Management',
-    slug: 'project-management',
-    type: 'calendar',
-    color: 'yellow',
-  },
-  {
-    name: 'Performance Reviews',
-    slug: 'performance-reviews',
-    type: 'table',
-    color: 'purple',
-  },
-])
 
 // refs used in template
 const context = ref(null)
@@ -281,7 +224,6 @@ const createApplicationContext = ref(null)
 const createApplicationContextLink = ref(null)
 const createApplicationContextLink2 = ref(null)
 const rename = ref(null)
-const templateModal = ref(null)
 
 async function fetchWorkspaceExtraData(workspace) {
   const plugins = Object.values($registry.getAll('plugin'))
@@ -329,7 +271,6 @@ const {
     }
 
     try {
-      await $store.dispatch('auth/fetchWorkspaceInvitations')
       return await fetchWorkspaceExtraData(workspace)
     } catch {
       throw createError({
@@ -364,10 +305,6 @@ useHead(() => ({
   title: $i18n.t('dashboard.title'),
 }))
 
-const workspaceInvitations = computed(
-  () => $store.getters['auth/getWorkspaceInvitations']
-)
-
 const getAllOfWorkspace = (ws) =>
   $store.getters['application/getAllOfWorkspace'](ws)
 
@@ -399,13 +336,18 @@ const resourceLinksComponents = computed(() =>
     .filter((c) => c !== null)
 )
 
-const orderedApplicationsInSelectedWorkspace = computed(() =>
-  !selectedWorkspace.value
-    ? []
-    : getAllOfWorkspace(selectedWorkspace.value).sort(
-        (a, b) => a.order - b.order
-      )
-)
+// The backend already leaves applications of a disabled type out of the response.
+// Filtering here as well makes an already open session follow the setting instead of
+// waiting for the next page load.
+const orderedApplicationsInSelectedWorkspace = computed(() => {
+  if (!selectedWorkspace.value) return []
+
+  const settings = $store.getters['settings/get']
+
+  return getAllOfWorkspace(selectedWorkspace.value)
+    .filter((application) => settings[`enable_${application.type}`] !== false)
+    .sort((a, b) => a.order - b.order)
+})
 
 const canCreateCreateApplication = computed(() => {
   if (!selectedWorkspace.value) return false

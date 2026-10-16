@@ -287,8 +287,8 @@ export const UIHelpers = {
     const searchBox = body.get(
       'input[placeholder*="viewSearchContext.searchInRows"]'
     )
-    await searchBox.setValue(searchTerm)
     vi.useFakeTimers()
+    await searchBox.setValue(searchTerm)
     await searchBox.trigger('submit')
     vi.runAllTimers() // Consume the debounce
     await flushPromises()
@@ -311,11 +311,6 @@ export const UIHelpers = {
   getSidebarItemNames(sidebarComponent) {
     return sidebarComponent
       .findAll('.sidebar__nav .tree__action')
-      .wrappers.map((t) => t.text())
-  },
-  getDisabledSidebarItemNames(sidebarComponent) {
-    return sidebarComponent
-      .findAll('.sidebar__nav .tree__action--deactivated')
       .wrappers.map((t) => t.text())
   },
   async selectSidebarItem(sidebarComponent, itemName) {

@@ -94,18 +94,6 @@ export class ServiceType extends Registerable {
     return false
   }
 
-  isDeactivatedReason({ workspace }) {
-    return null
-  }
-
-  isDeactivated({ workspace }) {
-    return !!this.isDeactivatedReason({ workspace })
-  }
-
-  getDeactivatedClickModal({ workspace }) {
-    return null
-  }
-
   getOrder() {
     return 0
   }

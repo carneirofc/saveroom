@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Manage API clients from the workspace menu: create a client for an external integration, grant it scopes, issue keys with an optional expiry, and revoke or deactivate them. An issued key is shown once, so copy it before closing the dialog.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-16"
+}

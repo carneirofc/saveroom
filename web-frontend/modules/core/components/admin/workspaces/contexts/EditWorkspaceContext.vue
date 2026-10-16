@@ -5,6 +5,12 @@
         {{ workspace.name }} ({{ workspace.id }})
       </div>
       <ul class="context__menu">
+        <li class="context__menu-item">
+          <a class="context__menu-item-link" @click.prevent="showAccessModal">
+            <i class="context__menu-item-icon iconoir-lock"></i>
+            {{ $t('editWorkspaceContext.manageAccess') }}
+          </a>
+        </li>
         <li class="context__menu-item context__menu-item--with-separator">
           <a
             class="context__menu-item-link context__menu-item-link--delete"
@@ -20,6 +26,13 @@
         :workspace="workspace"
         @workspace-deleted="$emit('workspace-deleted', $event)"
       ></DeleteWorkspaceModal>
+      <DatabaseAccessModal
+        ref="accessModal"
+        :workspace="workspace"
+        scope-type="workspace"
+        :scope-id="workspace.id"
+        :scope-name="workspace.name"
+      ></DatabaseAccessModal>
     </template>
   </Context>
 </template>
@@ -27,10 +40,11 @@
 <script>
 import context from '@baserow/modules/core/mixins/context'
 import DeleteWorkspaceModal from '@baserow/modules/core/components/admin/workspaces/modals/DeleteWorkspaceModal'
+import DatabaseAccessModal from '@baserow/modules/database/components/access/DatabaseAccessModal'
 
 export default {
   name: 'EditWorkspaceContext',
-  components: { DeleteWorkspaceModal },
+  components: { DeleteWorkspaceModal, DatabaseAccessModal },
   mixins: [context],
   props: {
     workspace: {
@@ -43,6 +57,10 @@ export default {
     showDeleteModal() {
       this.hide()
       this.$refs.deleteWorkspaceModal.show()
+    },
+    showAccessModal() {
+      this.hide()
+      this.$refs.accessModal.show()
     },
   },
 }

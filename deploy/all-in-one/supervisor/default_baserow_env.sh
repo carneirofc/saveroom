@@ -8,6 +8,15 @@ set -euo pipefail
 export DOCKER_USER=${DOCKER_USER:-baserow_docker_user}
 export DATA_DIR=${DATA_DIR:-/baserow/data}
 export BASEROW_PLUGIN_DIR=${BASEROW_PLUGIN_DIR:-$DATA_DIR/plugins}
+# Runtime web-frontend branding (docs/installation/branding.md).
+export BASEROW_BRANDING_DIR=${BASEROW_BRANDING_DIR:-$DATA_DIR/branding}
+
+# Build metadata, baked into the image at build time. Exported here so the
+# backend and the web-frontend both see the same values, and so an operator can
+# correct them without rebuilding.
+export BASEROW_BUILD_VERSION=${BASEROW_BUILD_VERSION:-}
+export BASEROW_BUILD_COMMIT=${BASEROW_BUILD_COMMIT:-}
+export BASEROW_BUILD_DATE=${BASEROW_BUILD_DATE:-}
 
 export BASEROW_AMOUNT_OF_WORKERS=${BASEROW_AMOUNT_OF_WORKERS:-1}
 export BASEROW_AMOUNT_OF_GUNICORN_WORKERS=${BASEROW_AMOUNT_OF_GUNICORN_WORKERS:-3}
@@ -15,7 +24,7 @@ export BASEROW_AMOUNT_OF_GUNICORN_WORKERS=${BASEROW_AMOUNT_OF_GUNICORN_WORKERS:-
 export BASEROW_ENABLE_SECURE_PROXY_SSL_HEADER=${BASEROW_ENABLE_SECURE_PROXY_SSL_HEADER:-}
 
 export PYTHONUNBUFFERED=1
-export PYTHONPATH="${PYTHONPATH:-}:/baserow/backend/src:/baserow/premium/backend/src:/baserow/enterprise/backend/src"
+export PYTHONPATH="${PYTHONPATH:-}:/baserow/backend/src"
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 export TMPDIR=${TMPDIR:-/dev/shm}

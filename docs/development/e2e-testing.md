@@ -1,6 +1,6 @@
 # End-to-End Testing
 
-Baserow includes an end-to-end test suite in the `e2e-tests` folder using [Playwright](https://playwright.dev/) to run UI tests against a running Baserow instance.
+Saveroom includes an end-to-end test suite in the `e2e-tests` folder using [Playwright](https://playwright.dev/) to run UI tests against a running Saveroom instance.
 
 ## Prerequisites
 
@@ -40,6 +40,30 @@ The e2e stack intentionally uses `3070`/`8070` by default so it does not
 collide with the default dev stack (`3000`/`8000`) or the documented alternate
 dev stacks (`3010`/`8010` and `3020`/`8020`), and leaves `3030`-`3060`/
 `8030`-`8060` free for additional dev instances.
+
+## Infra-only stack (backend tests, migrations, template sync)
+
+`just e2e` builds full application images. When you only need the backing
+services — for example to run the backend test suite, `manage.py migrate` or
+`sync_templates` against a throwaway database — use the lightweight
+`docker-compose.e2e-infra.yml` stack, which starts just PostgreSQL (with
+pgvector) and Redis on non-default ports:
+
+```bash
+docker compose -f docker-compose.e2e-infra.yml up -d      # or: podman-compose
+
+# Point the backend at it (Postgres 5470, Redis 6470):
+export DATABASE_HOST=localhost DATABASE_PORT=5470 \
+       DATABASE_NAME=baserow DATABASE_USER=baserow DATABASE_PASSWORD=baserow \
+       REDIS_HOST=localhost REDIS_PORT=6470
+just b migrate
+just b test
+
+docker compose -f docker-compose.e2e-infra.yml down -v    # tears down + wipes
+```
+
+Postgres runs in tmpfs with durability disabled, so all data is lost on
+teardown — it is for throwaway test data only.
 
 ## Commands Reference
 
@@ -112,6 +136,11 @@ just e2e test tests/mytest.spec.ts --trace on
 ```
 
 ### Regenerating Database Dump
+
+> **Note:** the committed dump was generated before the premium and enterprise
+> editions were removed, so it still contains their tables. It restores with
+> `|| true` in CI and the extra tables are inert, but it should be regenerated
+> against the current schema.
 
 When migrations change, regenerate the E2E database dump:
 
@@ -219,8 +248,6 @@ This opens a browser where your actions are recorded as test code. Use it as a s
 ### Old Installation
 
 ```bash
-# Using dev.sh (deprecated)
-./dev.sh
 cd e2e-tests
 ./run-e2e-tests-locally.sh
 

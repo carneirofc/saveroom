@@ -1,0 +1,243 @@
+name: Publish Helm Chart
+
+# Packages deploy/helm/saveroom and publishes it as an installable artifact.
+# On pull requests touching the chart the workflow only validates, renders and
+# packages (uploading the .tgz as a workflow artifact for inspection). On
+# version tags it additionally pushes the chart as an OCI package to this
+# repo's GitHub Container Registry, using only the built-in GITHUB_TOKEN.
+#
+# Result:
+#   oci://ghcr.io/<owner>/<repo>/charts/saveroom:<chart version>
+#   (install with: helm install saveroom oci://ghcr.io/<owner>/<repo>/charts/saveroom)
+#
+# The chart version is taken from Chart.yaml (bumped manually per
+# deploy/AGENTS.md), not from the git tag — the v* tag only marks a release
+# point at which the chart, like the images, is published.
+
+on:
+  pull_request:
+    paths:
+      - "deploy/helm/**"
+      - ".github/workflows/publish-helm-chart.yml"
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Also push the chart to GHCR (not just package it)"
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  CHART_DIR: deploy/helm/saveroom
+
+jobs:
+  # deploy/AGENTS.md requires Chart.yaml to be bumped whenever the chart changes.
+  # Without this gate a chart-only PR can merge and then never publish, because
+  # `helm push` would collide with the version already in the registry.
+  version-bump:
+    name: Chart version was bumped
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Compare Chart.yaml version against the base branch
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          base="origin/${{ github.base_ref }}"
+
+          # A PR that only touches this workflow does not need a chart bump.
+          if ! git diff --name-only "$base"...HEAD | grep -q "^deploy/helm/"; then
+            echo "No chart files changed; nothing to check."
+            exit 0
+          fi
+
+          new="$(yq -r '.version' "$CHART_DIR/Chart.yaml")"
+          old="$(git show "$base:$CHART_DIR/Chart.yaml" | yq -r '.version')"
+          echo "base=$old head=$new"
+
+          if [ "$old" = "$new" ]; then
+            echo "::error file=$CHART_DIR/Chart.yaml::Chart files changed but the version is still $new. Bump Chart.yaml version (see deploy/AGENTS.md)."
+            exit 1
+          fi
+
+  package:
+    name: Validate, package & publish chart
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+
+      # kubeconform validates the rendered manifests against the Kubernetes API
+      # schemas offline. `kubectl apply --dry-run=client` cannot be used here: it
+      # downloads the OpenAPI schema from a live cluster, which CI does not have.
+      - name: Set up kubeconform
+        run: |
+          set -euo pipefail
+          curl -sSLo /tmp/kubeconform.tar.gz \
+            https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          sudo tar -xzf /tmp/kubeconform.tar.gz -C /usr/local/bin kubeconform
+          kubeconform -v
+
+      # The subchart .tgz files under charts/ are git-ignored; rebuild them
+      # from the committed Chart.lock so packaging is reproducible.
+      - name: Fetch chart dependencies
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm dependency build "$CHART_DIR"
+
+      # Every shipped values preset must lint and render. values.schema.json is
+      # enforced automatically by helm on both lint and template.
+      - name: Lint and render every values preset
+        run: |
+          set -euo pipefail
+          for values in "" \
+                        "-f $CHART_DIR/values-openshift.yaml" \
+                        "-f $CHART_DIR/values-eks.yaml"; do
+            echo "::group::helm lint ${values:-(default values)}"
+            helm lint --strict "$CHART_DIR" $values
+            echo "::endgroup::"
+
+            echo "::group::helm template ${values:-(default values)}"
+            # Route is an OpenShift CRD that kubeconform has no schema for.
+            helm template baserow "$CHART_DIR" $values \
+              | kubeconform -strict -summary -ignore-missing-schemas
+            echo "::endgroup::"
+          done
+
+      # Combinations that no single values file can cover at once.
+      - name: Render option combinations
+        run: |
+          set -euo pipefail
+          render() {
+            local name="$1"; shift
+            echo "::group::$name"
+            helm template baserow "$CHART_DIR" "$@" \
+              | kubeconform -strict -summary -ignore-missing-schemas
+            echo "::endgroup::"
+          }
+          render "bundled postgresql + redis subcharts" \
+            --set postgresql.enabled=true --set redis.enabled=true
+          render "external database + redis, static S3 keys" \
+            --set postgresql.enabled=false --set redis.enabled=false \
+            --set externalDatabase.host=db.example.com \
+            --set externalRedis.host=redis.example.com
+          render "PVC media fallback" \
+            --set objectStorage.enabled=false
+          render "single-Ingress mode" \
+            --set ingress.enabled=true --set ingress.className=nginx
+          render "EKS Pod Identity" \
+            --set aws.podIdentity.enabled=true --set objectStorage.auth=podIdentity
+
+      # The IRSA contract is easy to regress silently: the backend's
+      # set_setting_from_env_if_present() treats a present-but-empty variable as a
+      # real value, so emitting AWS_ACCESS_KEY_ID="" would set the Django setting to
+      # "" and break the boto3 credential chain. These assertions fail the build if
+      # a credential ever leaks back into the IRSA render.
+      - name: Assert the IRSA render carries no static credentials
+        run: |
+          set -euo pipefail
+          helm template baserow "$CHART_DIR" -f "$CHART_DIR/values-eks.yaml" > /tmp/eks.yaml
+
+          if grep -qE "AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|s3-access-key-id|s3-secret-access-key" /tmp/eks.yaml; then
+            echo "::error::IRSA render leaked static AWS credentials:"
+            grep -nE "AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|s3-access-key-id|s3-secret-access-key" /tmp/eks.yaml
+            exit 1
+          fi
+
+          grep -q "eks.amazonaws.com/role-arn" /tmp/eks.yaml \
+            || { echo "::error::ServiceAccount is missing the eks.amazonaws.com/role-arn annotation"; exit 1; }
+
+          # ACLs are disabled on modern S3 buckets; a canned ACL makes every upload
+          # fail with AccessControlListNotSupported.
+          grep -q 'AWS_DEFAULT_ACL: ""' /tmp/eks.yaml \
+            || { echo "::error::values-eks.yaml must send an empty AWS_DEFAULT_ACL"; exit 1; }
+
+          # albGroup must produce exactly two Ingress objects with distinct health checks.
+          test "$(grep -c '^kind: Ingress' /tmp/eks.yaml)" = "2" \
+            || { echo "::error::expected 2 Ingress objects in albGroup mode"; exit 1; }
+          test "$(grep -c 'healthcheck-path' /tmp/eks.yaml)" = "2" \
+            || { echo "::error::expected a healthcheck-path on each albGroup Ingress"; exit 1; }
+
+          # Exactly one group.name per Ingress. More means the annotation maps were
+          # concatenated instead of merged, which emits a duplicate YAML key whose last
+          # value silently wins over ingress.group.name and splits the ALB in two.
+          test "$(grep -c 'alb.ingress.kubernetes.io/group.name' /tmp/eks.yaml)" = "2" \
+            || { echo "::error::expected exactly one group.name annotation per albGroup Ingress"; exit 1; }
+
+          echo "IRSA contract OK."
+
+      # The pod checksum annotations must be identical across two renders of the same
+      # values. secret.yaml falls back to randAlphaNum whenever it cannot look the live
+      # Secret up, so a checksum derived from its rendered output would change on every
+      # render — rolling every pod on each Argo CD sync and showing permanent drift.
+      # (The full render is deliberately NOT compared: the generated Secret and the
+      # Bitnami subchart passwords are random without a cluster to look up, which is
+      # expected and harmless.)
+      - name: Assert pod checksum annotations are deterministic
+        run: |
+          set -euo pipefail
+          for values in "" "-f $CHART_DIR/values-eks.yaml"; do
+            helm template baserow "$CHART_DIR" $values | grep "checksum/" | sort > /tmp/sums-a.txt
+            helm template baserow "$CHART_DIR" $values | grep "checksum/" | sort > /tmp/sums-b.txt
+            if ! diff -u /tmp/sums-a.txt /tmp/sums-b.txt; then
+              echo "::error::pod checksum annotations are not deterministic for ${values:-default values}; they must be derived from values, not from rendered secret.yaml"
+              exit 1
+            fi
+          done
+          echo "Pod checksum annotations are deterministic."
+
+      # Stock values must install on a plain cluster, so no OpenShift-only object
+      # may be rendered unless values-openshift.yaml asks for it.
+      - name: Assert default values stay platform-neutral
+        run: |
+          set -euo pipefail
+          if helm template baserow "$CHART_DIR" | grep -q "^kind: Route"; then
+            echo "::error::default values rendered an OpenShift Route; keep openshift.route.enabled=false by default"
+            exit 1
+          fi
+          helm template baserow "$CHART_DIR" -f "$CHART_DIR/values-openshift.yaml" \
+            | grep -q "^kind: Route" \
+            || { echo "::error::values-openshift.yaml stopped rendering Routes"; exit 1; }
+          echo "Default values are platform-neutral."
+
+      - name: Package chart
+        id: package
+        run: |
+          helm package "$CHART_DIR" --destination dist
+          tgz="$(ls dist/*.tgz)"
+          echo "path=$tgz" >> "$GITHUB_OUTPUT"
+          echo "version=$(basename "$tgz" .tgz | sed 's/^saveroom-//')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload packaged chart as workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: saveroom-helm-chart-${{ steps.package.outputs.version }}
+          path: ${{ steps.package.outputs.path }}
+          if-no-files-found: error
+
+      - name: Log in to GitHub Container Registry
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.publish
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login "$REGISTRY" \
+            --username "${{ github.actor }}" --password-stdin
+
+      - name: Push chart to GHCR (OCI)
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.publish
+        run: |
+          helm push "${{ steps.package.outputs.path }}" \
+            "oci://${REGISTRY}/${{ github.repository }}/charts"

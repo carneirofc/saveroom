@@ -9,7 +9,7 @@ with a field converter.
 
 ## How it works
 
-When the field type changes or a field's property changes Baserow will check if there is
+When the field type changes or a field's property changes Saveroom will check if there is
 an applicable converter. It does so by looping over the registered field converters,
 calling the `is_applicable` method which determines based on the `from`
 and `to` field instances if the converter can be applied in the situation. If an

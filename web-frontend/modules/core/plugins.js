@@ -251,9 +251,7 @@ export class BaserowPlugin extends Registerable {
   }
 
   /**
-   * Can overwrite the help component shown on the dashboard page. Note that it can
-   * only show one component, so if any plugin sets one, the original one will be
-   * hidden, and those will be shown.
+   * Components shown in the bottom corner of the dashboard page.
    */
   getDashboardHelpComponents() {
     return []

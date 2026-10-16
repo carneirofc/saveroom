@@ -46,20 +46,20 @@ exports[`Public View Page Tests > Can see a publicly shared grid view 1`] = `
           >
             <a
               class="header__filter-logo"
-              href="https://baserow.io"
+              href="https://github.com/carneirofc/baserow"
               target="_blank"
-              title="Baserow - open source no-code database tool and Airtable alternative"
+              title="Saveroom"
             >
               <div
-                alt="Baserow - open source no-code database tool and Airtable alternative"
+                alt="Saveroom"
                 class="logo"
                 height="14"
               >
                 <img
-                  alt="Baserow - open source no-code database tool and Airtable alternative"
+                  alt="Saveroom"
                   class=""
                   height="14"
-                  src="/modules/core/static/img/logo.svg"
+                  src="/_branding/assets/img/logo.svg"
                 />
               </div>
             </a>
@@ -93,7 +93,6 @@ exports[`Public View Page Tests > Can see a publicly shared grid view 1`] = `
           </li>
           <!--v-if-->
           
-          <!--v-if-->
           
           <li
             class="header__filter-item"
@@ -194,7 +193,7 @@ exports[`Public View Page Tests > Can see a publicly shared grid view 1`] = `
                 class="header__filter-link active active--error"
               >
                 <i
-                  class="header__filter-icon iconoir-eye-off"
+                  class="header__filter-icon iconoir-eye-closed"
                 />
                 <span
                   class="header__filter-name"
@@ -364,7 +363,7 @@ exports[`Public View Page Tests > Can see a publicly shared grid view 1`] = `
                 style="display: none;"
               >
                 <i
-                  class="iconoir-cancel"
+                  class="iconoir-xmark"
                 />
               </a>
               <teleport-stub
@@ -526,7 +525,6 @@ exports[`Public View Page Tests > Can see a publicly shared grid view 1`] = `
                       class="grid-view__description-options"
                     >
                       
-                      <!--v-if-->
                       
                       <!--v-if-->
                       <!--v-if-->
@@ -566,7 +564,6 @@ exports[`Public View Page Tests > Can see a publicly shared grid view 1`] = `
                       class="grid-view__description-options"
                     >
                       
-                      <!--v-if-->
                       
                       <!--v-if-->
                       <!--v-if-->
@@ -606,7 +603,6 @@ exports[`Public View Page Tests > Can see a publicly shared grid view 1`] = `
                       class="grid-view__description-options"
                     >
                       
-                      <!--v-if-->
                       
                       <!--v-if-->
                       <!--v-if-->
@@ -784,7 +780,13 @@ exports[`Public View Page Tests > Can see a publicly shared grid view 1`] = `
           </teleport-stub>
         </div>
         <!--v-if-->
+        <!--v-if-->
       </div>
+      <teleport-stub
+        to="body"
+      >
+        <!--v-if-->
+      </teleport-stub>
     </div>
   </div>
 </div>

@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "The documentation now describes Saveroom. The Docker Compose guide downloaded upstream Baserow's compose file, which runs upstream's images; it now downloads this fork's. The clone instructions, API examples and architecture diagram no longer point at upstream repositories or servers.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-09"
+}

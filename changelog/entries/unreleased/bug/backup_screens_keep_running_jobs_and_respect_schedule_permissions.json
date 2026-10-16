@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Backup and datalake export screens keep a running backup or restore across closing the dialog and switching tabs, only offer schedule actions to the schedule owner or a workspace admin, refresh schedules after running them, validate schedule names and timezones, show locale-aware dates and sizes, and no longer reveal storage configuration to non-staff users.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-04"
+}

@@ -15,6 +15,17 @@
   margin-bottom: 30px;
 }
 
+// Introduces a whole group, unlike .admin-settings__description which belongs
+// inside a single item's label. It follows a group title, so it takes back the
+// title's bottom margin instead of stacking on top of it.
+.admin-settings__group-description {
+  margin: -18px 0 24px;
+  max-width: 780px;
+  font-size: 13px;
+  color: $color-neutral-600;
+  line-height: 160%;
+}
+
 .admin-settings__item {
   display: flex;
 
@@ -48,5 +59,25 @@
   .warning {
     max-width: 500px;
     line-height: 18px;
+  }
+}
+
+// A value followed by an action, such as the instance id and its copy link,
+// which otherwise sit flush against each other.
+.admin-settings__control--inline {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+
+.admin-settings__copy {
+  flex: 0 0 auto;
+  position: relative;
+  font-size: 13px;
+  color: $color-neutral-600;
+
+  &:hover {
+    color: $color-neutral-900;
   }
 }

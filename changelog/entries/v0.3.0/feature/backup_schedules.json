@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Backups can now be scheduled. A backup schedule takes a crontab expression and a timezone, and optionally cleans up after itself with `keep_last` and `keep_days` retention. A periodic task starts every schedule that becomes due, and schedules can also be triggered on demand.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-07-29"
+}

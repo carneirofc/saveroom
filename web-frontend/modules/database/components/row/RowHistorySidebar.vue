@@ -55,6 +55,9 @@
             {{ $t('rowHistorySidebar.empty') }}
           </div>
         </div>
+        <div v-if="retentionDays" class="row-history__retention">
+          {{ $t('rowHistorySidebar.retention', retentionDays) }}
+        </div>
       </div>
     </template>
   </div>
@@ -95,6 +98,16 @@ export default {
     },
   },
   computed: {
+    /**
+     * How far back the history reaches. Entries older than
+     * BASEROW_ROW_HISTORY_RETENTION_DAYS are cleaned up, so an empty or short
+     * history is expected rather than a bug. A non-positive value means the
+     * cleanup is switched off.
+     */
+    retentionDays() {
+      const days = parseInt(this.$config.public.baserowRowHistoryRetentionDays)
+      return Number.isInteger(days) && days > 0 ? days : null
+    },
     ...mapGetters({
       entries: 'rowHistory/getSortedEntries',
       loading: 'rowHistory/getLoading',

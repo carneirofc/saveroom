@@ -1,0 +1,9 @@
+{
+    "type": "refactor",
+    "message": "Upgrade backend, frontend, e2e, email compiler and Zapier dependencies, Node 24.21, Go 1.26.8 and Caddy's bundled Go modules, fixing all fixable HIGH/CRITICAL CVEs.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-13"
+}

@@ -238,3 +238,28 @@ export class DateOnly extends Date {
     return this.toString()
   }
 }
+
+export const TIMEZONE_PAGE_SIZE = 100
+
+/**
+ * Pages through the known timezone names in the shape `PaginatedDropdown` expects
+ * from `fetch-page`, which is a HTTP response-like object. Filtering is a
+ * case-insensitive substring match on the name.
+ */
+export function fetchTimezonePage(page, search) {
+  const start = (page - 1) * TIMEZONE_PAGE_SIZE
+  const needle = (search || '').toLowerCase()
+  const results = moment.tz
+    .names()
+    .filter((timezone) => timezone.toLowerCase().includes(needle))
+  return {
+    data: {
+      count: results.length,
+      next: results.length > start + TIMEZONE_PAGE_SIZE ? page + 1 : null,
+      previous: page > 1 ? page - 1 : null,
+      results: results
+        .slice(start, start + TIMEZONE_PAGE_SIZE)
+        .map((timezone) => ({ id: timezone, value: timezone })),
+    },
+  }
+}

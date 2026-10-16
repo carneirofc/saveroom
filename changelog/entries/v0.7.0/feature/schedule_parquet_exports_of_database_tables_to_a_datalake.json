@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Schedule Parquet exports of database tables to a datalake destination: the first export is full, later ones only hold changed and deleted rows, with a manifest and _SUCCESS marker per run. Manage schedules through /api/database/data-export/ or run them with the export_table_parquet command.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "database",
+    "bullet_points": [],
+    "created_at": "2026-09-13"
+}

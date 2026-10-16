@@ -30,8 +30,7 @@ class Notification(models.Model):
             "If the notification is a broadcast notification, then the "
             "workspace will be None."
             "Workspace can be null also if the notification is not "
-            "associated with a specific workspace or if the user does not "
-            "have access to the workspace yet, like for a workspace invitation."
+            "associated with a specific workspace."
         ),
     )
     sender = models.ForeignKey(

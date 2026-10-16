@@ -891,7 +891,7 @@ def test_get_user_sources_with_user_source_auth_token(
     published_builder = data_fixture.create_builder_application(workspace=None)
 
     domain = data_fixture.create_builder_custom_domain(
-        domain_name="test.getbaserow.io", published_to=published_builder
+        domain_name="test.example.com", published_to=published_builder
     )
 
     user_source = data_fixture.create_user_source_with_first_type(
@@ -900,7 +900,7 @@ def test_get_user_sources_with_user_source_auth_token(
 
     url = reverse(
         "api:builder:domains:get_builder_by_domain_name",
-        kwargs={"domain_name": "test.getbaserow.io"},
+        kwargs={"domain_name": "test.example.com"},
     )
     us_user = data_fixture.create_user_source_user(user_source=user_source)
 

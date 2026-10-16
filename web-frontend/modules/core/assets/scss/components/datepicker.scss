@@ -165,15 +165,15 @@
   }
 
   .cell.highlighted {
-    background: #cae5ed;
+    background: $palette-blue-100;
 
     &.disabled {
-      color: #a3a3a3;
+      color: $palette-neutral-700;
     }
   }
 
   .cell.grey {
-    color: #888;
+    color: $palette-neutral-800;
 
     &:hover {
       background: inherit;

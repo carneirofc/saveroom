@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "BASEROW_ALLOW_MULTIPLE_SSO_PROVIDERS_FOR_SAME_ACCOUNT is now parsed as a boolean, so values like \"false\" or \"0\" no longer enable it.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-14"
+}

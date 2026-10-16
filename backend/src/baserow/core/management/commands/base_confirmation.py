@@ -3,7 +3,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 class BaseConfirmationCommand(BaseCommand):
     def get_confirmation_message(self, options: dict) -> str:
-        return "To execute this command against your installation of Baserow, run it again with --confirm."
+        return "To execute this command against your installation of Saveroom, run it again with --confirm."
 
     def add_arguments(self, parser):
         parser.add_argument(

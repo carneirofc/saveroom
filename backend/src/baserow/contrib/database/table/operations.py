@@ -45,3 +45,12 @@ class CreateRowDatabaseTableOperationType(DatabaseTableOperationType):
 
 class ImportRowsDatabaseTableOperationType(DatabaseTableOperationType):
     type = "database.table.import_rows"
+
+
+class ReplaceRowsDatabaseTableOperationType(DatabaseTableOperationType):
+    """
+    Required on top of `import_rows` for an import that trashes existing rows, so
+    that wiping a table's contents is not available to everyone who may import.
+    """
+
+    type = "database.table.replace_rows"

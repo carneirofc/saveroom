@@ -1,0 +1,9 @@
+{
+    "type": "breaking_change",
+    "message": "The all-in-one Docker image now embeds PostgreSQL 18 instead of 15, and all images are built on Ubuntu 26.04 LTS. Existing embedded databases must be migrated by following docs/runbooks/upgrade-embedded-postgres.md; external PostgreSQL servers are unaffected.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-08-04"
+}

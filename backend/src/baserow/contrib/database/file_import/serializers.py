@@ -21,3 +21,11 @@ class ReportSerializer(serializers.Serializer):
             "of errors by fields."
         ),
     )
+    summary = serializers.DictField(
+        child=serializers.IntegerField(),
+        required=False,
+        help_text=(
+            "The number of rows `created`, `updated`, left `unchanged`, `deleted` "
+            "and `skipped` by an import into an existing table."
+        ),
+    )

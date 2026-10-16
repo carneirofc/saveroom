@@ -1,0 +1,80 @@
+// Shared by the admin settings and admin health pages, so it carries its own
+// rhythm instead of borrowing either page's block. The label column matches
+// .admin-settings__label, which keeps both pages aligned on the same grid.
+.build-info__row {
+  display: flex;
+  align-items: baseline;
+
+  &:not(:last-child) {
+    margin-bottom: 12px;
+  }
+}
+
+.build-info__name {
+  flex: 0 0 25%;
+  max-width: 340px;
+  min-width: 200px;
+  margin-right: 40px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.build-info__value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.build-info__value-text {
+  overflow-wrap: anywhere;
+}
+
+.build-info__copy {
+  flex: 0 0 auto;
+  position: relative;
+  font-size: 13px;
+  color: $color-neutral-600;
+
+  &:hover {
+    color: $color-neutral-900;
+  }
+}
+
+.build-info__frontend {
+  margin-top: 16px;
+  font-size: 13px;
+  color: $color-neutral-600;
+}
+
+.build-info__mismatch {
+  margin-top: 16px;
+  max-width: 500px;
+}
+
+.build-info__unavailable {
+  max-width: 500px;
+
+  &:not(:last-child) {
+    margin-bottom: 16px;
+  }
+}
+
+.build-info__credits {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: $color-neutral-600;
+
+  a {
+    color: $color-neutral-600;
+    text-decoration: underline;
+
+    &:hover {
+      color: $color-neutral-900;
+    }
+  }
+}

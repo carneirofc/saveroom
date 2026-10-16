@@ -2,7 +2,7 @@
 
 const mjml2html = require('mjml')
 const fs = require('fs')
-const Eta = require('eta')
+const { Eta } = require('eta')
 const path = require('path')
 const { globSync } = require('glob')
 const chokidar = require('chokidar')
@@ -11,12 +11,10 @@ const BASEROW_BACKEND_SRC_DIR = path.join(__dirname, '..', 'src')
 const MJML_FILE_SEARCH_ROOT = process.env.MJML_FILE_SEARCH_ROOT
   ? process.env.MJML_FILE_SEARCH_ROOT
   : BASEROW_BACKEND_SRC_DIR
-const MJML_ETA_FILE_GLOB = path.join(MJML_FILE_SEARCH_ROOT, '**', '*.mjml.eta')
-const ETA_LAYOUT_FILE_GLOB = path.join(
-  MJML_FILE_SEARCH_ROOT,
-  '**',
-  '*.layout.eta'
-)
+const MJML_ETA_SUFFIX = '.mjml.eta'
+const ETA_LAYOUT_SUFFIX = '.layout.eta'
+// glob patterns always use forward slashes, even on Windows.
+const MJML_ETA_FILE_GLOB = `${MJML_FILE_SEARCH_ROOT.split(path.sep).join('/')}/**/*${MJML_ETA_SUFFIX}`
 
 /**
  * Given a .mjml.eta file first renders the eta template to get a .mjml file and then
@@ -24,70 +22,81 @@ const ETA_LAYOUT_FILE_GLOB = path.join(
  *
  * @param mjmlEtaFile The path to the .mjml.eta file.
  */
-function compileEtaAndMjml(mjmlEtaFile) {
+async function compileEtaAndMjml(mjmlEtaFile) {
   const Reset = '\x1B[0m'
   const FgGreen = '\x1B[32m'
 
   console.log(`Compiling ${mjmlEtaFile}`)
-  Eta.configure({
-    // Set views to the directory of the file to template so it can use layout(path)
-    // statements relative to its own directory.
-    views: path.dirname(mjmlEtaFile),
-  })
+  // Eta only resolves templates inside `views`, and resolves relative
+  // layout(path) statements against the calling template's own path. Rendering
+  // the file by name (not as a string) under the search root lets templates
+  // use layouts from parent directories, e.g. layout('../base.layout.eta').
+  const eta = new Eta({ views: MJML_FILE_SEARCH_ROOT, cache: false })
 
-  const tmplText = fs.readFileSync(mjmlEtaFile, 'utf8')
-  const mjmlText = Eta.render(tmplText, {})
+  const relativeName = path.relative(MJML_FILE_SEARCH_ROOT, mjmlEtaFile)
+  const mjmlText = eta.render(`./${relativeName}`, {})
 
-  const html = mjml2html(mjmlText, {
+  const { html } = await mjml2html(mjmlText, {
     validationLevel: 'strict',
     beautify: true,
-  }).html
+  })
 
-  const targetHtmlFile = mjmlEtaFile.replace('.mjml.eta', '.html')
+  const targetHtmlFile = mjmlEtaFile.replace(MJML_ETA_SUFFIX, '.html')
   console.log(
     `${FgGreen}Writing compiled email template to ${targetHtmlFile}${Reset}`
   )
   fs.writeFileSync(targetHtmlFile, html)
 }
 
-function recompileAllEtaAndMjmlFilesAfterLayoutFileChanges(layoutFile) {
-  console.log(`Layout file changed (${layoutFile})`)
-  const files = globSync(MJML_ETA_FILE_GLOB)
-  files.forEach((file) => {
-    compileEtaAndMjml(file)
-  })
+async function compileAll() {
+  for (const file of globSync(MJML_ETA_FILE_GLOB).sort()) {
+    await compileEtaAndMjml(file)
+  }
 }
 
 /**
- * Watches *.mjml.eta and *.layout.eta files and runs the eta templater followed by
- * the mjml cli over them initial run and on change if run in watch mode.
+ * Compiles every *.mjml.eta file once, and in watch mode keeps recompiling on
+ * changes to *.mjml.eta and *.layout.eta files.
  *
  * We use the simple javascript eta templating engine to first extend any base layout
- * files as MJML does not come with any built in templating. Secondly we use the MJML
- * cli tool to convert the MJML files into html ready to be used as a Django template.
+ * files as MJML does not come with any built in templating. Secondly we use MJML to
+ * convert the MJML files into html ready to be used as a Django template.
  *
  * @param args If command line arg is watch then continually watches the files,
  * otherwise just runs templating/compiling once over matching files and exits.
  */
-function main(args) {
+async function main(args) {
   const watchMode = args.length > 0 && args[0] === 'watch'
 
-  const mjmlEtaWatcher = chokidar
-    .watch(MJML_ETA_FILE_GLOB, { persistent: watchMode })
-    .on('add', compileEtaAndMjml)
+  await compileAll()
 
   if (watchMode) {
     console.log(
-      'Watching and recompiling changes to files found using glob pattern' +
-        ` ${MJML_ETA_FILE_GLOB}`
+      `Watching and recompiling *${MJML_ETA_SUFFIX} and *${ETA_LAYOUT_SUFFIX}` +
+        ` files under ${MJML_FILE_SEARCH_ROOT}`
     )
-
-    mjmlEtaWatcher.on('change', compileEtaAndMjml)
+    // chokidar no longer supports globs: watch the root and filter by suffix.
     chokidar
-      .watch(ETA_LAYOUT_FILE_GLOB, { persistent: watchMode })
-      .on('change', recompileAllEtaAndMjmlFilesAfterLayoutFileChanges)
+      .watch(MJML_FILE_SEARCH_ROOT, {
+        ignoreInitial: true,
+        ignored: (file, stats) =>
+          stats?.isFile() &&
+          !file.endsWith(MJML_ETA_SUFFIX) &&
+          !file.endsWith(ETA_LAYOUT_SUFFIX),
+      })
+      .on('all', async (event, file) => {
+        if (event !== 'add' && event !== 'change') return
+        if (file.endsWith(ETA_LAYOUT_SUFFIX)) {
+          console.log(`Layout file changed (${file})`)
+          await compileAll()
+        } else {
+          await compileEtaAndMjml(file)
+        }
+      })
   }
 }
 
-const args = process.argv.slice(2)
-main(args)
+main(process.argv.slice(2)).catch((error) => {
+  console.error(error)
+  process.exit(1)
+})

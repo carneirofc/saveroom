@@ -20,7 +20,7 @@
           class="field-multiple-select__remove"
           @click.prevent="removeValue($event, value, item.id)"
         >
-          <i class="iconoir-cancel"></i>
+          <i class="iconoir-xmark"></i>
         </a>
       </li>
     </ul>

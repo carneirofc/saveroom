@@ -65,11 +65,13 @@
     </Alert>
 
     <div class="modal-progress__actions">
-      <ProgressBar
-        v-if="jobIsRunning"
-        :value="job.progress_percentage"
-        :status="jobHumanReadableState"
-      />
+      <template v-if="jobIsRunning">
+        <ProgressBar
+          :value="job.progress_percentage"
+          :status="jobHumanReadableState"
+        />
+        <JobDuration :job="job" />
+      </template>
       <div class="align-right">
         <Button
           v-if="domains.length"
@@ -106,11 +108,12 @@ import { notifyIf } from '@baserow/modules/core/utils/error'
 import { copyToClipboard } from '@baserow/modules/database/utils/clipboard'
 import LastPublishedDomainDate from '@baserow/modules/builder/components/domain/LastPublishedDomainDate'
 import BuilderSettingsModal from '@baserow/modules/builder/components/settings/BuilderSettingsModal'
+import JobDuration from '@baserow/modules/core/components/job/JobDuration'
 import { DomainsBuilderSettingsType } from '@baserow/modules/builder/builderSettingTypes'
 
 export default {
   name: 'PublishActionModal',
-  components: { BuilderSettingsModal, LastPublishedDomainDate },
+  components: { BuilderSettingsModal, LastPublishedDomainDate, JobDuration },
   mixins: [modal, error, jobProgress],
   inject: ['workspace'],
   props: {

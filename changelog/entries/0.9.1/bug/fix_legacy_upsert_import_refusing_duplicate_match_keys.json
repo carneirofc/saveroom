@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Importing rows with upsert fields but no import mode pairs duplicate match values in order again instead of failing with an ambiguous matches error.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "database",
+    "bullet_points": [],
+    "created_at": "2026-09-15"
+}

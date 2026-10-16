@@ -1,0 +1,9 @@
+{
+    "type": "breaking_change",
+    "message": "Removed the MCP (Model Context Protocol) server, the last way for AI clients such as Claude Desktop, Cursor or Windsurf to read and change your data. The \"MCP server\" settings page, the `/mcp` endpoints and their URLs are gone, and the upgrade migration deletes existing MCP endpoints. The unused `/mcp` and `/assistant` backend routes are dropped from the Caddy config and the Helm chart.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-09"
+}

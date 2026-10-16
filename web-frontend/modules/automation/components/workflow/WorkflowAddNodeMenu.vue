@@ -6,13 +6,7 @@
       class="context__menu-item"
     >
       <a
-        v-tooltip="
-          nodeType.isDeactivatedReason({ workspace: resolvedWorkspace })
-        "
         class="context__menu-item-link context__menu-item-link--with-desc"
-        :class="{
-          disabled: nodeType.isDeactivated({ workspace: resolvedWorkspace }),
-        }"
         @click="onChange(nodeType)"
       >
         <span class="context__menu-item-title" :title="nodeType.name">
@@ -43,14 +37,6 @@
         <div class="context__menu-item-description">
           {{ nodeType.description }}
         </div>
-        <component
-          :is="getDeactivatedClickModal(nodeType)[0]"
-          v-if="getDeactivatedClickModal(nodeType) !== null"
-          :ref="`deactivatedClickModal_${nodeType.getType()}`"
-          v-bind="getDeactivatedClickModal(nodeType)[1]"
-          :name="nodeType.name"
-          :workspace="resolvedWorkspace"
-        ></component>
       </a>
     </li>
   </ul>
@@ -62,7 +48,7 @@ import context from '@baserow/modules/core/mixins/context'
 export default {
   name: 'WorkflowNodeContext',
   mixins: [context],
-  inject: ['workspace', 'workflow', 'automation'],
+  inject: ['workflow', 'automation'],
   props: {
     node: {
       type: Object,
@@ -82,9 +68,6 @@ export default {
     },
     resolvedWorkflow() {
       return unref(this.workflow)
-    },
-    resolvedWorkspace() {
-      return unref(this.workspace)
     },
     editingTriggerNode() {
       return this.onlyTrigger
@@ -112,19 +95,7 @@ export default {
   },
   methods: {
     onChange(nodeType) {
-      if (nodeType.isDeactivated({ workspace: this.resolvedWorkspace })) {
-        const deactivatedClickModal = this.getDeactivatedClickModal(nodeType)
-        if (deactivatedClickModal !== null) {
-          this.$refs[`deactivatedClickModal_${nodeType.getType()}`][0].show()
-        }
-        return
-      }
       this.$emit('change', nodeType.getType())
-    },
-    getDeactivatedClickModal(nodeType) {
-      return nodeType.getDeactivatedClickModal({
-        workspace: this.resolvedWorkspace,
-      })
     },
     getNodeContextNode(nodeType) {
       return {

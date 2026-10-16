@@ -5,8 +5,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        If you have a question about Baserow, please post it on the community forum:
-        https://community.baserow.io/
+        If you have a question about Baserow, please open a discussion or issue:
+        https://github.com/carneirofc/baserow/issues
 
   - type: textarea
     id: describe-problem
@@ -42,5 +42,5 @@ body:
       placeholder: |
         - Operating System: Windows/Ubuntu/Mac/etc.
         - Web Browser: Chrome / Firefox / Edge / Safari
-        - Deployment Type: baserow.io / docker / other
+        - Deployment Type: docker / other
         - Baserow Version: 1.8 / 1.7 / develop

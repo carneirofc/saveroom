@@ -1,0 +1,24 @@
+{
+  "appName": "Acme Data",
+  "colors": {
+    "palette-blue-50": "#f0fdfa",
+    "palette-blue-100": "#ccfbf1",
+    "palette-blue-200": "#99f6e4",
+    "palette-blue-300": "#5eead4",
+    "palette-blue-400": "#2dd4bf",
+    "palette-blue-500": "#14b8a6",
+    "palette-blue-600": "#0d9488",
+    "palette-blue-700": "#0f766e",
+    "palette-blue-800": "#115e59",
+    "palette-blue-900": "#134e4a",
+    "palette-blue-1000": "#0f3d3a",
+    "palette-blue-1100": "#042f2e"
+  },
+  "siteUrl": "https://acme.example",
+  "docsUrl": "https://docs.acme.example",
+  "siteTitle": "Acme Data",
+  "showAttribution": true,
+  "messages": {
+    "en": {}
+  }
+}

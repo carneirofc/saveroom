@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "OIDC sign-in now auto-provisions new users even when the instance has new signups disabled, so operators can turn off self-service signup while still provisioning everyone who authenticates through the IdP. Password-based signup stays governed by the toggle.",
+    "issue_origin": "github",
+    "issue_number": 2,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-07-16"
+}

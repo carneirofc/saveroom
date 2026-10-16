@@ -253,12 +253,12 @@ describe('elementTypes tests', () => {
         elementType.getDisplayName(
           {
             navigation_type: 'custom',
-            navigate_to_url: { formula: "'https://baserow.io'" },
+            navigate_to_url: { formula: "'https://example.com'" },
             value: { formula: "'Link name'" },
           },
           applicationContext
         )
-      ).toBe('Link name -> https://baserow.io')
+      ).toBe('Link name -> https://example.com')
     })
     test('ImageElementType with and without alt text to use', () => {
       const elementType = testApp.$registry.get('element', 'image')
@@ -573,12 +573,24 @@ describe('elementTypes tests', () => {
         elementType.isValid({ required: false, validation_type: 'integer' }, '')
       ).toBe(true)
     })
+    test.each(['3.2', '32', NaN, Infinity])(
+      'InputTextElementType rejects unparsed or non-finite numeric value %s',
+      (value) => {
+        const elementType = new InputTextElementType()
+        expect(
+          elementType.isValid(
+            { required: false, validation_type: 'integer' },
+            value
+          )
+        ).toBe(false)
+      }
+    )
     test('InputTextElementType | required | email | valid value.', () => {
       const elementType = new InputTextElementType()
       expect(
         elementType.isValid(
           { required: true, validation_type: 'email' },
-          'peter@baserow.io'
+          'peter@example.com'
         )
       ).toBe(true)
     })
@@ -587,7 +599,7 @@ describe('elementTypes tests', () => {
       expect(
         elementType.isValid(
           { required: true, validation_type: 'email' },
-          'peterbaserow.io'
+          'peterexample.com'
         )
       ).toBe(false)
     })
@@ -604,7 +616,7 @@ describe('elementTypes tests', () => {
         true
       )
       expect(
-        elementType.isValid({ validation_type: 'any' }, 'peter@baserow.io')
+        elementType.isValid({ validation_type: 'any' }, 'peter@example.com')
       ).toBe(true)
     })
     test('CheckboxElementType | required | unchecked.', () => {
@@ -669,6 +681,26 @@ describe('elementTypes tests', () => {
         options: [{ id: 1, value: 'uk', name: 'UK' }],
       }
       expect(elementType.isValid(element, 'uk', {})).toBe(true)
+    })
+    test('ChoiceElementType | required multiple | undefined value.', () => {
+      const elementType = new ChoiceElementType()
+      const element = {
+        required: true,
+        multiple: true,
+        option_type: CHOICE_OPTION_TYPES.MANUAL,
+        options: [{ id: 1, value: 'uk', name: 'UK' }],
+      }
+      expect(elementType.isValid(element, undefined, {})).toBe(false)
+    })
+    test('ChoiceElementType | not required multiple | undefined value.', () => {
+      const elementType = new ChoiceElementType()
+      const element = {
+        required: false,
+        multiple: true,
+        option_type: CHOICE_OPTION_TYPES.MANUAL,
+        options: [{ id: 1, value: 'uk', name: 'UK' }],
+      }
+      expect(elementType.isValid(element, undefined, {})).toBe(true)
     })
     test('RecordSelectorElementType | required | no value.', () => {
       const elementType = new RecordSelectorElementType()
@@ -1432,7 +1464,7 @@ describe('elementTypes tests', () => {
       element.menu_items[0].name = 'foo link'
       element.menu_items[0].navigation_type = 'custom'
       element.menu_items[0].navigate_to_url = {
-        formula: "'https://www.baserow.io'",
+        formula: "'https://www.example.com'",
       }
 
       expect(elementType.isInError(element, { page, element, builder })).toBe(

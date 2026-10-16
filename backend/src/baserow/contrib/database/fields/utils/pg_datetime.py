@@ -102,7 +102,7 @@ else:
         def adapter(value, cur):
             try:
                 return type_adapter(value, cur)
-            except (DataError, DjangoDataError, ValueError):
+            except DataError, DjangoDataError, ValueError:
                 return
 
         return adapter

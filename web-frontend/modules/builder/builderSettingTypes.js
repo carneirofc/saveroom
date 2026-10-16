@@ -32,18 +32,6 @@ export class BuilderSettingType extends Registerable {
   get componentPadding() {
     return true
   }
-
-  isDeactivated({ workspace }) {
-    return !!this.isDeactivatedReason({ workspace })
-  }
-
-  isDeactivatedReason({ workspace }) {
-    return null
-  }
-
-  getDeactivatedModal({ workspace }) {
-    return null
-  }
 }
 
 export class GeneralBuilderSettingsType extends BuilderSettingType {

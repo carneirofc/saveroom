@@ -19,10 +19,6 @@ class AutomationSettingType extends Registerable {
     return null
   }
 
-  isDeactivated() {
-    return false
-  }
-
   get component() {
     return null
   }
@@ -43,10 +39,6 @@ export class GeneralAutomationSettingsType extends AutomationSettingType {
 
   get icon() {
     return 'iconoir-settings'
-  }
-
-  isDeactivated() {
-    return import.meta.env.MODE !== 'development'
   }
 
   getOrder() {

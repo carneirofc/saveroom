@@ -51,7 +51,7 @@
 .widget__header-description {
   @extend %ellipsis;
 
-  color: #6a6b70;
+  color: $palette-neutral-900;
   font-size: 12px;
   font-weight: 400;
   margin-top: 8px;

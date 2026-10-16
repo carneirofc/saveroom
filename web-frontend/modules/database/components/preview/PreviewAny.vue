@@ -24,7 +24,7 @@
           v-for="(preview, index) in compatibleTypes"
           :key="preview.getType()"
           type="secondary"
-          :icon="preview.isExternal() ? 'iconoir-lock-open' : ''"
+          :icon="preview.isExternal() ? 'iconoir-lock-slash' : ''"
           @click.prevent.stop="selectedPreview = index"
         >
           {{ preview.getName() }}

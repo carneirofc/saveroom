@@ -1,7 +1,13 @@
+// A filled circle with a white dot in the middle. Drawn with a gradient over a
+// background color rather than an inline SVG so `$color` can be a runtime
+// color token (a CSS `var()`), which a data URI cannot reference.
 @mixin fill-radio($color) {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16'  height='16' viewBox='001616' fill='none'%3E%3Crect width='16' height='16' rx='8' fill='#{hex-to-url($color)}' /%3E%3Ccircle cx='8' cy='8' r='3' fill='white'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 100%;
+  background-color: $color;
+  background-image: radial-gradient(
+    circle at center,
+    $white 3px,
+    transparent 3.5px
+  );
+  border-radius: 100%;
   border: none;
 }

@@ -177,16 +177,16 @@
 .simple-grid__row--hover.simple-grid__row--checked {
   .simple-grid__cell,
   .grid-view__cell {
-    background-color: darken($color-primary-100, 1%);
+    background-color: color-mix(in srgb, #{$color-primary-100}, #{$black} 1%);
   }
 }
 
 .simple-grid__right-wrapper-footer {
   position: absolute;
-  background: #fafafa;
+  background: $palette-neutral-25;
   height: 44px;
   bottom: 0;
-  border-top: solid 1px #d9dbde;
+  border-top: solid 1px $color-neutral-200;
   width: 100%;
 }
 

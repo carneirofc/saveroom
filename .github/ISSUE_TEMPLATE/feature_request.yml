@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         If you have a vague idea or want feedback, please use the community forum first:
-        https://community.baserow.io/
+        https://github.com/carneirofc/baserow/issues
 
   - type: textarea
     id: feature-description

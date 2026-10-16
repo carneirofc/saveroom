@@ -12,15 +12,15 @@ from baserow.core.management.backup.exceptions import InvalidBaserowBackupArchiv
 
 class Command(BaseCommand):
     help = """
-        Backs up a Baserow database into a single compressed archive which can be
-        restored using the restore_baserow Baserow management command.
+        Backs up a Saveroom database into a single compressed archive which can be
+        restored using the restore_baserow Saveroom management command.
         To provide the database password you should either have a valid .pgpass file
         containing the password for the requested connection in the expected postgres
         location (see https://www.postgresql.org/docs/current/libpq-pgpass.html) or set
         the PGPASSFILE environment variable.
 
         WARNING: This command is only safe to run on a database which is not actively
-        being updated and not connected to a running version of Baserow for the
+        being updated and not connected to a running version of Saveroom for the
         duration of the back-up.
 
         This command splits the back-up into multiple `pg_dump` runs to export the
@@ -28,11 +28,11 @@ class Command(BaseCommand):
         database changes occur partway through the run. Additionally when tables are
         being backed up this command will hold an ACCESS SHARE lock over them, meaning
         users will see errors if they attempt to delete tables or edit fields. So to be
-        safe you should only perform back-up's when your Baserow server is shut down
+        safe you should only perform back-up's when your Saveroom server is shut down
         or you have first copied the database to a new cluster which is not in active
         use.
 
-        The back-up is split into batches as often Baserow database's can end up with
+        The back-up is split into batches as often Saveroom database's can end up with
         large numbers of tables and a single run of `pg_dump` over the entire database
         will run out of shared memory and fail.
         """
@@ -114,7 +114,7 @@ class Command(BaseCommand):
             backup_file_name = runner.backup_baserow(file, batch_size, additional_args)
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Successfully backed up Baserow to {backup_file_name} which can "
+                    f"Successfully backed up Saveroom to {backup_file_name} which can "
                     f"be restored using the ./baserow restore_baserow command. "
                 )
             )
@@ -131,6 +131,6 @@ class Command(BaseCommand):
         except InvalidBaserowBackupArchive:
             raise CommandError(
                 "Please ensure the provided back-up file is a valid "
-                "Baserow backup file produced by ./baserow "
+                "Saveroom backup file produced by ./baserow "
                 "backup_baserow"
             )

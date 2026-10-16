@@ -16,13 +16,6 @@ export function addQueryParamsToRedirectUrl(url, params) {
     parsedUrl.searchParams.append('original', params.original)
   }
 
-  if (params.invitationToken) {
-    parsedUrl.searchParams.append(
-      'workspace_invitation_token',
-      params.invitationToken
-    )
-  }
-
   return parsedUrl.toString()
 }
 

@@ -25,14 +25,13 @@ class CreateUserActionType(ActionType):
         _("Create User"),
         _(
             'User "%(user_email)s" (%(user_id)s) created via "%(auth_provider_type)s"'
-            " (%(auth_provider_id)s) auth provider (invitation: %(with_invitation_token)s)"
+            " (%(auth_provider_id)s) auth provider"
         ),
     )
     analytics_params = [
         "user_id",
         "auth_provider_id",
         "workspace_id",
-        "with_invitation_token",
         "template_id",
     ]
 
@@ -44,6 +43,7 @@ class CreateUserActionType(ActionType):
         auth_provider_type: str
         workspace_id: Optional[int] = None
         workspace_name: Optional[str] = ""
+        # Deprecated: only kept so stored params of older actions still load.
         with_invitation_token: bool = False
         template_id: Optional[int] = None
 
@@ -54,9 +54,9 @@ class CreateUserActionType(ActionType):
         email: str,
         password: str,
         language: str,
-        workspace_invitation_token: Optional[str] = None,
         template: Optional[Template] = None,
         auth_provider: Optional[AuthProviderModel] = None,
+        bypass_signup_toggle: bool = False,
     ) -> AbstractUser:
         """
         Creates a new user.
@@ -65,10 +65,10 @@ class CreateUserActionType(ActionType):
         :param email: The email address of the user.
         :param password: The password of the user.
         :param language: The language of the user.
-        :param workspace_invitation_token: The workspace invitation token that will be
-            used to add the user to a workspace.
         :param template: The template that will be used to create the user.
         :param auth_provider: The auth provider that will be used to create the user.
+        :param bypass_signup_toggle: If True, provisions the user even when the instance
+            has new signups disabled. Used only by SSO auto-provisioning.
 
         :return: The created user.
         """
@@ -81,9 +81,9 @@ class CreateUserActionType(ActionType):
             email,
             password,
             language,
-            workspace_invitation_token,
             template,
             auth_provider=auth_provider,
+            bypass_signup_toggle=bypass_signup_toggle,
         )
 
         workspace_id, workspace_name = None, None
@@ -100,8 +100,7 @@ class CreateUserActionType(ActionType):
                 auth_provider_type_registry.get_by_model(auth_provider).type,
                 workspace_id,
                 workspace_name,
-                workspace_invitation_token is not None,
-                template.id if template else None,
+                template_id=template.id if template else None,
             ),
             scope=cls.scope(),
             workspace=user.default_workspace,

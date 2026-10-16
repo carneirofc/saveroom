@@ -1,16 +1,5 @@
 <template>
   <div>
-    <Alert v-if="invitation !== null" type="info-primary">
-      <template #title>{{ $t('invitationTitle') }}</template>
-      <i18n-t keypath="invitationMessage" tag="p">
-        <template #invitedBy>
-          <strong>{{ invitation.invited_by }}</strong>
-        </template>
-        <template #workspace>
-          <strong>{{ invitation.workspace }}</strong>
-        </template>
-      </i18n-t>
-    </Alert>
     <Error :error="error"></Error>
     <form @submit.prevent="register">
       <FormGroup
@@ -21,16 +10,6 @@
         class="mb-24"
       >
         <FormInput
-          v-if="invitation !== null"
-          ref="email"
-          v-model="account.email"
-          type="email"
-          disabled
-          :placeholder="$t('signup.emailPlaceholder')"
-        ></FormInput>
-
-        <FormInput
-          v-else
           ref="email"
           v-model="account.email"
           size="large"
@@ -153,11 +132,6 @@ export default {
   components: { PasswordInput, CaptchaWidget },
   mixins: [error],
   props: {
-    invitation: {
-      required: false,
-      validator: (prop) => typeof prop === 'object' || prop === null,
-      default: null,
-    },
     template: {
       required: false,
       validator: (prop) => typeof prop === 'object' || prop === null,
@@ -206,11 +180,6 @@ export default {
         .filter((component) => component !== null)
     },
   },
-  beforeMount() {
-    if (this.invitation !== null) {
-      this.account.email = this.invitation.email
-    }
-  },
   methods: {
     async register() {
       this.v$.$touch()
@@ -240,15 +209,6 @@ export default {
           password: this.account.password,
           language: this.$i18n.locale,
           captchaToken: this.captchaToken,
-        }
-
-        // If there is a valid invitation we can add the workspace invitation token to the
-        // action parameters so that it can be passed along when signing up. That makes
-        // the user accept the workspace invitation without creating a new workspace for the
-        // user.
-        if (this.invitation !== null) {
-          values.workspaceInvitationToken =
-            this.$route.query.workspaceInvitationToken
         }
 
         // If a template is provided, we can add that id to the parameters so that the

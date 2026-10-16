@@ -2,11 +2,15 @@
 import { defineNuxtPlugin } from '#app'
 
 import { Registry } from '@baserow/modules/core/registry'
-import { PasswordAuthProviderType } from '@baserow/modules/core/authProviderTypes'
+import {
+  PasswordAuthProviderType,
+  OpenIdConnectAuthProviderType,
+} from '@baserow/modules/core/authProviderTypes'
 import {
   CreateSnapshotJobType,
   DuplicateApplicationJobType,
   ExportApplicationsJobType,
+  ExportApplicationsToDestinationJobType,
   ImportApplicationsJobType,
   InstallTemplateJobType,
   RestoreSnapshotJobType,
@@ -17,18 +21,9 @@ import {
   PasswordSettingsType,
   EmailSettingsType,
   EmailNotificationsSettingsType,
-  MCPEndpointSettingsType,
   DeleteAccountSettingsType,
   TwoFactorAuthSettingsType,
 } from '@baserow/modules/core/settingsTypes'
-import { GenerativeAIWorkspaceSettingsType } from '@baserow/modules/core/workspaceSettingsTypes'
-import {
-  OpenAIModelType,
-  OllamaModelType,
-  AnthropicModelType,
-  MistralModelType,
-  OpenRouterModelType,
-} from '@baserow/modules/core/generativeAIModelTypes'
 import {
   UploadFileUserFileUploadType,
   UploadViaURLUserFileUploadType,
@@ -39,10 +34,13 @@ import {
   WorkspacesAdminType,
   HealthCheckAdminType,
   SettingsAdminType,
+  AuditLogAdminType,
+  BackupsAdminType,
 } from '@baserow/modules/core/adminTypes'
 
 import {
   BasicPermissionManagerType,
+  DatabaseAccessPermissionManagerType,
   CorePermissionManagerType,
   StaffPermissionManagerType,
   WorkspaceMemberPermissionManagerType,
@@ -52,14 +50,9 @@ import {
 
 import {
   MembersWorkspaceSettingsPageType,
-  InvitesWorkspaceSettingsPageType,
+  TeamsWorkspaceSettingsPageType,
 } from '@baserow/modules/core/workspaceSettingsPageTypes'
-import {
-  WorkspaceInvitationCreatedNotificationType,
-  WorkspaceInvitationAcceptedNotificationType,
-  WorkspaceInvitationRejectedNotificationType,
-  BaserowVersionUpgradeNotificationType,
-} from '@baserow/modules/core/notificationTypes'
+import { BaserowVersionUpgradeNotificationType } from '@baserow/modules/core/notificationTypes'
 import { MoreOnboardingType } from '@baserow/modules/core/onboardingTypes'
 import { SidebarGuidedTourType } from '@baserow/modules/core/guidedTourTypes'
 import { TOTPAuthType } from '@baserow/modules/core/twoFactorAuthTypes'
@@ -156,7 +149,6 @@ export default defineNuxtPlugin({
     registry.registerNamespace('userSource')
     registry.registerNamespace('appAuthProvider')
     registry.registerNamespace('roles')
-    registry.registerNamespace('generativeAIModel')
     registry.registerNamespace('onboarding')
     registry.registerNamespace('guidedTour')
     registry.registerNamespace('admin')
@@ -171,20 +163,8 @@ export default defineNuxtPlugin({
     registry.register('settings', new PasswordSettingsType(context))
     registry.register('settings', new EmailSettingsType(context))
     registry.register('settings', new EmailNotificationsSettingsType(context))
-    registry.register('settings', new MCPEndpointSettingsType(context))
     registry.register('settings', new DeleteAccountSettingsType(context))
     registry.register('settings', new TwoFactorAuthSettingsType(context))
-
-    registry.register(
-      'workspaceSettings',
-      new GenerativeAIWorkspaceSettingsType(context)
-    )
-
-    registry.register('generativeAIModel', new OpenAIModelType(context))
-    registry.register('generativeAIModel', new AnthropicModelType(context))
-    registry.register('generativeAIModel', new MistralModelType(context))
-    registry.register('generativeAIModel', new OllamaModelType(context))
-    registry.register('generativeAIModel', new OpenRouterModelType(context))
 
     registry.register(
       'permissionManager',
@@ -201,6 +181,10 @@ export default defineNuxtPlugin({
     registry.register(
       'permissionManager',
       new BasicPermissionManagerType(context)
+    )
+    registry.register(
+      'permissionManager',
+      new DatabaseAccessPermissionManagerType(context)
     )
     registry.register(
       'permissionManager',
@@ -225,14 +209,24 @@ export default defineNuxtPlugin({
     registry.register('admin', new WorkspacesAdminType(context))
     registry.register('admin', new SettingsAdminType(context))
     registry.register('admin', new HealthCheckAdminType(context))
+    registry.register('admin', new AuditLogAdminType(context))
+    registry.register('admin', new BackupsAdminType(context))
 
     registry.register('authProvider', new PasswordAuthProviderType(context))
+    registry.register(
+      'authProvider',
+      new OpenIdConnectAuthProviderType(context)
+    )
 
     registry.register('job', new DuplicateApplicationJobType(context))
     registry.register('job', new InstallTemplateJobType(context))
     registry.register('job', new CreateSnapshotJobType(context))
     registry.register('job', new RestoreSnapshotJobType(context))
     registry.register('job', new ExportApplicationsJobType(context))
+    registry.register(
+      'job',
+      new ExportApplicationsToDestinationJobType(context)
+    )
     registry.register('job', new ImportApplicationsJobType(context))
 
     registry.register(
@@ -241,7 +235,7 @@ export default defineNuxtPlugin({
     )
     registry.register(
       'workspaceSettingsPage',
-      new InvitesWorkspaceSettingsPageType(context)
+      new TeamsWorkspaceSettingsPageType(context)
     )
 
     registry.register('runtimeFormulaFunction', new RuntimeConcat(context))
@@ -365,18 +359,6 @@ export default defineNuxtPlugin({
     registry.register('roles', new AdminRoleType(context))
     registry.register('roles', new MemberRoleType(context))
 
-    registry.register(
-      'notification',
-      new WorkspaceInvitationCreatedNotificationType(context)
-    )
-    registry.register(
-      'notification',
-      new WorkspaceInvitationAcceptedNotificationType(context)
-    )
-    registry.register(
-      'notification',
-      new WorkspaceInvitationRejectedNotificationType(context)
-    )
     registry.register(
       'notification',
       new BaserowVersionUpgradeNotificationType(context)

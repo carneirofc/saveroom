@@ -193,12 +193,12 @@ class LocalBaserowTableServiceType(LocalBaserowServiceType):
         "table_id": serializers.IntegerField(
             required=False,
             allow_null=True,
-            help_text="The id of the Baserow table we want the data for.",
+            help_text="The id of the Saveroom table we want the data for.",
         ),
         "integration_id": serializers.IntegerField(
             required=False,
             allow_null=True,
-            help_text="The id of the Baserow integration we want the data for.",
+            help_text="The id of the Saveroom integration we want the data for.",
         ),
     }
 
@@ -781,7 +781,7 @@ class LocalBaserowViewServiceType(LocalBaserowTableServiceType):
             "view_id": serializers.IntegerField(
                 required=False,
                 allow_null=True,
-                help_text="The id of the Baserow view we want the data for.",
+                help_text="The id of the Saveroom view we want the data for.",
             ),
         }
 
@@ -1179,7 +1179,7 @@ class LocalBaserowListRowsUserServiceType(
             # NOTE: This is an expensive operation, so in the future we need to
             # calculate the list of used fields for searching/sorting/filtering
             # and pass them to `get_model`.
-            # See: https://gitlab.com/baserow/baserow/-/issues/3062
+            # See: https://github.com/carneirofc/baserow/issues/3062
             model = table.get_model()
             queryset = self.build_queryset(
                 service, table, dispatch_context, model
@@ -1324,7 +1324,7 @@ class LocalBaserowAggregateRowsUserServiceType(
             "field_id": serializers.IntegerField(
                 required=False,
                 allow_null=True,
-                help_text="The id of the Baserow field we want to aggregate on.",
+                help_text="The id of the Saveroom field we want to aggregate on.",
             ),
         }
 
@@ -1553,7 +1553,12 @@ class LocalBaserowAggregateRowsUserServiceType(
             data["service"].aggregation_type
         )
         serializer_field = aggregation_type.get_result_serializer_field(data["field"])
-        result = serializer_field.to_representation(data["data"]["result"])
+        raw_result = data["data"]["result"]
+        result = (
+            None
+            if raw_result is None
+            else serializer_field.to_representation(raw_result)
+        )
 
         return DispatchResult(data={"result": result})
 
@@ -2142,7 +2147,7 @@ class LocalBaserowUpsertRowServiceType(
 
         model = table.get_model()
 
-        if row_id:
+        if row_id is not None:
             try:
                 (row,) = UpdateRowsActionType.do(
                     service.integration.authorized_user,

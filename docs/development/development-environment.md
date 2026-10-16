@@ -1,12 +1,12 @@
-# Baserow's Dev Environment
+# Saveroom's Dev Environment
 
-The dev environment runs Baserow services with source code hot reloading enabled. It
+The dev environment runs Saveroom services with source code hot reloading enabled. It
 also runs the backend django server and web-frontend nuxt server in debug and
 development modes.
 
 ## Getting Started
 
-Baserow offers two development approaches. Choose based on your priorities:
+Saveroom offers two development approaches. Choose based on your priorities:
 
 | Approach | Guide |
 |----------|-------|
@@ -42,13 +42,10 @@ Both approaches use the same `just` commands and can be switched between freely.
 - [Running Locally](running-the-dev-env-locally.md) - Complete local development setup
 - [justfile reference](justfile.md) - All available `just` commands
 - [Running tests](running-tests.md) - Testing guide
-- [IntelliJ setup](intellij-setup.md) - Configure IntelliJ for Baserow development
-- [VS Code setup](vscode-setup.md) - Configure VS Code for Baserow development
+- [IntelliJ setup](intellij-setup.md) - Configure IntelliJ for Saveroom development
+- [VS Code setup](vscode-setup.md) - Configure VS Code for Saveroom development
 - [Feature flags](feature-flags.md) - Optionally enabling unfinished features
-- [Baserow Docker API](../installation/install-with-docker.md) - Docker setup configuration
-
-> **Note**: The older `dev.sh` script is deprecated. See [dev.sh](dev_sh.md) for
-> documentation on the legacy script if needed.
+- [Saveroom Docker API](../installation/install-with-docker.md) - Docker setup configuration
 
 ## Fixing git blame
 

@@ -1,13 +1,13 @@
 # 🔐 Permissions system guide
 
 The permission system is used to control access to resources or functionality within
-Baserow. It determines who is allowed to perform certain operations or access certain
+Saveroom. It determines who is allowed to perform certain operations or access certain
 data.
 
 The permission system is pluggable and allows for the easy addition or replacement of
 different components that handle the authorization of user operations.
 It provides flexibility and modularity in the way that access to resources or
-functionality is controlled within Baserow.
+functionality is controlled within Saveroom.
 
 This allows for different authorization strategies to be easily implemented and
 swapped out as needed without having to make significant changes to the overall code.
@@ -16,16 +16,16 @@ swapped out as needed without having to make significant changes to the overall 
 
 Before going any further, we need to agree on the definition of some terms:
 
-**Object**: represents a piece of data in Baserow. One of Field, Row, Table, Database,
+**Object**: represents a piece of data in Saveroom. One of Field, Row, Table, Database,
   Workspace, User, Team, Role, Webhook, …
 
 **Hierarchical Objects**: in Basrow, *Objects* are related to each others and we
 can have a parent <-> children dependency between two *Objects*. A full
-hierarchy tree can be created with all the Baserow objects. For instance, The
+hierarchy tree can be created with all the Saveroom objects. For instance, The
 `Table` *Object* is a child of a `Database`.
 
 **Actor**: A generic term grouping anything that can perform *Operations* on an
-*Object* in Baserow. Can be a `User` but also a `Personal API Token` or an
+*Object* in Saveroom. Can be a `User` but also a `Personal API Token` or an
 `AnonymousUser`...
 
 **Operation**: an action an *Actor* do on an *Object*. Some examples:
@@ -49,7 +49,7 @@ determine if access to a specific resource or functionality is granted or denied
 by the *Permission system*. The *Context* can be omitted if the *Operation*
 doesn't need one.
 
-**Permission system**: the whole mechanism in Baserow that decides if a
+**Permission system**: the whole mechanism in Saveroom that decides if a
 *Permission request* is allowed or not. The *Permission system* relies on
 *Permission managers* to take a decision regarding a specific *Permission
 request* in a given *Workspace*.
@@ -66,7 +66,7 @@ Group).
 **Subject**: includes all *Actors* but also groups of *Actors* like `Teams`.
 
 **Personal API Token**: An authentication token which can be created by users in
-their settings area in Baserow. It is owned by a `User`, for a *Workspace*,
+their settings area in Saveroom. It is owned by a `User`, for a *Workspace*,
 allowing access to some of our API endpoints.
 
 ## 📃 Main principles
@@ -85,7 +85,7 @@ Each *Permission manager* can:
 If none of the Permission managers have allowed or disallowed the Permission,
 then the permission is disallowed by default.
 
-![Permission diagram](https://raw.githubusercontent.com/baserow/baserow/refs/heads/master/docs/assets/diagrams/permissionProcessus.jpg)
+![Permission diagram](../assets/diagrams/permissionProcessus.jpg)
 
 [source](https://viewer.diagrams.net/?tags=%7B%7D&highlight=0000ff&edit=_blank&layers=1&nav=1#R7VnZVtswEP2aPNLjJXbIIwESKEvbAxR4FLZiq5GtVFYW9%2Bs7iiXvJUkhUCgvOZrxWMvcO4uVjn0YLUccTcML5mPasQx%2F2bGPOpbVd7rwKxVppnBNO1MEnPiZyiwUV%2BQXVkpDaWfEx0nFUDBGBZlWlR6LY%2ByJig5xzhZVszGj1VWnKMANxZWHaFN7S3wRZtp9q1foTzAJQr2y6fazJxHSxuokSYh8tiip7OOOfcgZE9koWh5iKn2n%2FXJ7mt7S84k7%2Bvwt%2BYluBmfXl9%2F3ssmG27ySH4HjWDzv1FY29RzRmfKXOqtItQM5m8U%2BlpMYHXsQiojC0IThDyxEqgBHM8FAxbgIWcBiRM8Zmyq7MYuFMjOljGP%2FQAIL8gNl3iRTDQmlag2QlP0%2BSIngbJJjJyfIgZDGFD1gOkDeJFht9JBRxuFRzGIsp%2FKBDOosxeaOC%2B1gQ98qDBI24x5%2BxE4Fh0A8wI%2FN52Z2cn8lnirkRphFWPAUDDimSJB5lcxIxUSQ2xW4w0BBvwUN7AYNRrBmLJeSzsE8IklCWPwIOSQwi5AIfDVFKw8tIJ1UCVMmApx1EFCUJArGNShvh9Icc4GXj%2FpVPbUNFdypljNxUaQKU8d%2FWEoTXWNHSHRbAtKlsOrAJ3MYBnJ4ybQS1ijpP2L3SbHrbhi7urStDV5Fsj3jk%2BM4boVomlQbx7ea%2FSsjcNbChI3HCWy2Trt8E3%2FPRKfBxHuo43WGrQfpTXPwlRjW25BgabXX%2BnfJ5DbIdJpIR4S4Vl%2Bgi0SxALpYxkOaW3gzvkKgZhuhGNo3DqOOPWwmv5BFD7NkfV2q8EGybYgiQqVvTzCdY0E81FK9ECVBDIIHG4M9tBINliRxAJJbSNcrYkOi311Vs%2FrVqmb2Wspat6Wsmeau6lqvQYDrFbIMAAXOruAkkhKIUraQ%2BL%2BzTqNbw8QynFduNfYbkMi%2B4qODeEJ%2B1%2BGzvoUwt24hrDfWP%2FQ%2F%2BodX5Jf13joIvcMNWgifJHkV%2BegMqt%2B7Zu1712ypQkZLFdp%2FhirEjfDCvDm4pQejL2dWgnu20dc3UE9ICa1B35IcSriCV3l6l4c7CPdS%2BORo8WhZfniUamlJxF1pXHoLpOIlKeh3njsF6EvUF79hWr0KmROlJYOpTABJS0bQrahbJVy3V7ulXGNvWU6NYtkOnje36DgqcssVpvI2WueXGC%2F%2F%2FPXxzjrV%2Bp1Yt7thp%2BrsqlPV1Wz910M59b8zWJz6VaX9gh8Qram7GTXXaILzmBkTnvy3QZMX0R2gA2Lxr1OWA4u%2F7uzj3w%3D%3D)
 
@@ -112,12 +112,12 @@ the Permissions system are the following:
   allowing or not the Permission requests.
 - `SubjectType`: every *Actor* you want to use in the *Permission system* must
   belongs to a `SubjectType`.
-- `ObjectScopeType`: every *Context* object must be part of the Baserow *Object*
+- `ObjectScopeType`: every *Context* object must be part of the Saveroom *Object*
   hierarchy. By now it's implemented by having a related `ObjectScopeType` for
   each *Object* type.
 
 All of them are objects you can register in their related registry to extend the
-core functionnalities of Baserow Permission system.
+core functionnalities of Saveroom Permission system.
 
 ### Check a Permission on the backend
 
@@ -318,7 +318,7 @@ The permission object looks like this:
     "name": "basic",
     "permissions": {
       "admin_only_operations": [
-        "workspace.list_invitations",
+        "workspace.list_workspace_users",
         "...",
         "workspace.delete"
       ],
@@ -346,7 +346,7 @@ method will be called with the following object:
 ```json
 {
     "admin_only_operations": [
-    "workspace.list_invitations",
+    "workspace.list_workspace_users",
     "...",
     "workspace_user.delete"
     ],
@@ -390,6 +390,16 @@ app.$registry.register('permissionManager', new OwnedTablePermissionManagerType(
 
 And that's it, you have a fully functionnal frontend permission manager.
 
+## 🗂️ Database access levels
+
+The `database_access` manager (`contrib/database/access/`) applies the access levels
+workspace admins give members and teams on the workspace default, a database or a table.
+It only answers database-family operations for non-admin members with an applicable grant
+and passes everything else through. `builder` covers every operation whose context scope
+lives inside a database, so a new database operation is builder-only until it is added to
+the `viewer` or `editor` lists in `access/levels.py`. See
+[ADR 005](../adr/005-in-app-database-access-grants.md).
+
 ## 📝 Conclusion
 
 If you want to create a new way to validate Permissions, you'll have to:
@@ -407,7 +417,7 @@ If you want to create a new way to validate Permissions, you'll have to:
 
 The Permission system has been designed with these constraints in mind:
 
-- Must be extensible (to support RBAC from enterprise folder)
+- Must be extensible (to support additional permission managers from plugins)
 - Must be as much compatible with the previous system (The `.has_user` method)
   as possible
 - Must play well with realtime

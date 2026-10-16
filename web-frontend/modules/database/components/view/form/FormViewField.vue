@@ -25,7 +25,7 @@
           class="form-view__field-head-hide"
           @click="$emit('hide', field)"
         >
-          <i class="iconoir-eye-off"></i>
+          <i class="iconoir-eye-closed"></i>
         </a>
       </div>
       <div class="form-view__field-inner">

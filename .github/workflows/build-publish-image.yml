@@ -1,0 +1,225 @@
+name: Build & Publish All-in-One Image
+
+# Self-contained image build for this fork. Builds the backend and web-frontend
+# from source (so the fork's changes are included), then assembles the
+# deploy/all-in-one image and publishes it to this repo's GitHub Container
+# Registry. Uses only the built-in GITHUB_TOKEN — no external secrets required.
+#
+# Results (each + :latest):
+#   ghcr.io/<owner>/<repo>:<version>               (all-in-one; compose/simple deploys)
+#   ghcr.io/<owner>/<repo>/backend:<version>       (Helm chart)
+#   ghcr.io/<owner>/<repo>/web-frontend:<version>  (Helm chart)
+#   ghcr.io/<owner>/<repo>/caddy:<version>         (split-services compose)
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_REPO: ${{ github.repository }}
+
+jobs:
+  build-all-in-one:
+    name: Build & publish all-in-one (amd64)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code at tag
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Intermediate image refs, pinned to the commit so the all-in-one build
+      # consumes exactly the backend/web-frontend built in this run.
+      - name: Compute intermediate image refs
+        id: refs
+        run: |
+          echo "backend=${REGISTRY}/${IMAGE_REPO}/backend:build-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "webfrontend=${REGISTRY}/${IMAGE_REPO}/web-frontend:build-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      # Baked into every image below and reported by the UI, so a running
+      # instance states the exact source it was built from.
+      - name: Compute build metadata
+        id: buildmeta
+        run: |
+          echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Docker metadata for all-in-one image
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+
+      # Stable tags for the standalone backend / web-frontend images so the
+      # Helm chart (deploy/helm/saveroom) can consume them directly.
+      - name: Docker metadata for backend image
+        id: meta-backend
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}/backend
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+
+      - name: Docker metadata for web-frontend image
+        id: meta-webfrontend
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}/web-frontend
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+
+      # Caddy reverse proxy for the split-services compose stack. Built from
+      # source against a pinned Go toolchain rather than pulled from the
+      # official caddy image, which lags behind Go security releases.
+      - name: Docker metadata for caddy image
+        id: meta-caddy
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}/caddy
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+
+      - name: Build & push backend image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: backend/Dockerfile
+          target: prod
+          platforms: linux/amd64
+          push: true
+          # Re-resolve the base images (ubuntu:26.04, golang) on every release build so
+          # a tag cut picks up upstream security rebuilds instead of a stale cache hit.
+          pull: true
+          build-args: |
+            BASEROW_BUILD_VERSION=${{ github.ref_name }}
+            BASEROW_BUILD_COMMIT=${{ github.sha }}
+            BASEROW_BUILD_DATE=${{ steps.buildmeta.outputs.date }}
+          # Intermediate pinned tag (consumed by the all-in-one build) plus the
+          # stable semver/latest tags used by the Helm chart.
+          tags: |
+            ${{ steps.refs.outputs.backend }}
+            ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha,scope=backend-prod
+          cache-to: type=gha,scope=backend-prod,mode=max
+
+      - name: Build & push web-frontend image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: web-frontend/Dockerfile
+          target: prod
+          platforms: linux/amd64
+          push: true
+          pull: true
+          build-args: |
+            BASEROW_BUILD_VERSION=${{ github.ref_name }}
+            BASEROW_BUILD_COMMIT=${{ github.sha }}
+            BASEROW_BUILD_DATE=${{ steps.buildmeta.outputs.date }}
+          tags: |
+            ${{ steps.refs.outputs.webfrontend }}
+            ${{ steps.meta-webfrontend.outputs.tags }}
+          labels: ${{ steps.meta-webfrontend.outputs.labels }}
+          cache-from: type=gha,scope=frontend-prod
+          cache-to: type=gha,scope=frontend-prod,mode=max
+
+      - name: Build & push caddy image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/caddy/Dockerfile
+          platforms: linux/amd64
+          push: true
+          pull: true
+          tags: ${{ steps.meta-caddy.outputs.tags }}
+          labels: ${{ steps.meta-caddy.outputs.labels }}
+          cache-from: type=gha,scope=caddy
+          cache-to: type=gha,scope=caddy,mode=max
+
+      - name: Build & push all-in-one image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/all-in-one/Dockerfile
+          platforms: linux/amd64
+          push: true
+          pull: true
+          build-args: |
+            BACKEND_IMAGE=${{ steps.refs.outputs.backend }}
+            WEBFRONTEND_IMAGE=${{ steps.refs.outputs.webfrontend }}
+            BASEROW_BUILD_VERSION=${{ github.ref_name }}
+            BASEROW_BUILD_COMMIT=${{ github.sha }}
+            BASEROW_BUILD_DATE=${{ steps.buildmeta.outputs.date }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=all-in-one
+          cache-to: type=gha,scope=all-in-one,mode=max
+
+      # Ubuntu's base layer ships /usr/bin/pebble with no dpkg package owning
+      # it, so apt can neither patch nor purge the CVEs vendored into it
+      # (CVE-2026-39821); every ubuntu:26.04 stage deletes it instead. ci.yml
+      # proves that for the caddy and web-frontend prod images, which it builds
+      # itself -- these are the prod targets only this workflow ever builds.
+      - name: Assert pebble was stripped from the published images
+        run: |
+          set -euo pipefail
+          allinone=$(printf '%s\n' "${{ steps.meta.outputs.tags }}" | head -n1)
+          for ref in "${{ steps.refs.outputs.backend }}" "${{ steps.refs.outputs.webfrontend }}" "$allinone"; do
+            docker pull -q "$ref"
+            docker create --name pebble_audit "$ref" > /dev/null
+            docker export pebble_audit | tar -tf - > ./image-files.txt
+            docker rm pebble_audit > /dev/null
+            if grep -E '^usr/bin/pebble$|^var/lib/pebble' ./image-files.txt; then
+              echo "::error::Ubuntu's pebble binary (CVE-2026-39821) shipped in $ref"
+              exit 1
+            fi
+            echo "no pebble artefacts in $ref ($(wc -l < ./image-files.txt) files scanned)"
+          done
+
+      # CVE gate on every published image (HIGH/CRITICAL with a fix; exceptions
+      # in .trivyignore.yaml). Pushes happen in the build steps above, so a
+      # failure here marks the release red rather than blocking the push; ci.yml
+      # scans the caddy and web-frontend prod images before merge. Keep
+      # TRIVY_IMAGE identical to ci.yml and the root justfile.
+      - name: Scan published images for CVEs
+        env:
+          TRIVY_IMAGE: docker.io/aquasec/trivy:0.75.0
+        run: |
+          set -euo pipefail
+          allinone=$(printf '%s\n' "${{ steps.meta.outputs.tags }}" | head -n1)
+          caddy=$(printf '%s\n' "${{ steps.meta-caddy.outputs.tags }}" | head -n1)
+          status=0
+          for ref in "${{ steps.refs.outputs.backend }}" "${{ steps.refs.outputs.webfrontend }}" "$caddy" "$allinone"; do
+            docker pull -q "$ref"
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+              -v "$PWD:/src" -w /src "$TRIVY_IMAGE" \
+              image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+              --ignorefile .trivyignore.yaml --exit-code 1 "$ref" || status=1
+          done
+          exit $status

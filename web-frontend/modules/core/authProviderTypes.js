@@ -1,5 +1,7 @@
 import { Registerable } from '@baserow/modules/core/registry'
 import PasswordAuthIcon from '@baserow/modules/core/assets/images/providers/Key.svg?url'
+import OpenIdIcon from '@baserow/modules/core/assets/images/providers/OpenID.svg?url'
+import OIDCLoginButton from '@baserow/modules/core/components/auth/OIDCLoginButton.vue'
 
 /**
  * Base class for authorization provider types
@@ -175,5 +177,44 @@ export class PasswordAuthProviderType extends AuthProviderType {
 
   getOrder() {
     return 1
+  }
+}
+
+/**
+ * Env-configured OpenID Connect provider. One login button is rendered per provider
+ * declared in the backend's BASEROW_OIDC_PROVIDERS. All configuration lives in the
+ * backend; the frontend only renders the buttons returned by the login-options
+ * endpoint.
+ */
+export class OpenIdConnectAuthProviderType extends AuthProviderType {
+  static getType() {
+    return 'openid_connect'
+  }
+
+  getIcon() {
+    return OpenIdIcon
+  }
+
+  getName() {
+    return this.app.$i18n.t('authProviderTypes.openIdConnect')
+  }
+
+  getProviderName(provider) {
+    return provider.name || this.getName()
+  }
+
+  getLoginButtonComponent() {
+    return OIDCLoginButton
+  }
+
+  /**
+   * Providers are configured through the environment, never through the admin UI.
+   */
+  canCreateNew(authProviders) {
+    return false
+  }
+
+  getOrder() {
+    return 50
   }
 }

@@ -215,112 +215,10 @@ exports[`Preview exportTableModal > Modal with no view 1`] = `
                           <span>
                             exporterType.csv
                           </span>
-                          <!--v-if-->
                           <i
                             class="choice-items__icon-active iconoir-check-circle"
                           />
                         </a>
-                        <!--v-if-->
-                      </li>
-                      <li>
-                        <a
-                          class="choice-items__link"
-                        >
-                          <i
-                            class="choice-items__icon baserow-icon-file-code"
-                          />
-                          <span>
-                            premium.exporterType.json
-                          </span>
-                          <div
-                            class="deactivated-label"
-                          >
-                            <i
-                              class="iconoir-lock"
-                            />
-                          </div>
-                          <!--v-if-->
-                        </a>
-                        <teleport-stub
-                          to="body"
-                        >
-                          <!--v-if-->
-                        </teleport-stub>
-                      </li>
-                      <li>
-                        <a
-                          class="choice-items__link"
-                        >
-                          <i
-                            class="choice-items__icon baserow-icon-file-code"
-                          />
-                          <span>
-                            premium.exporterType.xml
-                          </span>
-                          <div
-                            class="deactivated-label"
-                          >
-                            <i
-                              class="iconoir-lock"
-                            />
-                          </div>
-                          <!--v-if-->
-                        </a>
-                        <teleport-stub
-                          to="body"
-                        >
-                          <!--v-if-->
-                        </teleport-stub>
-                      </li>
-                      <li>
-                        <a
-                          class="choice-items__link"
-                        >
-                          <i
-                            class="choice-items__icon baserow-icon-file-excel"
-                          />
-                          <span>
-                            premium.exporterType.excel
-                          </span>
-                          <div
-                            class="deactivated-label"
-                          >
-                            <i
-                              class="iconoir-lock"
-                            />
-                          </div>
-                          <!--v-if-->
-                        </a>
-                        <teleport-stub
-                          to="body"
-                        >
-                          <!--v-if-->
-                        </teleport-stub>
-                      </li>
-                      <li>
-                        <a
-                          class="choice-items__link"
-                        >
-                          <i
-                            class="choice-items__icon baserow-icon-file-code"
-                          />
-                          <span>
-                            premium.exporterType.file
-                          </span>
-                          <div
-                            class="deactivated-label"
-                          >
-                            <i
-                              class="iconoir-lock"
-                            />
-                          </div>
-                          <!--v-if-->
-                        </a>
-                        <teleport-stub
-                          to="body"
-                        >
-                          <!--v-if-->
-                        </teleport-stub>
                       </li>
                       
                     </ul>
@@ -1958,24 +1856,27 @@ exports[`Preview exportTableModal > Modal with no view 1`] = `
           </div>
         </div>
         
-        <div
-          class="modal-progress__actions"
-        >
-          <!--v-if-->
-          <button
-            class="button button--large button--full-width modal-progress__export-button"
-            disabled=""
+        <div>
+          <div
+            class="modal-progress__actions"
           >
             <!--v-if-->
-            <span
-              class="button__label"
+            <button
+              class="button button--large button--full-width modal-progress__export-button"
+              disabled=""
             >
-              
-              exportTableLoadingBar.export
-              
-            </span>
-            <!--v-if-->
-          </button>
+              <!--v-if-->
+              <span
+                class="button__label"
+              >
+                
+                exportTableLoadingBar.export
+                
+              </span>
+              <!--v-if-->
+            </button>
+          </div>
+          <!--v-if-->
         </div>
         
       </form>
@@ -1989,7 +1890,7 @@ exports[`Preview exportTableModal > Modal with no view 1`] = `
           class="modal__close"
         >
           <i
-            class="iconoir-cancel"
+            class="iconoir-xmark"
           />
         </a>
         
@@ -2218,112 +2119,10 @@ exports[`Preview exportTableModal > Modal with view 1`] = `
                           <span>
                             exporterType.csv
                           </span>
-                          <!--v-if-->
                           <i
                             class="choice-items__icon-active iconoir-check-circle"
                           />
                         </a>
-                        <!--v-if-->
-                      </li>
-                      <li>
-                        <a
-                          class="choice-items__link"
-                        >
-                          <i
-                            class="choice-items__icon baserow-icon-file-code"
-                          />
-                          <span>
-                            premium.exporterType.json
-                          </span>
-                          <div
-                            class="deactivated-label"
-                          >
-                            <i
-                              class="iconoir-lock"
-                            />
-                          </div>
-                          <!--v-if-->
-                        </a>
-                        <teleport-stub
-                          to="body"
-                        >
-                          <!--v-if-->
-                        </teleport-stub>
-                      </li>
-                      <li>
-                        <a
-                          class="choice-items__link"
-                        >
-                          <i
-                            class="choice-items__icon baserow-icon-file-code"
-                          />
-                          <span>
-                            premium.exporterType.xml
-                          </span>
-                          <div
-                            class="deactivated-label"
-                          >
-                            <i
-                              class="iconoir-lock"
-                            />
-                          </div>
-                          <!--v-if-->
-                        </a>
-                        <teleport-stub
-                          to="body"
-                        >
-                          <!--v-if-->
-                        </teleport-stub>
-                      </li>
-                      <li>
-                        <a
-                          class="choice-items__link"
-                        >
-                          <i
-                            class="choice-items__icon baserow-icon-file-excel"
-                          />
-                          <span>
-                            premium.exporterType.excel
-                          </span>
-                          <div
-                            class="deactivated-label"
-                          >
-                            <i
-                              class="iconoir-lock"
-                            />
-                          </div>
-                          <!--v-if-->
-                        </a>
-                        <teleport-stub
-                          to="body"
-                        >
-                          <!--v-if-->
-                        </teleport-stub>
-                      </li>
-                      <li>
-                        <a
-                          class="choice-items__link"
-                        >
-                          <i
-                            class="choice-items__icon baserow-icon-file-code"
-                          />
-                          <span>
-                            premium.exporterType.file
-                          </span>
-                          <div
-                            class="deactivated-label"
-                          >
-                            <i
-                              class="iconoir-lock"
-                            />
-                          </div>
-                          <!--v-if-->
-                        </a>
-                        <teleport-stub
-                          to="body"
-                        >
-                          <!--v-if-->
-                        </teleport-stub>
                       </li>
                       
                     </ul>
@@ -3961,24 +3760,27 @@ exports[`Preview exportTableModal > Modal with view 1`] = `
           </div>
         </div>
         
-        <div
-          class="modal-progress__actions"
-        >
-          <!--v-if-->
-          <button
-            class="button button--large button--full-width modal-progress__export-button"
-            disabled=""
+        <div>
+          <div
+            class="modal-progress__actions"
           >
             <!--v-if-->
-            <span
-              class="button__label"
+            <button
+              class="button button--large button--full-width modal-progress__export-button"
+              disabled=""
             >
-              
-              exportTableLoadingBar.export
-              
-            </span>
-            <!--v-if-->
-          </button>
+              <!--v-if-->
+              <span
+                class="button__label"
+              >
+                
+                exportTableLoadingBar.export
+                
+              </span>
+              <!--v-if-->
+            </button>
+          </div>
+          <!--v-if-->
         </div>
         
       </form>
@@ -3992,7 +3794,7 @@ exports[`Preview exportTableModal > Modal with view 1`] = `
           class="modal__close"
         >
           <i
-            class="iconoir-cancel"
+            class="iconoir-xmark"
           />
         </a>
         

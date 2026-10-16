@@ -12,8 +12,11 @@ export default (client) => {
     syncTable(dataSyncId) {
       return client.post(`/database/data-sync/${dataSyncId}/sync/async/`)
     },
-    fetchProperties(values) {
-      return client.post(`/database/data-sync/properties/`, values)
+    fetchProperties(databaseId, values) {
+      return client.post(
+        `/database/data-sync/database/${databaseId}/properties/`,
+        values
+      )
     },
     fetchPropertiesOfDataSync(dataSyncId) {
       return client.get(`/database/data-sync/${dataSyncId}/properties/`)

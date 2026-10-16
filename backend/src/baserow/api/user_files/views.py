@@ -36,7 +36,7 @@ class UploadFileView(APIView):
         tags=["User files"],
         operation_id="upload_file",
         description=(
-            "Uploads a file to Baserow by uploading the file contents directly. A "
+            "Uploads a file to Saveroom by uploading the file contents directly. A "
             "`file` multipart is expected containing the file contents."
         ),
         request=None,
@@ -73,7 +73,7 @@ class UploadViaURLView(APIView):
         tags=["User files"],
         operation_id="upload_via_url",
         description=(
-            "Uploads a file to Baserow by downloading it from the provided URL."
+            "Uploads a file to Saveroom by downloading it from the provided URL."
         ),
         request=UserFileUploadViaURLRequestSerializer,
         responses={

@@ -8,6 +8,7 @@ from django.contrib.auth.models import AbstractUser
 from drf_spectacular.utils import extend_schema_serializer
 from opentelemetry import metrics
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.request import Request
 from rest_framework_simplejwt.serializers import (
     TokenObtainPairSerializer,
@@ -25,10 +26,8 @@ from baserow.api.user.validators import (
     name_validation,
     password_validation,
 )
-from baserow.api.workspaces.invitations.serializers import (
-    UserWorkspaceInvitationSerializer,
-)
 from baserow.core.action.registries import action_type_registry
+from baserow.core.audit_log.handler import AuditLogHandler
 from baserow.core.auth_provider.exceptions import (
     AuthProviderDisabled,
     EmailVerificationRequired,
@@ -44,6 +43,7 @@ from baserow.core.user.utils import (
     generate_session_tokens_for_user,
     normalize_email_address,
 )
+from baserow.core.utils import get_user_remote_ip_address_from_request
 
 User = get_user_model()
 
@@ -162,18 +162,12 @@ class RegisterSerializer(serializers.Serializer):
         help_text="Indicates whether an authentication JWT should be generated and "
         "be included in the response.",
     )
-    workspace_invitation_token = serializers.CharField(
-        required=False,
-        help_text="If provided and valid, the user accepts the workspace invitation and "
-        "will have access to the workspace after signing up.",
-    )
     template_id = serializers.PrimaryKeyRelatedField(
         required=False,
         default=None,
         queryset=Template.objects.all(),
         help_text="The id of the template that must be installed after creating the "
-        "account. This only works if the `workspace_invitation_token` param is not "
-        "provided.",
+        "account.",
     )
     captcha_token = serializers.CharField(
         required=False,
@@ -311,14 +305,20 @@ def get_all_user_data_serialized(
 
 def log_in_user(request, user):
     password_provider = PasswordProviderHandler.get()
-    if not password_provider.enabled and user.is_staff is False:
+    password_login_disabled = (
+        not password_provider.enabled or settings.BASEROW_OIDC_ONLY
+    )
+    if password_login_disabled and user.is_staff is False:
+        # Break-glass: staff/superuser may still use the password form even when
+        # password login is otherwise disabled (e.g. OIDC-only mode).
         raise AuthProviderDisabled()
     if not user.is_active:
         raise DeactivatedUserException()
 
-    settings = CoreHandler().get_settings()
+    instance_settings = CoreHandler().get_settings()
     if (
-        settings.email_verification == Settings.EmailVerificationOptions.ENFORCED
+        instance_settings.email_verification
+        == Settings.EmailVerificationOptions.ENFORCED
         and not user.profile.email_verified
     ):
         UserHandler().send_email_pending_verification(user)
@@ -370,7 +370,19 @@ class TokenObtainPairWithUserSerializer(TokenObtainPairSerializer):
                 raise serializers.ValidationError({"email": "This field is required."})
             attrs[self.username_field] = email
 
-        super().validate(attrs)
+        try:
+            super().validate(attrs)
+        except AuthenticationFailed:
+            request = self.context.get("request")
+            AuditLogHandler().log_auth_event(
+                user=None,
+                event_type="sign_in_failed",
+                ip_address=get_user_remote_ip_address_from_request(request)
+                if request
+                else None,
+                user_email=attrs.get(self.username_field, ""),
+            )
+            raise
 
         twofa_provider = TwoFactorAuthHandler().get_provider(self.user)
         if twofa_provider:
@@ -461,31 +473,4 @@ class TokenVerifyWithUserSerializer(TokenVerifySerializer):
 class TokenBlacklistSerializer(serializers.Serializer):
     refresh_token = serializers.CharField(
         required=True, help_text="The fresh token that must be blacklisted."
-    )
-
-
-class DashboardSerializer(serializers.Serializer):
-    workspace_invitations = UserWorkspaceInvitationSerializer(many=True)
-
-
-class ShareOnboardingDetailsWithBaserowSerializer(serializers.Serializer):
-    team = serializers.CharField(
-        help_text="The team that the user has chosen during the onboarding.",
-        required=True,
-    )
-    role = serializers.CharField(
-        help_text="The role that the user has chosen during the onboarding",
-        required=True,
-    )
-    size = serializers.CharField(
-        help_text="The company size that the user has chosen during the onboarding.",
-        required=True,
-    )
-    country = serializers.CharField(
-        help_text="The country that the user has chosen during the onboarding.",
-        required=True,
-    )
-    how = serializers.CharField(
-        help_text="How the user found Baserow.",
-        required=True,
     )

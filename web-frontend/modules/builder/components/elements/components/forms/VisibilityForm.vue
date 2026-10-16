@@ -70,11 +70,9 @@
       <template #title>{{ $t('visibilityForm.warningTitle') }}</template>
       <i18n-t keypath="visibilityForm.warningMessage" tag="p">
         <template #link>
-          <a
-            href="https://baserow.io/user-docs/application-builder-element-visibility#note-accessing-hidden-data-via-api"
-            target="_blank"
-            >{{ $t('visibilityForm.documentationLink') }}</a
-          >
+          <a :href="$branding.docsUrl" target="_blank">{{
+            $t('visibilityForm.documentationLink')
+          }}</a>
         </template>
       </i18n-t>
     </Alert>

@@ -169,9 +169,11 @@ export default {
             this.job.state === 'failed'
               ? this.$t('exportTableModal.failedTitle')
               : this.$t('exportTableModal.cancelledTitle')
+          // The job carries the reason it failed -- a storage the server cannot
+          // read back, most often -- which is far more use than "a server error".
           const message =
             this.job.state === 'failed'
-              ? this.$t('exportTableModal.failedDescription')
+              ? this.job.error || this.$t('exportTableModal.failedDescription')
               : this.$t('exportTableModal.cancelledDescription')
           this.showError(title, message)
         }

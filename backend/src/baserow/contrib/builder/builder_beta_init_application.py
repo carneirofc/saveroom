@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils import translation
 from django.utils.translation import gettext as _
@@ -46,7 +47,9 @@ class BuilderApplicationTypeInitApplication:
             self.examples_name = _("Examples")
             self.customers_table_name = _("Customers")
             self.first_data_source_name = _("List rows")
-            self.first_integration_name = _("Local Baserow")
+            self.first_integration_name = _("Local %(app_name)s") % {
+                "app_name": settings.BRANDING_APP_NAME
+            }
             self.first_name_field_name = _("Name")
             self.last_name_field_name = _("Last name")
 
@@ -107,9 +110,9 @@ class BuilderApplicationTypeInitApplication:
             self.user,
             element_type_registry.get("text"),
             page,
-            value="\"Baserow's application builder allows you to create dynamic and "
+            value='"The application builder allows you to create dynamic and '
             "complex interface applications with no code. Pages can optionally "
-            "source data from this Baserow installation's tables, or you can "
+            "source data from this installation's tables, or you can "
             'add data manually from the General tab."',
         )
         ElementService().create_element(

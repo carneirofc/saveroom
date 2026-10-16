@@ -7,7 +7,7 @@ description: Create or update a Baserow in-app notification for an event. Use wh
 
 Use this skill when a task is to add or update an in-app notification shown in Baserow's notification center.
 
-Do not invent a new notification architecture. This repo already has established backend and frontend patterns. Start from the closest existing notification type in the same product area: core, database, builder, automation, integration, premium, or enterprise.
+Do not invent a new notification architecture. This repo already has established backend and frontend patterns. Start from the closest existing notification type in the same product area: core, database, builder, automation, or integration.
 
 ## First Step
 
@@ -24,8 +24,9 @@ Useful starting points:
 
 - Core notification types: `backend/src/baserow/core/notification_types.py`
 - Database notification types: `backend/src/baserow/contrib/database/fields/notification_types.py`
-- Premium notification types: `premium/backend/src/baserow_premium/row_comments/notification_types.py`
-- Enterprise notification types: `enterprise/backend/src/baserow_enterprise/data_scanner/notification_types.py`
+- View notification types: `backend/src/baserow/contrib/database/views/notification_types.py`
+- Webhook notification types: `backend/src/baserow/contrib/database/webhooks/notification_types.py`
+- Automation notification types: `backend/src/baserow/contrib/automation/notification_types.py`
 - Backend notification APIs: `backend/src/baserow/core/notifications/handler.py`
 - Backend notification base classes: `backend/src/baserow/core/notifications/registries.py`
 - Frontend base notification type: `web-frontend/modules/core/notificationTypes.js`
@@ -57,8 +58,7 @@ Common backend registration points:
 
 - `backend/src/baserow/core/apps.py`
 - `backend/src/baserow/contrib/database/apps.py`
-- `premium/backend/src/baserow_premium/apps.py`
-- `enterprise/backend/src/baserow_enterprise/apps.py`
+- `backend/src/baserow/contrib/automation/apps.py`
 
 ## Frontend Pattern
 
@@ -74,8 +74,7 @@ Common frontend registration points:
 
 - `web-frontend/modules/core/plugin.js`
 - `web-frontend/modules/database/plugin.js`
-- `premium/web-frontend/modules/baserow_premium/plugin.js`
-- `enterprise/web-frontend/modules/baserow_enterprise/plugin.js`
+- `web-frontend/modules/automation/plugin.js`
 
 ## Define The Target Clearly
 
@@ -86,7 +85,7 @@ Prefer storing stable identifiers in `notification.data`, not display-only value
 Good target payload examples:
 
 - Row or field event: `database_id`, `table_id`, `row_id`, `field_id`
-- Comment event: `comment_id`, `table_id`, `row_id`
+- View event: `database_id`, `table_id`, `view_id`
 - Workspace-scoped event: `workspace_id` or object IDs resolvable within the workspace
 - Admin or global event: IDs and query parameters needed for an admin route
 
@@ -122,7 +121,7 @@ The repo uses several duplicate-prevention patterns already:
 
 ### Pattern 1: Query for an existing active notification
 
-Use this when the event has a natural unique object, such as an invitation, comment, sync, or scan.
+Use this when the event has a natural unique object, such as a mention or a failing webhook.
 
 Typical lookup shape:
 
@@ -154,7 +153,7 @@ Use `UserNotificationsGrouper` when one operation can generate many notification
 
 ### Pattern 4: Update or mark read instead of inserting
 
-If the event resolves a prior notification, prefer updating state over inserting another notification. For example, invitation follow-up flows mark the original invitation notification as read.
+If the event resolves a prior notification, prefer updating state over inserting another notification. For example, when a follow-up event resolves the original one, mark the original notification as read.
 
 ## Choosing A Dedupe Key
 
@@ -167,10 +166,8 @@ A dedupe key is usually an implicit tuple made from:
 
 Examples:
 
-- One notification per invitation per user:
-  `type + recipient + data.invitation_id`
-- One notification per row comment mention per user:
-  `type + recipient + data.comment_id`
+- One notification per failing webhook per user:
+  `type + recipient + data.webhook_id`
 - One notification per row-field mention per user:
   `type + recipient + data.field_id + data.row_id`
 
@@ -202,8 +199,9 @@ Add the narrowest backend tests that prove:
 
 Useful existing tests:
 
-- `premium/backend/tests/baserow_premium_tests/row_comments/test_row_comments_notification_types.py`
-- `enterprise/backend/tests/baserow_enterprise_tests/data_scanner/test_data_scanner_notification_types.py`
+- `backend/tests/baserow/core/notifications/test_notification_types.py`
+- `backend/tests/baserow/contrib/database/view/test_view_notification_types.py`
+- `backend/tests/baserow/contrib/database/webhooks/test_webhook_notification_types.py`
 
 If you add custom frontend routing or rendering logic, add or update a focused frontend unit test near the notification type or component.
 
@@ -213,11 +211,11 @@ Use these searches to move quickly:
 
 Use `rg -n "<pattern>" <paths>` as a faster equivalent when `rg` is available.
 
-- `grep -RInE "class .*NotificationType" backend/src premium/backend/src enterprise/backend/src`
-- `grep -RInE "notification_type_registry.register" backend/src premium/backend/src enterprise/backend/src`
-- `grep -RInE "new .*NotificationType\\(context\\)" web-frontend premium/web-frontend enterprise/web-frontend`
-- `grep -RInE "NotificationHandler\\.create_direct_notification_for_users|UserNotificationsGrouper|create_broadcast_notification" backend/src premium/backend/src enterprise/backend/src`
-- `grep -RInE "data__contains=.*_id|get_notification_by\\(" backend/src premium/backend/src enterprise/backend/src`
+- `grep -RInE "class .*NotificationType" backend/src`
+- `grep -RInE "notification_type_registry.register" backend/src`
+- `grep -RInE "new .*NotificationType\\(context\\)" web-frontend`
+- `grep -RInE "NotificationHandler\\.create_direct_notification_for_users|UserNotificationsGrouper|create_broadcast_notification" backend/src`
+- `grep -RInE "data__contains=.*_id|get_notification_by\\(" backend/src`
 
 ## Guardrails
 

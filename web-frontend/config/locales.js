@@ -4,16 +4,12 @@
  *
  * To add a new language:
  * 1. Add the locale entry here
- * 2. Create the corresponding .json translation files in each module's locales/ directory
+ * 2. Create the corresponding .json translation files in each module's locales/
+ *    directory, in web-frontend/locales/, and add the code to LANGUAGES in
+ *    backend/src/baserow/config/settings/base.py (the account language API
+ *    validates against it). A missing file fails the Nuxt build.
  */
 export const locales = [
   { code: 'en', name: 'English', file: 'en.json' },
-  { code: 'fr', name: 'Français', file: 'fr.json' },
-  { code: 'nl', name: 'Nederlands', file: 'nl.json' },
-  { code: 'de', name: 'Deutsch', file: 'de.json' },
-  { code: 'es', name: 'Español', file: 'es.json' },
-  { code: 'it', name: 'Italiano', file: 'it.json' },
-  { code: 'pl', name: 'Polski (Beta)', file: 'pl.json' },
-  { code: 'ko', name: '한국어', file: 'ko.json' },
-  { code: 'uk', name: 'Українська', file: 'uk.json' },
+  { code: 'pt-BR', name: 'Português (Brasil)', file: 'pt_BR.json' },
 ]

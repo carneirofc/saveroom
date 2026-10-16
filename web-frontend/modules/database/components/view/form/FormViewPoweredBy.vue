@@ -1,15 +1,14 @@
 <template>
-  <div class="form-view__powered-by">
-    Powered by
-    <a
-      href="https://baserow.io"
-      target="_blank"
-      title="Baserow - open source no-code database tool and Airtable alternative"
-    >
-      <Logo
-        class="form-view__powered-by-logo"
-        alt="Baserow - open source no-code database tool and Airtable alternative"
-      />
+  <div v-if="$branding.showAttribution" class="form-view__powered-by">
+    {{ $t('formViewPoweredBy.poweredBy') }}
+    <a :href="$branding.siteUrl" target="_blank" :title="$branding.siteTitle">
+      <Logo class="form-view__powered-by-logo" :alt="$branding.siteTitle" />
     </a>
   </div>
 </template>
+
+<script>
+export default {
+  name: 'FormViewPoweredBy',
+}
+</script>

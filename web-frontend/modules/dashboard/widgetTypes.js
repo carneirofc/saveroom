@@ -57,14 +57,6 @@ export class WidgetType extends Registerable {
   isLoading(widget, data) {
     return false
   }
-
-  isAvailable() {
-    return true
-  }
-
-  getDeactivatedModal() {
-    return null
-  }
 }
 
 export class SummaryWidgetType extends WidgetType {

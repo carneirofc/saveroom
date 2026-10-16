@@ -531,7 +531,7 @@ def parse_duration_string(value: str) -> Optional[timedelta]:
     try:
         total_seconds = parse_duration_value(value, MOST_ACCURATE_DURATION_FORMAT)
         return timedelta(seconds=round(total_seconds, 3))
-    except (ValueError, OverflowError):
+    except ValueError, OverflowError:
         pass
 
     for pattern, unit, factor in DURATION_PATTERNS:

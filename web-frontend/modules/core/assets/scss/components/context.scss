@@ -112,7 +112,7 @@
 
   &:active:not(.disabled) {
     color: $palette-neutral-900;
-    background: #07081014;
+    background: alpha($palette-neutral-1300, 0.08);
 
     .context__menu-item-icon {
       color: $palette-neutral-600;
@@ -255,7 +255,7 @@
   align-items: flex-start;
 
   &.active {
-    background: rgba($palette-neutral-1300, 0.04);
+    background: alpha($palette-neutral-1300, 0.04);
   }
 }
 

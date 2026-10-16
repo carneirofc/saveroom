@@ -1,0 +1,9 @@
+{
+    "type": "refactor",
+    "message": "Removed the untested AWS ECS and DigitalOcean Apps install guides and the outdated development tools page, and dropped leftover Heroku, Cloudron, Render, reverse-proxy and OpenTelemetry collector instructions from the remaining docs.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-09"
+}

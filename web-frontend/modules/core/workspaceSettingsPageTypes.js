@@ -32,18 +32,6 @@ export class WorkspaceSettingsPageType extends Registerable {
     return true
   }
 
-  /**
-   * Responsible for returning whether the user has access to
-   * this page's features in this workspace.
-   */
-  isFeatureActive(workspace) {
-    return true
-  }
-
-  getFeatureDeactivatedModal(workspace) {
-    return null
-  }
-
   getRoute() {
     throw new Error('The `getRoute` method must be set.')
   }
@@ -69,23 +57,19 @@ export class MembersWorkspaceSettingsPageType extends WorkspaceSettingsPageType 
   }
 }
 
-export class InvitesWorkspaceSettingsPageType extends WorkspaceSettingsPageType {
+export class TeamsWorkspaceSettingsPageType extends WorkspaceSettingsPageType {
   static getType() {
-    return 'invites'
+    return 'teams'
   }
 
   getName() {
     const { $i18n: i18n } = this.app
-    return i18n.t('membersSettings.invitesTabTitle')
+    return i18n.t('teamsSettings.tabTitle')
   }
 
-  /**
-   * Responsible for returning whether the user has access to the
-   * invitations table by checking their `workspace.list_invitations` permission.
-   */
   hasPermission(workspace) {
     return this.app.$hasPermission(
-      'workspace.list_invitations',
+      'workspace.list_teams',
       workspace,
       workspace.id
     )
@@ -93,7 +77,7 @@ export class InvitesWorkspaceSettingsPageType extends WorkspaceSettingsPageType 
 
   getRoute(workspace) {
     return {
-      name: 'settings-invites',
+      name: 'settings-teams',
       params: {
         workspaceId: workspace.id,
       },

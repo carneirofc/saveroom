@@ -1,0 +1,7 @@
+# Patterns to ignore when packaging the chart.
+.git
+*.tmpl.bak
+*.orig
+*~
+.DS_Store
+README.md.bak

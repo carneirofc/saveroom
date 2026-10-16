@@ -1320,6 +1320,89 @@ def test_dispatch_data_source_with_adhoc_search(api_client, data_fixture):
     }
 
 
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.enable_signals(
+    "baserow.contrib.database.search.tasks.schedule_update_search_data.delay",
+    "baserow.contrib.database.search.tasks.update_search_data.delay",
+)
+def test_dispatch_data_source_with_adhoc_search_and_filter_referencing_other_data_source(
+    api_client, data_fixture
+):
+    """
+    The adhoc refinements of the request (search, filters, sortings) must only
+    be applied to the data source the request targets. When that data source's
+    filter formula references another data source, the nested dispatch used to
+    apply the adhoc search too, and because the element's searchable field ids
+    don't exist in the referenced table, the full-text search crashed with an
+    `IndexError`.
+    """
+
+    with transaction.atomic():
+        user, token = data_fixture.create_user_and_token()
+        members_table, _, _ = data_fixture.build_table(
+            user=user,
+            columns=[("Email", "text")],
+            rows=[["a@x.com"]],
+        )
+        clients_table, _, _ = data_fixture.build_table(
+            user=user,
+            columns=[("Client name", "text"), ("Tenant", "text")],
+            rows=[["Acme", "a@x.com"], ["Globex", "b@x.com"]],
+        )
+    email_field = members_table.field_set.get(name="Email")
+    client_name_field = clients_table.field_set.get(name="Client name")
+    tenant_field = clients_table.field_set.get(name="Tenant")
+
+    builder = data_fixture.create_builder_application(user=user)
+    integration = data_fixture.create_local_baserow_integration(
+        user=user, application=builder
+    )
+    page = data_fixture.create_builder_page(user=user, builder=builder)
+
+    members_data_source = data_fixture.create_builder_local_baserow_get_row_data_source(
+        user=user,
+        page=page,
+        integration=integration,
+        table=members_table,
+        row_id="1",
+    )
+    clients_data_source = (
+        data_fixture.create_builder_local_baserow_list_rows_data_source(
+            user=user, page=page, integration=integration, table=clients_table
+        )
+    )
+    data_fixture.create_local_baserow_table_service_filter(
+        service=clients_data_source.service,
+        field=tenant_field,
+        value=f"get('data_source.{members_data_source.id}.field_{email_field.id}')",
+        value_is_formula=True,
+        order=0,
+    )
+    element = data_fixture.create_builder_table_element(
+        page=page, data_source=clients_data_source
+    )
+    element.property_options.create(
+        schema_property=client_name_field.db_column, searchable=True
+    )
+
+    url = reverse(
+        "api:builder:data_source:dispatch",
+        kwargs={"data_source_id": clients_data_source.id},
+    )
+
+    response = api_client.post(
+        f"{url}?search_query=Acme",
+        {"metadata": {"data_source": {"element": element.id}}},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+
+    assert response.status_code == HTTP_200_OK, response.json()
+    results = response.json()["results"]
+    assert len(results) == 1
+    assert results[0][client_name_field.name] == "Acme"
+
+
 @pytest.mark.django_db
 def test_dispatch_data_source_with_element_from_different_page(
     api_client, data_fixture
@@ -2080,7 +2163,7 @@ def test_dispatch_data_source_anonymous_unpublished_builder_is_denied(
     response = api_client.post(url, {}, format="json")
 
     assert response.status_code == HTTP_401_UNAUTHORIZED
-    assert response.json()["error"] == "PERMISSION_DENIED"
+    assert response.json()["detail"] == "Authentication credentials were not provided."
 
 
 @pytest.mark.django_db
@@ -2392,6 +2475,7 @@ def test_dispatch_data_source_view(
     mock_builder_dispatch_context,
     mock_dispatch_data_source,
     api_client,
+    data_fixture,
 ):
     """
     Test the DispatchDataSourceView endpoint.
@@ -2400,7 +2484,9 @@ def test_dispatch_data_source_view(
     filter any fields in the Editor.
     """
 
+    user, token = data_fixture.create_user_and_token()
     mock_data_source = MagicMock()
+    mock_data_source.page.builder.is_published = False
     mock_get_data_source.return_value = mock_data_source
 
     mock_dispatch_context = MagicMock()
@@ -2414,7 +2500,7 @@ def test_dispatch_data_source_view(
         "api:builder:data_source:dispatch",
         kwargs={"data_source_id": mock_data_source_id},
     )
-    response = api_client.post(url)
+    response = api_client.post(url, HTTP_AUTHORIZATION=f"JWT {token}")
 
     assert response.status_code == 200
     assert response.json() == mock_response
@@ -2499,6 +2585,41 @@ def test_private_dispatch_data_source_view_returns_all_fields(api_client, data_f
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("dispatch_all", [False, True])
+@pytest.mark.parametrize("authenticated", [False, True])
+def test_published_internal_dispatch_is_denied(
+    api_client, data_fixture, dispatch_all, authenticated
+):
+    user, token = data_fixture.create_user_and_token()
+    workspace = data_fixture.create_workspace(user=user)
+    builder = data_fixture.create_builder_application(user=user, workspace=workspace)
+    page = data_fixture.create_builder_page(user=user, builder=builder)
+    data_source = data_fixture.create_builder_local_baserow_list_rows_data_source(
+        user=user,
+        page=page,
+    )
+
+    builder.workspace = None
+    builder.save()
+    data_fixture.create_builder_custom_domain(published_to=builder)
+
+    if dispatch_all:
+        url = reverse(
+            "api:builder:data_source:dispatch-all", kwargs={"page_id": page.id}
+        )
+    else:
+        url = reverse(
+            "api:builder:data_source:dispatch",
+            kwargs={"data_source_id": data_source.id},
+        )
+
+    headers = {"HTTP_AUTHORIZATION": f"JWT {token}"} if authenticated else {}
+    response = api_client.post(url, {}, format="json", **headers)
+
+    assert response.status_code == HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.django_db
 @patch(
     "baserow.contrib.builder.api.data_sources.views.DataSourceService.dispatch_page_data_sources"
 )
@@ -2509,6 +2630,7 @@ def test_dispatch_data_sources_view(
     mock_builder_dispatch_context,
     mock_dispatch_page_data_sources,
     api_client,
+    data_fixture,
 ):
     """
     Test the DispatchDataSourcesView
@@ -2518,7 +2640,9 @@ def test_dispatch_data_sources_view(
     filter any fields in the Editor.
     """
 
+    user, token = data_fixture.create_user_and_token()
     mock_page = MagicMock()
+    mock_page.builder.is_published = False
     mock_get_page.return_value = mock_page
 
     mock_dispatch_context = MagicMock()
@@ -2531,7 +2655,7 @@ def test_dispatch_data_sources_view(
     url = reverse(
         "api:builder:data_source:dispatch-all", kwargs={"page_id": mock_page_id}
     )
-    response = api_client.post(url)
+    response = api_client.post(url, HTTP_AUTHORIZATION=f"JWT {token}")
 
     assert response.status_code == 200
     assert response.json() == mock_service_contents

@@ -1,0 +1,7 @@
+from rest_framework.status import HTTP_413_REQUEST_ENTITY_TOO_LARGE
+
+ERROR_CONTENTS_TOO_LARGE = (
+    "ERROR_CONTENTS_TOO_LARGE",
+    HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+    "{e}",
+)

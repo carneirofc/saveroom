@@ -22,3 +22,10 @@ ERROR_APPLICATION_TYPE_DOES_NOT_EXIST = (
     HTTP_400_BAD_REQUEST,
     "{e}",
 )
+
+ERROR_APPLICATION_TYPE_DISABLED = (
+    "ERROR_APPLICATION_TYPE_DISABLED",
+    HTTP_400_BAD_REQUEST,
+    "Creating applications of type {e.application_type} has been disabled by the "
+    "instance administrator.",
+)

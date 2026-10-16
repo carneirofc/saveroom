@@ -20,18 +20,4 @@ export class TwoWaySyncStrategyType extends Registerable {
       type: this.type,
     }
   }
-
-  /**
-   * Indicates whether the data sync is deactivated.
-   */
-  isDeactivated(workspaceId) {
-    return false
-  }
-
-  /**
-   * When the disabled data sync is clicked, this modal will be shown.
-   */
-  getDeactivatedClickModal() {
-    return null
-  }
 }

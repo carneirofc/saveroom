@@ -1,16 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30" viewBox="0 0 30 30">
-  <defs>
-    <clipPath id="clip-logoOnly">
-      <rect width="30" height="30"/>
-    </clipPath>
-  </defs>
-  <g id="logoOnly" clip-path="url(#clip-logoOnly)">
-    <g id="Group_6" data-name="Group 6" transform="translate(893 523)">
-      <path id="Path_37" data-name="Path 37" d="M1.613,0H17.1a1.613,1.613,0,0,1,1.613,1.613V5.8A1.613,1.613,0,0,1,17.1,7.417H1.613A1.613,1.613,0,0,1,0,5.8V1.613A1.613,1.613,0,0,1,1.613,0Z" transform="translate(-874.291 -493) rotate(180)" fill="#4d68c4"/>
-      <path id="Path_35" data-name="Path 35" d="M1.613,0H28.387A1.613,1.613,0,0,1,30,1.613V5.8a1.613,1.613,0,0,1-1.613,1.613H1.613A1.613,1.613,0,0,1,0,5.8V1.613A1.613,1.613,0,0,1,1.613,0Z" transform="translate(-863 -504.291) rotate(180)" fill="#5190ef"/>
-      <path id="Path_36" data-name="Path 36" d="M1.613,0H17.1a1.613,1.613,0,0,1,1.613,1.613V5.8A1.613,1.613,0,0,1,17.1,7.417H1.613A1.613,1.613,0,0,1,0,5.8V1.613A1.613,1.613,0,0,1,1.613,0Z" transform="translate(-863 -515.583) rotate(180)" fill="#2bc3f1"/>
-      <path id="Path_38" data-name="Path 38" d="M1.613,0H5.8A1.613,1.613,0,0,1,7.417,1.613V5.8A1.613,1.613,0,0,1,5.8,7.417H1.613A1.613,1.613,0,0,1,0,5.8V1.613A1.613,1.613,0,0,1,1.613,0Z" transform="translate(-863 -493) rotate(180)" fill="#4d68c4"/>
-      <path id="Path_39" data-name="Path 39" d="M1.613,0H5.8A1.613,1.613,0,0,1,7.417,1.613V5.8A1.613,1.613,0,0,1,5.8,7.417H1.613A1.613,1.613,0,0,1,0,5.8V1.613A1.613,1.613,0,0,1,1.613,0Z" transform="translate(-893 -523)" fill="#2bc3f1"/>
-    </g>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" role="img" aria-label="Saveroom"><title>Saveroom</title><path d="M3.5 27.25V13A11.5 11.5 0 0 1 26.5 13V27.25A1.75 1.75 0 0 1 24.75 29H5.25A1.75 1.75 0 0 1 3.5 27.25Z" fill="#5190ef"/><path d="M6.75 14V13A8.25 8.25 0 0 1 23.25 13V14Z" fill="#ffffff"/><rect x="6.75" y="15.75" width="4.333" height="4.125" rx="0.6" fill="#ffffff"/><rect x="12.833" y="15.75" width="4.333" height="4.125" rx="0.6" fill="#ffffff"/><rect x="18.917" y="15.75" width="4.333" height="4.125" rx="0.6" fill="#ffffff"/><rect x="6.75" y="21.625" width="4.333" height="4.125" rx="0.6" fill="#ffffff"/><rect x="12.833" y="21.625" width="4.333" height="4.125" rx="0.6" fill="#ffffff"/><rect x="18.917" y="21.625" width="4.333" height="4.125" rx="0.6" fill="#ffffff"/></svg>

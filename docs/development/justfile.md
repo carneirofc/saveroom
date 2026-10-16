@@ -1,6 +1,6 @@
 # Justfile Command Reference
 
-Baserow uses [just](https://github.com/casey/just) as a command runner. Commands are organized in three justfiles:
+Saveroom uses [just](https://github.com/casey/just) as a command runner. Commands are organized in three justfiles:
 
 - **Root** (`/justfile`) - Docker Compose and orchestration commands
 - **Backend** (`/backend/justfile`) - Python/Django commands using [uv](https://github.com/astral-sh/uv)
@@ -45,8 +45,6 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ```bash
 just init                 # Install backend + frontend dependencies, create .env.local
-                          # Also builds local code runner artifacts
-just b code-runtime       # Rebuild local Wasmtime + QuickJS runtime artifacts
 just pre-commit-install   # Install Git pre-commit hooks locally
 ```
 

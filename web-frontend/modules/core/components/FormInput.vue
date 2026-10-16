@@ -61,7 +61,7 @@
         class="form-input__clear"
         @click="updateValue('')"
       >
-        <i class="iconoir-cancel"></i>
+        <i class="iconoir-xmark"></i>
       </a>
     </div>
 

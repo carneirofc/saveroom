@@ -1,7 +1,7 @@
-$focus-fallback-rgb:
-  #{red($palette-neutral-500)},
-  #{green($palette-neutral-500)},
-  #{blue($palette-neutral-500)};
+// `r, g, b` channels of the default neutral-500 (#cdcecd), used when the row
+// has no `--focus-color-rgb`. Literal because color tokens are runtime CSS
+// variables whose channels Sass cannot read.
+$focus-fallback-rgb: 205, 206, 205;
 
 .grid-view__column {
   &.grid-view__column--focus-highlight,

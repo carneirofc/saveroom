@@ -36,24 +36,17 @@
       </template>
       <template v-else>
         <template v-if="loginButtons.length">
-          <LoginButtons :invitation="invitation" :hide-if-no-buttons="true" />
+          <LoginButtons :hide-if-no-buttons="true" />
 
           <div class="auth__separator">
             {{ $t('common.or') }}
           </div>
         </template>
 
-        <PasswordRegister
-          v-if="passwordLoginEnabled"
-          :invitation="invitation"
-          @success="next"
-        >
+        <PasswordRegister v-if="passwordLoginEnabled" @success="next">
         </PasswordRegister>
 
-        <LoginActions
-          v-if="!shouldShowAdminSignupPage"
-          :invitation="invitation"
-        ></LoginActions>
+        <LoginActions v-if="!shouldShowAdminSignupPage"></LoginActions>
       </template>
     </template>
   </div>
@@ -62,14 +55,13 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useStore } from 'vuex'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PasswordRegister from '@baserow/modules/core/components/auth/PasswordRegister'
 import LangPicker from '@baserow/modules/core/components/LangPicker'
 import LoginButtons from '@baserow/modules/core/components/auth/LoginButtons'
 import LoginActions from '@baserow/modules/core/components/auth/LoginActions'
 import EmailNotVerified from '@baserow/modules/core/components/auth/EmailNotVerified.vue'
-import WorkspaceService from '@baserow/modules/core/services/workspace'
 import { EMAIL_VERIFICATION_OPTIONS } from '@baserow/modules/core/enums'
 
 definePageMeta({
@@ -78,46 +70,23 @@ definePageMeta({
 })
 
 const store = useStore()
-const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const config = useRuntimeConfig()
-const { $client } = useNuxtApp()
 
 // Reactive data
 const displayEmailNotVerified = ref(false)
 const emailToVerify = ref(null)
 
-// Fetch invitation data based on token
-const invitationToken = route.query.workspaceInvitationToken
-const { data: invitation } = await useAsyncData(
-  `signup-invitation-${invitationToken || 'none'}`,
-  async () => {
-    // Redirect if already authenticated
-    if (store.getters['auth/isAuthenticated']) {
-      await navigateTo({ name: 'dashboard' })
-      return null
-    }
-
-    // Fetch login options
-    await store.dispatch('authProvider/fetchLoginOptions')
-
-    // Fetch workspace invitation if token exists
-    if (invitationToken) {
-      try {
-        const { data } =
-          await WorkspaceService($client).fetchInvitationByToken(
-            invitationToken
-          )
-        return data
-      } catch {
-        return null
-      }
-    }
-
-    return null
+await useAsyncData('signup-login-options', async () => {
+  // Redirect if already authenticated
+  if (store.getters['auth/isAuthenticated']) {
+    await navigateTo({ name: 'dashboard' })
+    return false
   }
-)
+  await store.dispatch('authProvider/fetchLoginOptions')
+  return true
+})
 
 // Computed properties
 const settings = computed(() => store.getters['settings/get'])
@@ -132,11 +101,11 @@ const passwordLoginEnabled = computed(
 )
 
 const isSignupEnabled = computed(() => {
-  return (
-    settings.value.allow_new_signups ||
-    (settings.value.allow_signups_via_workspace_invitations &&
-      invitation.value?.id)
-  )
+  if (settings.value.oidc_only) {
+    // OIDC-only mode disables self-service signup entirely.
+    return false
+  }
+  return settings.value.allow_new_signups
 })
 
 const shouldShowAdminSignupPage = computed(() => {
@@ -151,8 +120,7 @@ const next = (params) => {
 
   if (
     emailToVerify.value &&
-    settings.value.email_verification === EMAIL_VERIFICATION_OPTIONS.ENFORCED &&
-    !route.query.workspaceInvitationToken
+    settings.value.email_verification === EMAIL_VERIFICATION_OPTIONS.ENFORCED
   ) {
     displayEmailNotVerified.value = true
   } else {

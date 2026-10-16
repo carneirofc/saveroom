@@ -22,7 +22,6 @@ class SettingsDataType(Instance):
     Will result into the following response when the authenticates:
     {
       "allow_new_signups": True,
-      "allow_signups_via_workspace_invitations": False,
       ...
       "test": {
         "test": "value"

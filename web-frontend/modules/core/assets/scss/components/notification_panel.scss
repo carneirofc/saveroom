@@ -43,7 +43,7 @@
 }
 
 .notification-panel__notification--unread {
-  background-color: #f4fafe;
+  background-color: $color-primary-100;
 }
 
 .notification-panel__notification-icon {
@@ -192,7 +192,7 @@
 .notification-panel__refresh-hint {
   height: 52px;
   padding: 16px;
-  border-bottom: 1px solid #d9dbde;
+  border-bottom: 1px solid $color-neutral-200;
   display: flex;
   justify-content: space-between;
   align-items: center;

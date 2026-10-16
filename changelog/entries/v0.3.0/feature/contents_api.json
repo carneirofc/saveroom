@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Added a `/api/contents/` API that returns the complete contents of a workspace or a single application as JSON in one request, with an `exclude_data` option for structure only. Requests above `BASEROW_CONTENTS_API_MAX_ROWS` are refused so that large reads go through a backup instead.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-07-29"
+}

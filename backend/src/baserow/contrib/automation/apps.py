@@ -18,7 +18,6 @@ class AutomationConfig(AppConfig):
             UpdateAutomationNodeActionType,
         )
         from baserow.contrib.automation.nodes.node_types import (
-            AIAgentActionNodeType,
             CoreCSVFileReaderNodeType,
             CoreHttpRequestNodeType,
             CoreHTTPTriggerNodeType,
@@ -195,7 +194,6 @@ class AutomationConfig(AppConfig):
         automation_node_type_registry.register(CorePeriodicTriggerNodeType())
         automation_node_type_registry.register(CoreHTTPTriggerNodeType())
         automation_node_type_registry.register(CoreManualTriggerNodeType())
-        automation_node_type_registry.register(AIAgentActionNodeType())
         automation_node_type_registry.register(SlackWriteMessageActionNodeType())
 
         from baserow.core.trash.registries import trash_operation_type_registry

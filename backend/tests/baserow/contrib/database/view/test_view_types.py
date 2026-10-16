@@ -950,7 +950,6 @@ def test_import_export_view_ownership_type(data_fixture):
         filters_disabled=False,
         row_identifier_type="count",
     )
-    grid_view.ownership_type = "personal"
     grid_view.owned_by = user2
     grid_view.save()
     grid_view_type = view_type_registry.get("grid")
@@ -972,7 +971,7 @@ def test_import_export_view_ownership_type(data_fixture):
     assert grid_view.ownership_type == imported_grid_view.ownership_type
     assert grid_view.owned_by == imported_grid_view.owned_by
 
-    # view should not be imported if the user is gone
+    # the owner is dropped if the user is no longer a member of the workspace
 
     WorkspaceUser.objects.filter(user=user2).delete()
 
@@ -986,7 +985,7 @@ def test_import_export_view_ownership_type(data_fixture):
         None,
     )
 
-    assert imported_grid_view is None
+    assert imported_grid_view.owned_by is None
 
     # created by is not set
     grid_view.owned_by = None

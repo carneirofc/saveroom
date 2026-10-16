@@ -51,3 +51,125 @@
   font-size: 14px;
   line-height: 160%;
 }
+
+.import-modal__match-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 8px;
+}
+
+.import-modal__confirm-summary {
+  margin-top: 16px;
+  border: 1px solid $color-neutral-200;
+  border-radius: 4px;
+}
+
+.import-modal__confirm-summary-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 12px;
+  font-size: 13px;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid $color-neutral-200;
+  }
+}
+
+.import-modal__confirm-summary-count {
+  font-weight: 600;
+}
+
+.import-diff__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.import-diff__badge {
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  background-color: $color-neutral-100;
+  color: $color-neutral-800;
+
+  &.import-diff__badge--create {
+    background-color: $palette-green-50;
+    color: $palette-green-800;
+  }
+
+  &.import-diff__badge--update {
+    background-color: $palette-yellow-50;
+    color: $palette-yellow-800;
+  }
+
+  &.import-diff__badge--delete,
+  &.import-diff__badge--errors {
+    background-color: $palette-red-50;
+    color: $palette-red-800;
+  }
+}
+
+.import-diff__table-wrapper {
+  border: 1px solid $color-neutral-200;
+  overflow: auto;
+  max-width: 100%;
+  max-height: 360px;
+}
+
+.import-diff__table {
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th,
+  td {
+    border-bottom: 1px solid $color-neutral-200;
+    border-right: 1px solid $color-neutral-200;
+    padding: 6px 8px;
+    min-width: 150px;
+    max-width: 260px;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    position: sticky;
+    top: 0;
+    background-color: $color-neutral-50;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .import-diff__index {
+    min-width: 60px;
+    color: $color-neutral-500;
+  }
+}
+
+.import-diff__row--delete td {
+  color: $color-neutral-500;
+  text-decoration: line-through;
+}
+
+.import-diff__cell--changed {
+  background-color: $palette-yellow-50;
+}
+
+.import-diff__old {
+  background-color: $palette-red-50;
+  text-decoration: line-through;
+  margin-bottom: 4px;
+}
+
+.import-diff__new {
+  background-color: $palette-green-50;
+}
+
+.import-diff__notice {
+  color: $color-neutral-500;
+  font-size: 12px;
+  margin-top: 8px;
+}

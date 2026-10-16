@@ -14,6 +14,7 @@ from django.core.files.storage import Storage
 
 import requests
 from requests import Response
+from requests.exceptions import RequestException
 
 from baserow.contrib.database.airtable.constants import (
     AIRTABLE_API_BASE_URL,
@@ -109,21 +110,26 @@ def download_airtable_file(
     :raises FileDownloadFailed: When the file could not be downloaded.
     """
 
-    if download_file.type == AIRTABLE_DOWNLOAD_FILE_TYPE_FETCH:
-        response = requests.get(download_file.url, headers=headers)  # noqa: S113
-    elif download_file.type == AIRTABLE_DOWNLOAD_FILE_TYPE_ATTACHMENT_ENDPOINT:
-        response = AirtableHandler.fetch_attachment(
-            row_id=download_file.row_id,
-            column_id=download_file.column_id,
-            attachment_id=download_file.attachment_id,
-            init_data=init_data,
-            request_id=request_id,
-            cookies=cookies,
-            headers=headers,
-        )
-    else:
+    try:
+        if download_file.type == AIRTABLE_DOWNLOAD_FILE_TYPE_FETCH:
+            response = requests.get(download_file.url, headers=headers)  # noqa: S113
+        elif download_file.type == AIRTABLE_DOWNLOAD_FILE_TYPE_ATTACHMENT_ENDPOINT:
+            response = AirtableHandler.fetch_attachment(
+                row_id=download_file.row_id,
+                column_id=download_file.column_id,
+                attachment_id=download_file.attachment_id,
+                init_data=init_data,
+                request_id=request_id,
+                cookies=cookies,
+                headers=headers,
+            )
+        else:
+            raise FileDownloadFailed(
+                f"Unknown download file type: {download_file.type}",
+            )
+    except RequestException as e:
         raise FileDownloadFailed(
-            f"Unknown download file type: {download_file.type}",
+            f"File {name} could not be downloaded: {e}",
         )
     if response.status_code not in [HTTPStatus.OK, HTTPStatus.PARTIAL_CONTENT]:
         raise FileDownloadFailed(
@@ -138,7 +144,7 @@ def download_airtable_file(
         try:
             total_size = content_range.split("/")[-1]
             file_size_bytes = int(total_size)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             raise FileDownloadFailed(f"Could not determine the size of file {name}.")
 
     # Use Content-Length if the status code is not partial content
@@ -147,7 +153,7 @@ def download_airtable_file(
         if content_length is not None:
             try:
                 file_size_bytes = int(content_length)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 file_size_bytes = None
 
     # Fall back to measuring the actual downloaded content. This handles
@@ -966,7 +972,7 @@ class AirtableHandler:
                     and url in signed_user_content_urls
                 ):
                     download_file.url = signed_user_content_urls[url]
-                elif signed_user_content_urls is None:
+                else:
                     download_file.type = AIRTABLE_DOWNLOAD_FILE_TYPE_ATTACHMENT_ENDPOINT
 
                 files_to_download[file_name] = download_file
@@ -1065,14 +1071,14 @@ class AirtableHandler:
             SCOPE_AUTOMATIONS,
             "",
             ERROR_TYPE_UNSUPPORTED_FEATURE,
-            "Baserow doesn't support automations.",
+            "Importing Airtable automations isn't supported.",
         )
         import_report.add_failed(
             "All interfaces",
             SCOPE_INTERFACES,
             "",
             ERROR_TYPE_UNSUPPORTED_FEATURE,
-            "Baserow doesn't support interfaces.",
+            "Importing Airtable interfaces isn't supported.",
         )
 
         # Convert the import report to the serialized export format of a Baserow table,

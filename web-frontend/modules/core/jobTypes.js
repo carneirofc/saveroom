@@ -129,7 +129,7 @@ export class DuplicateApplicationJobType extends JobType {
   getIconClass(job) {
     const applicationTypeName = job.original_application.type
     if (!this.app.$registry.exists('application', applicationTypeName)) {
-      return 'iconoir-db'
+      return 'iconoir-database'
     }
     return this.app.$registry
       .get('application', applicationTypeName)
@@ -194,7 +194,7 @@ export class InstallTemplateJobType extends JobType {
 
   getIconClass() {
     // TODO: This should be moved to a registry and in the database module.
-    return 'iconoir-db'
+    return 'iconoir-database'
   }
 
   getName() {
@@ -276,6 +276,16 @@ export class ExportApplicationsJobType extends JobType {
 
   getName() {
     return 'exportApplications'
+  }
+}
+
+export class ExportApplicationsToDestinationJobType extends JobType {
+  static getType() {
+    return 'export_applications_to_destination'
+  }
+
+  getName() {
+    return 'exportApplicationsToDestination'
   }
 }
 

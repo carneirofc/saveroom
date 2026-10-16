@@ -26,7 +26,7 @@
             class="rich-text-editor__bubble-menu-link-edit-delete"
             @click.stop.prevent="deleteLink"
           >
-            <i class="iconoir-cancel"></i>
+            <i class="iconoir-xmark"></i>
           </button>
         </div>
         <button

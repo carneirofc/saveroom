@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "baserow.fullname" . }}-celery-export
+  labels:
+    {{- include "baserow.labels" . | nindent 4 }}
+    app.kubernetes.io/component: celery-export
+spec:
+  replicas: {{ .Values.replicaCount.celeryExport }}
+  selector:
+    matchLabels:
+      {{- include "baserow.componentSelectorLabels" (dict "root" . "component" "celery-export") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- include "baserow.podAnnotations" . | nindent 8 }}
+      labels:
+        {{- include "baserow.componentSelectorLabels" (dict "root" . "component" "celery-export") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "baserow.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: celery-export
+          image: {{ include "baserow.image.backend" . }}
+          imagePullPolicy: {{ .Values.image.backend.pullPolicy }}
+          args: ["celery-exportworker"]
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          envFrom:
+            {{- include "baserow.envFrom" . | nindent 12 }}
+          env:
+            {{- include "baserow.secretEnv" . | nindent 12 }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - /baserow/backend/docker/docker-entrypoint.sh
+                - celery-exportworker-healthcheck
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources.celeryExport | nindent 12 }}
+          volumeMounts:
+            {{- include "baserow.tmpVolumeMounts" . | nindent 12 }}
+            {{- if not .Values.objectStorage.enabled }}
+            - name: media
+              mountPath: /baserow/media
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- include "baserow.tmpVolumes" . | nindent 8 }}
+        {{- if not .Values.objectStorage.enabled }}
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ include "baserow.fullname" . }}-media
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

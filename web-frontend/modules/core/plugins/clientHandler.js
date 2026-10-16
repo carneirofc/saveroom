@@ -134,10 +134,6 @@ export class ClientErrorMap {
         $i18n.t('clientHandler.disabledPasswordProviderTitle'),
         $i18n.t('clientHandler.disabledPasswordProviderMessage')
       ),
-      ERROR_GENERATIVE_AI_PROMPT: new ResponseErrorMessage(
-        $i18n.t('clientHandler.generateAIPromptTitle'),
-        $i18n.t('clientHandler.generateAIPromptDescription')
-      ),
       // TODO: Move to enterprise module if possible
       ERROR_CANNOT_DISABLE_ALL_AUTH_PROVIDERS: new ResponseErrorMessage(
         $i18n.t('clientHandler.cannotDisableAllAuthProvidersTitle'),
@@ -150,10 +146,6 @@ export class ClientErrorMap {
       ERROR_LAST_ADMIN_OF_GROUP: new ResponseErrorMessage(
         $i18n.t('clientHandler.lastAdminTitle'),
         $i18n.t('clientHandler.lastAdminMessage')
-      ),
-      ERROR_GENERATIVE_AI_DOES_NOT_EXIST: new ResponseErrorMessage(
-        $i18n.t('clientHandler.generativeAIDoesNotExistTitle'),
-        $i18n.t('clientHandler.generativeAIDoesNotExistDescription')
       ),
       ERROR_MODEL_DOES_NOT_BELONG_TO_TYPE: new ResponseErrorMessage(
         $i18n.t('clientHandler.modelDoesNotBelongToTypeTitle'),

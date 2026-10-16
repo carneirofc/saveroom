@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "A table export whose file cannot be read back from the storage now fails with that reason, instead of finishing and handing you a download that does not work.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "database",
+    "bullet_points": [],
+    "created_at": "2026-09-21"
+}

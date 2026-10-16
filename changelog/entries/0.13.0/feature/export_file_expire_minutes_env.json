@@ -1,0 +1,7 @@
+{
+    "type": "feature",
+    "message": "EXPORT_FILE_EXPIRE_MINUTES can now be set from the environment instead of being fixed at 60 minutes.",
+    "issue_number": null,
+    "bullet_points": [],
+    "created_at": "2026-09-17"
+}

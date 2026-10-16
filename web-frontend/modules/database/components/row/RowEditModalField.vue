@@ -43,7 +43,7 @@
         >
           <i
             class="context__menu-item-icon"
-            :class="[hidden ? 'iconoir-eye-empty' : 'iconoir-eye-off']"
+            :class="[hidden ? 'iconoir-eye' : 'iconoir-eye-closed']"
           ></i>
           {{ $t(hidden ? 'fieldContext.showField' : 'fieldContext.hideField') }}
         </a>

@@ -21,7 +21,7 @@ SAMPLE_WORKFLOW_IMPORT_REFERENCE = {
             "name": "Local Baserow",
             "order": "1.00000000000000000000",
             "type": "local_baserow",
-            "authorized_user": "test@baserow.io",
+            "authorized_user": "test@example.com",
         }
     ],
     "workflows": [
@@ -72,7 +72,7 @@ SAMPLE_WORKFLOW_IMPORT_REFERENCE = {
 
 @pytest.mark.django_db
 def test_automation_export_serialized(data_fixture):
-    user = data_fixture.create_user(email="test@baserow.io")
+    user = data_fixture.create_user(email="test@example.com")
     automation = data_fixture.create_automation_application(user=user)
     workflow = data_fixture.create_automation_workflow(user, automation=automation)
     trigger = workflow.get_trigger()
@@ -170,7 +170,7 @@ def test_automation_init_application(data_fixture):
 
 @pytest.mark.django_db
 def test_automation_application_import(data_fixture):
-    user = data_fixture.create_user(email="test@baserow.io")
+    user = data_fixture.create_user(email="test@example.com")
     workspace = data_fixture.create_workspace(user=user)
     database = data_fixture.create_database_application(workspace=workspace)
     table = data_fixture.create_database_table(database=database)

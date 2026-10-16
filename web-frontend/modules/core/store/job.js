@@ -1,7 +1,8 @@
 import JobService from '@baserow/modules/core/services/job'
 import _ from 'lodash'
+import { JOB_TERMINAL_STATES } from '@baserow/modules/core/utils/job'
 
-const FINISHED_STATES = ['finished', 'failed', 'cancelled']
+const FINISHED_STATES = JOB_TERMINAL_STATES
 const STARTING_TIMEOUT_MS = 200
 const MAX_POLLING_ATTEMPTS = 100
 

@@ -1,28 +1,28 @@
 # Debugging connection issues
 
-On launching Baserow if you encountered the "Backend URL mis-configuration detected" 
-or you are having trouble connecting to your Baserow server this tutorial will explain 
+On launching Saveroom if you encountered the "Backend URL mis-configuration detected" 
+or you are having trouble connecting to your Saveroom server this tutorial will explain 
 why this error can occur how to fix it. 
 
 ## Possible cause of the error
 
-Baserow needs to know the hostname where it hosted for a number of practical and 
+Saveroom needs to know the hostname where it hosted for a number of practical and 
 security reasons. It cannot safely discover this hostname automatically and instead
 relies on you setting it correctly. In the docker and docker-compose installs it 
-defaults to using `http://localhost`. If you then try to access Baserow from a different
-machine your browser will still be configured to look for Baserow at `http://localhost`,
+defaults to using `http://localhost`. If you then try to access Saveroom from a different
+machine your browser will still be configured to look for Saveroom at `http://localhost`,
 which does not exist on the different machine, which is the usual cause of this error.
 
 ## Fixing a Docker Install
 
 Ensure you have set the environment variable `BASEROW_PUBLIC_URL` to the URL you are 
-using the access Baserow on. The following three sections show how to do this depending
-on how you are accessing your Baserow server.
+using the access Saveroom on. The following three sections show how to do this depending
+on how you are accessing your Saveroom server.
 
 ### Access via a domain name
 
-If you are accessing your Baserow server using a domain name then you should launch 
-Baserow like so:
+If you are accessing your Saveroom server using a domain name then you should launch 
+Saveroom like so:
 ```bash
 docker run \
   -e BASEROW_PUBLIC_URL=https://YOUR_DOMAIN_HERE \
@@ -31,9 +31,9 @@ docker run \
 
 ### Access via a domain name with automatic HTTPS
 
-If you are accessing your Baserow server using a domain name and you want the Baserow
-Caddy server to automatically handle HTTPS for you then launch Baserow like so. If
-you still want to be able to access your Baserow from http://localhost add
+If you are accessing your Saveroom server using a domain name and you want the Saveroom
+Caddy server to automatically handle HTTPS for you then launch Saveroom like so. If
+you still want to be able to access your Saveroom from http://localhost add
 `,http://localhost` onto the BASEROW_CADDY_ADDRESSES.
 ```bash
 docker run \
@@ -44,8 +44,8 @@ docker run \
 
 ### Accessing via an IP address
 
-If you are accessing your Baserow server using an IP address then you should launch
-Baserow like so: 
+If you are accessing your Saveroom server using an IP address then you should launch
+Saveroom like so: 
 ```bash
 docker run \
   -e BASEROW_PUBLIC_URL=http://YOUR_IP_ADDRESS_HERE \
@@ -54,7 +54,7 @@ docker run \
 
 ### Accessing using a non-standard port
 
-If you have or want to access Baserow using a different port other than 80 (`-p 80:80`) 
+If you have or want to access Saveroom using a different port other than 80 (`-p 80:80`) 
 then you also need to set the environment variable `WEB_FRONTEND_PORT`. You also need 
 to ensure you properly change the `-p 80:80` argument to 
 `-p YOUR_CUSTOM_PORT:80` and also update the BASEROW_PUBLIC_URL to include
@@ -78,27 +78,27 @@ docker run \
 ## Fixing a Docker-Compose Install
 
 Ensure you have set the environment variable `BASEROW_PUBLIC_URL` to the URL you are
-using the access Baserow on. See the 
+using the access Saveroom on. See the 
 [Install with docker compose](../installation/install-with-docker-compose.md) guide
 to see the various ways you can set this variable using docker compose.
 
 The following three sections show how to do this depending on how you are accessing 
-your Baserow server. Please remember to also include any additional environment 
+your Saveroom server. Please remember to also include any additional environment 
 variables and arguments that are explained in the guide above.
 
 ### Access via a domain name
 
-If you are accessing your Baserow server using a domain name then you should launch
-Baserow like so 
+If you are accessing your Saveroom server using a domain name then you should launch
+Saveroom like so 
 ```bash
 BASEROW_PUBLIC_URL=https://YOUR_DOMAIN_HERE docker-compose up -d
 ```
 
 ### Access via a domain name with automatic HTTPS
 
-If you are accessing your Baserow server using a domain name and you want the Baserow
-Caddy server to automatically handle HTTPS for you then launch Baserow like so. If
-you still want to be able to access your Baserow from http://localhost add 
+If you are accessing your Saveroom server using a domain name and you want the Saveroom
+Caddy server to automatically handle HTTPS for you then launch Saveroom like so. If
+you still want to be able to access your Saveroom from http://localhost add 
 `,http://localhost` onto the BASEROW_CADDY_ADDRESSES.
 ```bash
 BASEROW_PUBLIC_URL=https://YOUR_DOMAIN_HERE \
@@ -108,15 +108,15 @@ docker-compose up -d
 
 ### Accessing via an IP address
 
-If you are accessing your Baserow server using an IP address then you should launch
-Baserow like so:
+If you are accessing your Saveroom server using an IP address then you should launch
+Saveroom like so:
 ```bash
 BASEROW_PUBLIC_URL=https://YOUR_IP_HERE docker-compose up -d
 ```
 
 ### Accessing using a non-standard port
 
-If you have or want to access Baserow using a different port other than 80 and
+If you have or want to access Saveroom using a different port other than 80 and
 then you also need to set the environment variable `WEB_FRONTEND_PORT`.
 
 ```bash
@@ -125,10 +125,10 @@ WEB_FRONTEND_PORT=YOUR_CUSTOM_PORT \
 docker-compose up -d
 ```
 
-## Fixing an install using standalone Baserow service images
+## Fixing an install using standalone Saveroom service images
 
-Baserow also provides the `baserow/backend` and `baserow/web-frontend` images for users
-who want to host and co-ordinate the various Baserow services themselves. Using
+Saveroom also provides the `ghcr.io/carneirofc/baserow/backend` and `ghcr.io/carneirofc/baserow/web-frontend` images for users
+who want to host and co-ordinate the various Saveroom services themselves. Using
 these images you instead need to set the following environment variables on all 
 containers running these images. Please note that the `BASEROW_PUBLIC_URL` environment
 variable is not used by these standalone images.
@@ -147,5 +147,5 @@ variable is not used by these standalone images.
 
 ## Further help 
 
-Please post on the [community forum](https://baserow.io) if you are having further
+Please post on the [issue tracker](https://github.com/carneirofc/baserow/issues) if you are having further
 troubles or are using another installation method.

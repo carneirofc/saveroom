@@ -1,9 +1,8 @@
-import jwtDecode from 'jwt-decode'
+import { jwtDecode } from 'jwt-decode'
 
 import _ from 'lodash'
 
 import AuthService from '@baserow/modules/core/services/auth'
-import WorkspaceService from '@baserow/modules/core/services/workspace'
 import {
   setToken,
   setUserSessionCookie,
@@ -33,7 +32,6 @@ export const state = () => ({
   preventSetToken: false,
   untrustedClientSessionId: uuid(),
   userSessionExpired: false,
-  workspaceInvitations: [],
   umreadUserNotificationCount: 0,
 })
 
@@ -111,27 +109,6 @@ export const mutations = {
   SET_USER_SESSION_EXPIRED(state, expired) {
     state.userSessionExpired = expired
   },
-  SET_WORKSPACE_INVIATIONS(state, invitations) {
-    state.workspaceInvitations = invitations
-  },
-  ADD_OR_UPDATE_WORKSPACE_INVITATION(state, invitation) {
-    const existingIndex = state.workspaceInvitations.findIndex(
-      (c) => c.id === invitation.id
-    )
-    if (existingIndex !== -1) {
-      state.workspaceInvitations.splice(existingIndex, 1, invitation)
-    } else {
-      state.workspaceInvitations.push(invitation)
-    }
-  },
-  REMOVE_WORKSPACE_INVITATION(state, invitationId) {
-    const existingIndex = state.workspaceInvitations.findIndex(
-      (c) => c.id === invitationId
-    )
-    if (existingIndex !== -1) {
-      state.workspaceInvitations.splice(existingIndex, 1)
-    }
-  },
 }
 
 export const actions = {
@@ -168,15 +145,7 @@ export const actions = {
    */
   async register(
     { commit, dispatch },
-    {
-      email,
-      name,
-      password,
-      language,
-      workspaceInvitationToken = null,
-      templateId = null,
-      captchaToken = '',
-    }
+    { email, name, password, language, templateId = null, captchaToken = '' }
   ) {
     const { data } = await AuthService(this.$client).register(
       email,
@@ -184,7 +153,6 @@ export const actions = {
       password,
       language,
       true,
-      workspaceInvitationToken,
       templateId,
       captchaToken
     )
@@ -311,31 +279,6 @@ export const actions = {
     await unsetWorkspaceCookie(this.app)
     commit('SET_USER_SESSION_EXPIRED', value)
   },
-  async fetchWorkspaceInvitations({ commit }) {
-    const { data } = await AuthService(this.$client).dashboard()
-    commit('SET_WORKSPACE_INVIATIONS', data.workspace_invitations)
-    return data.workspace_invitations
-  },
-  forceUpdateOrCreateWorkspaceInvitation({ commit }, invitation) {
-    commit('ADD_OR_UPDATE_WORKSPACE_INVITATION', invitation)
-  },
-  async acceptWorkspaceInvitation({ commit }, invitationId) {
-    const { data: workspace } = await WorkspaceService(
-      this.$client
-    ).acceptInvitation(invitationId)
-    commit('REMOVE_WORKSPACE_INVITATION', invitationId)
-    return workspace
-  },
-  forceAcceptWorkspaceInvitation({ commit }, invitation) {
-    commit('REMOVE_WORKSPACE_INVITATION', invitation.id)
-  },
-  async rejectWorkspaceInvitation({ commit }, invitationId) {
-    await WorkspaceService(this.$client).rejectInvitation(invitationId)
-    commit('REMOVE_WORKSPACE_INVITATION', invitationId)
-  },
-  forceRejectWorkspaceInvitation({ commit }, invitation) {
-    commit('REMOVE_WORKSPACE_INVITATION', invitation.id)
-  },
 }
 
 export const getters = {
@@ -406,9 +349,6 @@ export const getters = {
   },
   isUserSessionExpired: (state) => {
     return state.userSessionExpired
-  },
-  getWorkspaceInvitations(state) {
-    return state.workspaceInvitations
   },
 }
 

@@ -6,6 +6,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from baserow.api.api_clients.authentication import (
+    ApiClientAuthentication,
+    HasApiClientScope,
+)
 from baserow.api.decorators import (
     map_exceptions,
     validate_body_custom_fields,
@@ -21,6 +25,7 @@ from baserow.core.jobs.exceptions import (
 )
 from baserow.core.jobs.handler import JobHandler
 from baserow.core.jobs.registries import job_type_registry
+from baserow.core.models import ExportApplicationsJob, ImportApplicationsJob
 
 from .errors import (
     ERROR_JOB_DOES_NOT_EXIST,
@@ -142,7 +147,22 @@ class JobsView(APIView):
 
 
 class JobView(APIView):
-    permission_classes = (IsAuthenticated,)
+    # A machine credential polls the backup and restore jobs it started, which is
+    # what `backup.read` stands for. Other job types are refused for API clients.
+    authentication_classes = APIView.authentication_classes + [ApiClientAuthentication]
+    permission_classes = (IsAuthenticated, HasApiClientScope)
+    api_client_scopes = {"GET": "backup.read"}
+
+    def get_api_client_workspace_id(self, request, job_id=None, **kwargs):
+        for model in (ExportApplicationsJob, ImportApplicationsJob):
+            workspace_id = (
+                model.objects.filter(id=job_id, user_id=request.user.id)
+                .values_list("workspace_id", flat=True)
+                .first()
+            )
+            if workspace_id is not None:
+                return workspace_id
+        return None
 
     @extend_schema(
         parameters=[

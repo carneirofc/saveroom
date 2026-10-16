@@ -28,7 +28,7 @@ describe('Builder collection field types', () => {
       )
 
       // Once a custom URL formula is provided, the field is no longer in error.
-      field.navigate_to_url = { formula: "'https://baserow.io'" }
+      field.navigate_to_url = { formula: "'https://example.com'" }
 
       expect(fieldType.isInError({ field, builder })).toBe(false)
     })

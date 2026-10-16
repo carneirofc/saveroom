@@ -31,15 +31,22 @@ class MappingSerializerExtension(OpenApiSerializerExtension):
     def map_serializer(self, auto_schema, direction):
         return self._map_serializer(auto_schema, direction, self.target.mapping)
 
-    def _map_serializer(self, auto_schema, direction, mapping):
+    def _map_serializer(self, auto_schema, direction, mapping, partial=False):
         sub_components = []
 
         for key, serializer_class in mapping.items():
             sub_serializer = force_instance(serializer_class)
+            if partial:
+                sub_serializer.partial = True
             resolved_sub_serializer = auto_schema.resolve_serializer(
                 sub_serializer, direction
             )
             sub_components.append((key, resolved_sub_serializer.ref))
+
+        if not sub_components:
+            # An empty registry must not produce `anyOf: []`, which is invalid
+            # OpenAPI (the keyword requires at least one subschema).
+            return {"type": "object", "additionalProperties": True}
 
         return {"anyOf": [ref for _, ref in sub_components]}
 
@@ -87,7 +94,8 @@ class CustomFieldRegistryMappingSerializerExtension(MappingSerializerExtension):
             for types in self.target.registry.registry.values()
         }
 
-        return self._map_serializer(auto_schema, direction, mapping)
+        partial = getattr(self.target, "partial_request", False)
+        return self._map_serializer(auto_schema, direction, mapping, partial=partial)
 
 
 class DiscriminatorMappingSerializerExtension(OpenApiSerializerExtension):
@@ -131,6 +139,11 @@ class DiscriminatorMappingSerializerExtension(OpenApiSerializerExtension):
                     sub_components.append((key, item))
             else:
                 sub_components.append((key, schema))
+
+        if not sub_components:
+            # An empty registry must not produce `oneOf: []`, which is invalid
+            # OpenAPI (the keyword requires at least one subschema).
+            return {"type": "object", "additionalProperties": True}
 
         return {
             "oneOf": [schema for _, schema in sub_components],

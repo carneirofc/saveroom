@@ -34,7 +34,7 @@
           ></i>
           <i
             v-show="file.state === 'failed'"
-            class="upload-files__state-failed iconoir-cancel"
+            class="upload-files__state-failed iconoir-xmark"
           ></i>
           <div
             v-show="file.state === 'uploading'"

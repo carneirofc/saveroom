@@ -3,6 +3,7 @@ import os
 import sys
 
 from django.conf import settings
+from django.core.handlers.asgi import ASGIHandler
 
 from loguru import logger
 
@@ -58,6 +59,30 @@ class dummy_context:
         pass
 
 
+class BaserowASGIHandler(ASGIHandler):
+    """
+    Django's disconnect watcher raises `RequestAborted`, whose traceback ends up in a
+    reference cycle with the `handle` frame that pins the request and response in
+    memory until a full garbage collection pass. On Django 5.2 completing the watcher
+    normally is behavior-identical (`handle` ignores the result and cancels the
+    in-flight request via `asyncio.wait`), and no cycle is created.
+
+    Streaming responses are not covered: on mid-stream disconnect an iterator that
+    references the view can still keep the response in a cycle.
+
+    TODO: re-evaluate before Django >= 6.1, where only a raising watcher aborts the
+    in-flight request. `test_handle_cancels_in_flight_request_on_disconnect` fails
+    loudly in that case.
+    """
+
+    async def listen_for_disconnect(self, receive):
+        message = await receive()
+        if message["type"] == "http.disconnect":
+            return
+        # This should never happen.
+        assert False, "Invalid ASGI message after request body: %s" % message["type"]
+
+
 class ConcurrencyLimiterASGI:
     """
     Helper wrapper on ASGI app to limit the number of requests handled
@@ -84,29 +109,29 @@ def log_env_warnings():
     if settings.BASEROW_PUBLIC_URL:
         if settings.BASEROW_PUBLIC_URL.startswith("http://localhost"):
             logger.warning(
-                "WARNING: Baserow is configured to use a BASEROW_PUBLIC_URL of "
-                f"{settings.BASEROW_PUBLIC_URL}. If you attempt to access Baserow on "
+                "WARNING: Saveroom is configured to use a BASEROW_PUBLIC_URL of "
+                f"{settings.BASEROW_PUBLIC_URL}. If you attempt to access Saveroom on "
                 "any other hostname requests to the backend will fail as they will be "
                 "from an unknown host. "
-                "Please set BASEROW_PUBLIC_URL if you will be accessing Baserow "
+                "Please set BASEROW_PUBLIC_URL if you will be accessing Saveroom "
                 f"from any other URL then {settings.BASEROW_PUBLIC_URL}."
             )
     else:
         if "PUBLIC_BACKEND_URL" not in os.environ:
             logger.warning(
-                "WARNING: Baserow is configured to use a PUBLIC_BACKEND_URL of "
-                f"{settings.PUBLIC_BACKEND_URL}. If you attempt to access Baserow on any other "
+                "WARNING: Saveroom is configured to use a PUBLIC_BACKEND_URL of "
+                f"{settings.PUBLIC_BACKEND_URL}. If you attempt to access Saveroom on any other "
                 "hostname requests to the backend will fail as they will be from an "
                 "unknown host."
                 "Please ensure you set PUBLIC_BACKEND_URL if you will be accessing "
-                f"Baserow from any other URL then {settings.PUBLIC_BACKEND_URL}."
+                f"Saveroom from any other URL then {settings.PUBLIC_BACKEND_URL}."
             )
         if "PUBLIC_WEB_FRONTEND_URL" not in os.environ:
             logger.warning(
-                "WARNING: Baserow is configured to use a default PUBLIC_WEB_FRONTEND_URL "
-                f"of {settings.PUBLIC_WEB_FRONTEND_URL}. Emails sent by Baserow will use links "
+                "WARNING: Saveroom is configured to use a default PUBLIC_WEB_FRONTEND_URL "
+                f"of {settings.PUBLIC_WEB_FRONTEND_URL}. Emails sent by Saveroom will use links "
                 f"pointing to {settings.PUBLIC_WEB_FRONTEND_URL} when telling users how to "
                 "access your server. "
                 "If this is incorrect please ensure you have set PUBLIC_WEB_FRONTEND_URL to "
-                "the URL where users can access your Baserow server."
+                "the URL where users can access your Saveroom server."
             )

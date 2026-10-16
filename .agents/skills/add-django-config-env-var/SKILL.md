@@ -16,7 +16,6 @@ When adding a new setting, usually check these files:
 
 - `backend/src/baserow/config/settings/base.py`
 - `docker-compose.yml`
-- `docker-compose.no-caddy.yml`
 - `web-frontend/env-remap.mjs`
 - `docs/installation/configuration.md` — the canonical env-var reference table; add a row in the right section
 - Backend or frontend code that uses the setting
@@ -35,7 +34,6 @@ MY_SETTING = int(os.getenv("BASEROW_MY_SETTING", 123))
 2. If the variable should be configurable in Docker, add it everywhere the similar example appears in:
 
 - `docker-compose.yml`
-- `docker-compose.no-caddy.yml`
 
 3. If the frontend needs it at runtime, add it to `web-frontend/env-remap.mjs`.
 

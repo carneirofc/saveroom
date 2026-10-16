@@ -25,11 +25,30 @@ def test_escape_query():
     # Spacing is standardized.
     assert SearchHandler.escape_query("Full   text   search") == "Full text search"
     # Escape colons for URLs.
-    assert SearchHandler.escape_query("https://baserow.io") == "https baserow io"
+    assert SearchHandler.escape_query("https://example.com") == "https example com"
     # Special characters are trimmed.
     assert SearchHandler.escape_query("Base<&(|)!>row") == "Base row"
     # Leading or trailing spaces trimmed.
     assert SearchHandler.escape_query("  Full text search  ") == "Full text search"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_full_text_search_in_table_without_fields(data_fixture):
+    user = data_fixture.create_user()
+    table, _, rows = data_fixture.build_table(
+        user=user, columns=[("Name", "text")], rows=[["Peter"], ["Afonso"]]
+    )
+    model = table.get_model()
+
+    # With no fields to search in, a textual query can't match anything.
+    result = SearchHandler.full_text_search_in_table(model.objects.all(), "Peter", [])
+    assert list(result) == []
+
+    # An exact row id match is still returned.
+    result = SearchHandler.full_text_search_in_table(
+        model.objects.all(), str(rows[1].id), []
+    )
+    assert [row.id for row in result] == [rows[1].id]
 
 
 @pytest.mark.django_db

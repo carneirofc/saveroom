@@ -23,7 +23,7 @@ def load_test_data():
     fake = Faker()
     print("Add basic data...")
 
-    user = User.objects.get(email="admin@baserow.io")
+    user = User.objects.get(email="admin@example.com")
     workspace = user.workspaceuser_set.get(workspace__name="Acme Corp").workspace
 
     try:
@@ -319,7 +319,7 @@ def load_test_data():
         data = [
             (
                 "user1",
-                "user1@baserow.io",
+                "user1@example.com",
                 make_password("password"),
                 "admin",
                 "2020-01-01",
@@ -329,7 +329,7 @@ def load_test_data():
             ),
             (
                 "user2",
-                "user2@baserow.io",
+                "user2@example.com",
                 make_password("password"),
                 "student",
                 "2021-02-02",
@@ -339,7 +339,7 @@ def load_test_data():
             ),
             (
                 "user3",
-                "user3@baserow.io",
+                "user3@example.com",
                 make_password("password"),
                 "teacher",
                 "2022-03-03",
@@ -349,7 +349,7 @@ def load_test_data():
             ),
             (
                 "user4",
-                "user4@baserow.io",
+                "user4@example.com",
                 make_password("password"),
                 "student",
                 "2023-04-04",

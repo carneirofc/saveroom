@@ -793,6 +793,45 @@ def test_token_blacklist(api_client, data_fixture):
 
 
 @pytest.mark.django_db
+def test_token_auth_failure_is_audit_logged(api_client, data_fixture):
+    from baserow.core.audit_log.models import AuditLogEntry
+
+    data_fixture.create_password_provider()
+    data_fixture.create_user(email="test@test.nl", password="password")
+
+    response = api_client.post(
+        reverse("api:user:token_auth"),
+        {"email": "test@test.nl", "password": "wrong"},
+        format="json",
+    )
+    assert response.status_code == HTTP_401_UNAUTHORIZED
+
+    entry = AuditLogEntry.objects.get(action_type="sign_in_failed")
+    assert entry.user_id is None
+    assert entry.user_email == "test@test.nl"
+    assert entry.command_type == "AUTH"
+
+
+@pytest.mark.django_db
+def test_token_blacklist_is_audit_logged(api_client, data_fixture):
+    from baserow.core.audit_log.models import AuditLogEntry
+
+    user = data_fixture.create_user(email="test@test.nl", password="password")
+    refresh_token_str = str(RefreshToken.for_user(user))
+
+    response = api_client.post(
+        reverse("api:user:token_blacklist"),
+        {"refresh_token": refresh_token_str},
+        format="json",
+    )
+    assert response.status_code == HTTP_204_NO_CONTENT
+
+    entry = AuditLogEntry.objects.get(action_type="sign_out")
+    assert entry.user_id == user.id
+    assert entry.command_type == "AUTH"
+
+
+@pytest.mark.django_db
 def test_token_auth_two_factor_token_is_not_access_token(api_client, data_fixture):
     data_fixture.create_password_provider()
     user = data_fixture.create_user(email="test@example.com", password="password")

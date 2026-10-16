@@ -35,7 +35,7 @@
         rel="noopener"
         class="header__filter-link"
       >
-        <i class="header__filter-icon iconoir-eye-empty"></i>
+        <i class="header__filter-icon iconoir-eye"></i>
         <span class="header__filter-name">{{
           $t('formViewHeader.preview')
         }}</span>

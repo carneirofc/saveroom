@@ -5,10 +5,7 @@
         <div class="form-view__sidebar-fields-title">
           {{ $t('formSidebar.fields') }}
         </div>
-        <ul
-          v-if="!readOnly && !isDeactivated"
-          class="form-view__sidebar-fields-actions"
-        >
+        <ul v-if="!readOnly" class="form-view__sidebar-fields-actions">
           <li v-if="fields.length > 0">
             <a
               @click="
@@ -42,12 +39,12 @@
           v-for="field in fields"
           :key="field.id"
           v-sortable="{
-            enabled: !readOnly && !isDeactivated,
+            enabled: !readOnly,
             id: field.id,
             update: order,
           }"
           :field="field"
-          :read-only="readOnly || isDeactivated"
+          :read-only="readOnly"
           @updated-field-options="
             updateFieldOptionsOfField(view, field, $event)
           "
@@ -57,7 +54,7 @@
       <p v-else class="form-view__sidebar-fields-description">
         {{ $t('formSidebar.fieldsDescription') }}
       </p>
-      <div v-if="!readOnly && !isDeactivated">
+      <div v-if="!readOnly">
         <span ref="createFieldContextLink">
           <ButtonText
             icon="iconoir-plus"
@@ -162,15 +159,6 @@ export default {
   },
   emits: ['ordered-fields'],
   computed: {
-    modeType() {
-      return this.$registry.get('formViewMode', this.view.mode)
-    },
-    isDeactivated() {
-      return (
-        !this.readOnly &&
-        this.modeType.isDeactivated(this.database.workspace.id)
-      )
-    },
     editableByFields() {
       return this.fields.filter(
         (field) =>

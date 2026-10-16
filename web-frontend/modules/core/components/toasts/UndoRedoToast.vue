@@ -53,25 +53,25 @@ export default {
           })
         case UNDO_REDO_STATES.NO_MORE_UNDO:
           return base({
-            icon: 'iconoir-cancel',
+            icon: 'iconoir-xmark',
             title: this.$t('undoRedoToast.failed'),
             content: this.$t('undoRedoToast.noMoreUndo'),
           })
         case UNDO_REDO_STATES.NO_MORE_REDO:
           return base({
-            icon: 'iconoir-cancel',
+            icon: 'iconoir-xmark',
             title: this.$t('undoRedoToast.failed'),
             content: this.$t('undoRedoToast.noMoreRedo'),
           })
         case UNDO_REDO_STATES.ERROR_WITH_UNDO:
           return base({
-            icon: 'iconoir-exclamation',
+            icon: 'iconoir-warning-triangle',
             title: this.$t('undoRedoToast.failed'),
             content: this.$t('undoRedoToast.skippingUndoDueToError'),
           })
         case UNDO_REDO_STATES.ERROR_WITH_REDO:
           return base({
-            icon: 'iconoir-exclamation',
+            icon: 'iconoir-warning-triangle',
             title: this.$t('undoRedoToast.failed'),
             content: this.$t('undoRedoToast.skippingRedoDueToError'),
           })

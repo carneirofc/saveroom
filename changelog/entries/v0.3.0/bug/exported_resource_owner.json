@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Workspace export archives now record the user that created them. Without an owner they could neither be deleted nor imported again, because both look the resource up by its owner.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-07-29"
+}

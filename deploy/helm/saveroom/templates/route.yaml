@@ -1,0 +1,62 @@
+{{- if .Values.openshift.route.enabled }}
+{{- $fullname := include "baserow.fullname" . }}
+{{- $host := .Values.openshift.route.host }}
+{{- $tls := .Values.openshift.route.tls }}
+{{- $labels := include "baserow.labels" . }}
+{{- $annotations := .Values.openshift.route.annotations }}
+# Default route: everything not matched by a backend path -> web-frontend.
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- $labels | nindent 4 }}
+  {{- with $annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  host: {{ $host | quote }}
+  path: /
+  to:
+    kind: Service
+    name: {{ $fullname }}-web-frontend
+    weight: 100
+  port:
+    targetPort: http
+  {{- if $tls.enabled }}
+  tls:
+    termination: {{ $tls.termination }}
+    insecureEdgeTerminationPolicy: {{ $tls.insecureEdgeTerminationPolicy }}
+  {{- end }}
+  wildcardPolicy: None
+{{- range .Values.openshift.route.backendPaths }}
+---
+# Backend path route: {{ . }} -> backend (longest-prefix match wins over "/").
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ printf "%s-backend-%s" $fullname (. | trimPrefix "/" | replace "/" "-") }}
+  labels:
+    {{- $labels | nindent 4 }}
+  {{- with $annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  host: {{ $host | quote }}
+  path: {{ . | quote }}
+  to:
+    kind: Service
+    name: {{ $fullname }}-backend
+    weight: 100
+  port:
+    targetPort: http
+  {{- if $tls.enabled }}
+  tls:
+    termination: {{ $tls.termination }}
+    insecureEdgeTerminationPolicy: {{ $tls.insecureEdgeTerminationPolicy }}
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}
+{{- end }}

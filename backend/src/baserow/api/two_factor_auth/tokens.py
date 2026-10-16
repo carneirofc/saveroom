@@ -25,5 +25,5 @@ class Require2faToken(permissions.BasePermission):
         try:
             token = TwoFactorAccessToken(token_string)
             return token.token_type == "2fa"  # nosec
-        except (InvalidToken, TokenError):
+        except InvalidToken, TokenError:
             return False

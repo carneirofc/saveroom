@@ -1,0 +1,9 @@
+{
+    "type": "breaking_change",
+    "message": "The all-in-one image and the Helm chart are published under new names from this release on: the all-in-one image moved from `ghcr.io/carneirofc/baserow/baserow` to `ghcr.io/carneirofc/baserow`, and the chart from `oci://ghcr.io/carneirofc/baserow/charts/baserow` to `oci://ghcr.io/carneirofc/baserow/charts/saveroom`. Update image references and `helm upgrade` commands to the new paths; releases up to 0.15.0 stay at the old paths. The split `backend`, `web-frontend` and `caddy` images keep their paths. Volumes, databases, environment variables and the chart's resource names are unchanged, so existing installs and Helm releases upgrade in place.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-09"
+}

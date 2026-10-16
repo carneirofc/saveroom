@@ -1,0 +1,9 @@
+{
+    "type": "refactor",
+    "message": "Removed the hooks upstream used to grey out and lock paid features: lock icons, \"upgrade\" click modals and disabled entries for field, view, element, node, setting and admin types. Every implementation in this fork already reported the feature as available, so nothing changes for users. Plugins that need to hide or disable a type now do so through their own registration.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-09"
+}

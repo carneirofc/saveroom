@@ -24,7 +24,7 @@
           class="sortings__remove"
           @click.stop="deleteSort(sort)"
         >
-          <i class="iconoir-cancel"></i>
+          <i class="iconoir-xmark"></i>
         </a>
 
         <div v-if="sortMisconfigured(sort)">

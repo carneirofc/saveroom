@@ -1,0 +1,9 @@
+{
+    "type": "breaking_change",
+    "message": "Workspace invitations are removed: admins add people who already have an account from Members → Add members. Pending invitations, invitation emails and notifications, invite-token signups and the \"allow signups via workspace invitations\" setting are gone, as are the /api/workspaces/invitations/ and /api/user/dashboard/ endpoints.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-15"
+}

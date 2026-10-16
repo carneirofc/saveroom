@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Fixed the Helm chart deploying image tags that do not exist. `Chart.yaml` still carried the upstream `appVersion` 2.3.2, and the chart defaults `image.backend.tag` / `image.webFrontend.tag` to it, so a default install pulled `ghcr.io/carneirofc/baserow/backend:2.3.2` from this fork's registry, which only publishes this fork's own release tags. `appVersion` now tracks the fork release.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-08-28"
+}

@@ -33,34 +33,34 @@ def test_0082_remove_duplicate_workspace_invitation_forwards(
     WorkspaceInvitation.objects.bulk_create(
         [
             WorkspaceInvitation(
-                id=1, email="a@baserow.io", workspace_id=1, invited_by_id=sender.id
+                id=1, email="a@example.com", workspace_id=1, invited_by_id=sender.id
             ),
             WorkspaceInvitation(
-                id=2, email="a@baserow.io", workspace_id=1, invited_by_id=sender.id
+                id=2, email="a@example.com", workspace_id=1, invited_by_id=sender.id
             ),
             WorkspaceInvitation(
-                id=3, email="a@baserow.io", workspace_id=2, invited_by_id=sender.id
+                id=3, email="a@example.com", workspace_id=2, invited_by_id=sender.id
             ),
             WorkspaceInvitation(
-                id=4, email="b@baserow.io", workspace_id=1, invited_by_id=sender.id
+                id=4, email="b@example.com", workspace_id=1, invited_by_id=sender.id
             ),
             WorkspaceInvitation(
-                id=5, email="b@baserow.io", workspace_id=2, invited_by_id=sender.id
+                id=5, email="b@example.com", workspace_id=2, invited_by_id=sender.id
             ),
             WorkspaceInvitation(
-                id=6, email="b@baserow.io", workspace_id=2, invited_by_id=sender.id
+                id=6, email="b@example.com", workspace_id=2, invited_by_id=sender.id
             ),
             WorkspaceInvitation(
-                id=7, email="c@baserow.io", workspace_id=2, invited_by_id=sender.id
+                id=7, email="c@example.com", workspace_id=2, invited_by_id=sender.id
             ),
             WorkspaceInvitation(
-                id=8, email="c@baserow.io", workspace_id=2, invited_by_id=sender.id
+                id=8, email="c@example.com", workspace_id=2, invited_by_id=sender.id
             ),
             WorkspaceInvitation(
-                id=9, email="c@baserow.io", workspace_id=2, invited_by_id=sender.id
+                id=9, email="c@example.com", workspace_id=2, invited_by_id=sender.id
             ),
             WorkspaceInvitation(
-                id=10, email="c@baserow.io", workspace_id=2, invited_by_id=sender.id
+                id=10, email="c@example.com", workspace_id=2, invited_by_id=sender.id
             ),
         ]
     )
@@ -79,5 +79,5 @@ def test_0082_remove_duplicate_workspace_invitation_forwards(
     # And now it's not possible to create a new duplicate
     with pytest.raises(IntegrityError):
         NewWorkspaceInvitation.objects.create(
-            email="a@baserow.io", workspace_id=1, invited_by_id=sender.id
+            email="a@example.com", workspace_id=1, invited_by_id=sender.id
         ),

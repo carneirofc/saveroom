@@ -32,8 +32,6 @@
           <span
             v-for="workflowActionType in availableWorkflowActionTypes"
             :key="workflowActionType.getType()"
-            v-tooltip="workflowActionType.isDeactivatedReason({ workspace })"
-            tooltip-position="bottom-left"
           >
             <ButtonText
               :value="workflowActionType.getType()"
@@ -41,22 +39,10 @@
               :image="workflowActionType.image"
               type="primary"
               size="small"
-              :disabled="
-                workflowActionType.isDeactivated({ workspace }) &&
-                getDeactivatedClickModal(workflowActionType) === null
-              "
               @click="addWorkflowAction(workflowActionType)"
             >
               {{ workflowActionType.label }}
             </ButtonText>
-            <component
-              :is="getDeactivatedClickModal(workflowActionType)[0]"
-              v-if="getDeactivatedClickModal(workflowActionType) !== null"
-              :ref="`deactivatedClickModal_${workflowActionType.getType()}`"
-              v-bind="getDeactivatedClickModal(workflowActionType)[1]"
-              :name="workflowActionType.label"
-              :workspace="workspace"
-            ></component>
           </span>
         </div>
       </Context>
@@ -164,17 +150,6 @@ export default {
       }
     },
     async addWorkflowAction(workflowActionType) {
-      if (workflowActionType.isDeactivated({ workspace: this.workspace })) {
-        const deactivatedClickModal =
-          this.getDeactivatedClickModal(workflowActionType)
-        if (deactivatedClickModal !== null) {
-          this.$refs[
-            `deactivatedClickModal_${workflowActionType.getType()}`
-          ][0].show()
-        }
-        return
-      }
-
       this.addingAction = true
       this.$refs.workflowActionAddContext.hide()
       try {
@@ -211,11 +186,6 @@ export default {
       } catch (error) {
         notifyIf(error)
       }
-    },
-    getDeactivatedClickModal(workflowActionType) {
-      return workflowActionType.getDeactivatedClickModal({
-        workspace: this.workspace,
-      })
     },
   },
 }

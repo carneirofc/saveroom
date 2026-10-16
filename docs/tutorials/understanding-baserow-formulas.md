@@ -1,19 +1,19 @@
-# Understanding Baserow Formulas
+# Understanding Saveroom Formulas
 
-Baserow formula fields allow you to dynamically calculate values for each cell in the
+Saveroom formula fields allow you to dynamically calculate values for each cell in the
 field based on a formula. These formulas are similar to those found in other spreadsheet
 tools, have a growing collection of functions available and are lightning fast.
 
-This guide will first explain what Baserow formulas are and how to use them. See the
+This guide will first explain what Saveroom formulas are and how to use them. See the
 [baserow formula technical guide](../technical/formula-technical-guide.md) if you are a
-looking for a technical understanding of how formulas are implemented within Baserow.
+looking for a technical understanding of how formulas are implemented within Saveroom.
 
-## What a Baserow Formula Field is
+## What a Saveroom Formula Field is
 
-A Baserow Formula field lets you create a field whose contents are calculated based on a
-Baserow Formula you've provided. A Baserow Formula is simply some text written in a
-particular way such that Baserow can understand it, for example the text `1+1` is a
-Baserow formula which will calculate the result `2` for every row.
+A Saveroom Formula field lets you create a field whose contents are calculated based on a
+Saveroom Formula you've provided. A Saveroom Formula is simply some text written in a
+particular way such that Saveroom can understand it, for example the text `1+1` is a
+Saveroom formula which will calculate the result `2` for every row.
 
 ### A Simple Formula Example
 
@@ -60,7 +60,7 @@ is going on:
       `text field`. For each cell in the formula field this reference will be replaced
       by whatever the value in the `text field` field is for that row.
 * `)`
-    * Finally, we need to tell Baserow we've finished giving inputs to the `concat`
+    * Finally, we need to tell Saveroom we've finished giving inputs to the `concat`
       function, we do this with a matching closing parenthesis.
 
 #### What is a formula function?
@@ -136,7 +136,7 @@ no longer reference the deleted field or rename another field.
 ### Extra Functions
 
 Many more functions will be coming soon, please let us know which in particular are most
-important for you on our [community forum](https://community.baserow.io/).
+important for you on our [issue tracker](https://github.com/carneirofc/baserow/issues).
 
 ### Unsupported Field Types
 

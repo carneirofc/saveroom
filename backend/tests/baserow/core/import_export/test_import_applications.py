@@ -332,3 +332,31 @@ def test_import_cleans_up_on_checksum_failure(
         )
 
     assert not storage.exists(import_tmp_path)
+
+
+@pytest.mark.import_export_workspace
+@pytest.mark.django_db
+def test_extract_files_streams_members_to_storage(tmp_path, use_tmp_media_root):
+    payload = os.urandom(300_000)
+    zip_path = f"{tmp_path}/stream_test.zip"
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.writestr("big.bin", payload)
+
+    storage = get_default_storage()
+    original_read = zipfile.ZipExtFile.read
+    unbounded_reads = []
+
+    def spy(self, n=-1):
+        if n is None or n < 0:
+            unbounded_reads.append(n)
+        return original_read(self, n)
+
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        with patch.object(zipfile.ZipExtFile, "read", spy):
+            ImportExportHandler().extract_files_from_zip(
+                "import_test/stream", zf, storage, allowed_files=["big.bin"]
+            )
+
+    assert unbounded_reads == []
+    with storage.open("import_test/stream/big.bin", "rb") as extracted:
+        assert extracted.read() == payload

@@ -1,75 +1,39 @@
-# Repository Guidelines
+# Saveroom
 
-## Project Structure & Module Organization
+FOSS fork of Baserow: a no-code database and application platform. Django backend + Nuxt/Vue frontend, run with Docker Compose and shipped via a Helm chart.
 
-Baserow is a monorepo. Core Django code lives in `backend/src`, shared backend tests in `backend/tests`, and the main Nuxt app in `web-frontend/` (`modules/`, `server/`, `test/`, `stories/`). Paid extensions mirror that layout in `premium/backend`, `premium/web-frontend`, `enterprise/backend`, and `enterprise/web-frontend`. End-to-end coverage lives in `e2e-tests/`. Product and contributor docs are in `docs/`, while deployment recipes are under `deploy/`.
+## DOX contract
 
-## Build, Test, and Development Commands
+AGENTS.md files are binding contracts for their subtrees.
 
-Use `just` from the repo root; it wraps the backend and frontend workflows consistently for local and Docker setups.
+- Before editing, read every AGENTS.md on the path from the root to each file you touch. The closest doc controls local details; no child may weaken a parent.
+- After a meaningful change, update the nearest owning AGENTS.md when it alters scope, contracts, workflows, constraints or user preferences, and refresh any affected Child DOX Index. Delete stale text rather than annotating it.
+- Keep docs short and operational: stable contracts, not history. Broad rules go in parents, concrete detail in children; don't repeat a rule across files.
+- Child doc sections, in order: Purpose, Ownership, Local Contracts, Work Guidance, Verification, Child DOX Index. Leave Work Guidance/Verification empty when no standard or check exists.
 
-- `just init` installs dependencies and creates `.env.local`.
-- `just dev up` starts the local stack; `just dc-dev up -d` runs the Docker dev environment.
-- `just b test -n=auto` runs backend pytest suites in parallel.
-- `just b test tests/baserow/core/notifications/utils.py` to test a specific file.
-- `just f test` runs frontend Vitest suites.
-- `just lint` runs both backend and frontend linters; `just fix` applies auto-fixes.
-- `just b run pre-commit run --files $(git diff --name-only HEAD)` lints only the files you've touched on your branch (staged + unstaged); use `origin/develop...HEAD` instead of `HEAD` to scope to the whole branch. See `docs/development/code-quality.md` for details.
-- `just b migrate` runs Django migrations.
+## User preferences
 
-For direct package-manager use, backend commands run through `uv` and frontend commands through `yarn`.
+- Scrub pointers, branding and infra ties back to Baserow B.V.; never reintroduce them.
+- The product is **Saveroom** ("the safe room for your tables"). Rename only what users and operators see; internal `baserow` identifiers stay (Python package, `BASEROW_*` env vars, API paths, protocol headers, DB/app labels, `local_baserow` types, the `baserow-icon` CSS prefix, the Helm chart's base resource name).
+- Keep the MIT attribution to Baserow B.V. (`LICENSE`, file headers, version panel credits, README "Meta" section): it is a license obligation, not branding.
 
-## Coding Style & Naming Conventions
+## Layout
 
-Python targets Python 3.14, uses 4-space indentation, and is formatted and linted with Ruff (`just b lint`, `just b fix`) with an 88-character line length. Follow existing Django app/module naming and keep new tests in `test_*.py` or `*_test.py` files. Frontend code uses ESLint, Stylelint, and Prettier (`just f lint`, `just f fix`); SCSS should follow BEM-style naming already used in `web-frontend/modules`. Use `$palette-*` color variables in CSS; `$color-*` variables are legacy compatibility aliases and should not be used for new styles.
+`backend/` (Django API + workers), `web-frontend/` (Nuxt app), `e2e-tests/` (Playwright), `deploy/` (all-in-one image + Helm), `docs/`, `changelog/`, `.agents/skills/` (project skills; `.claude/skills` symlinks here).
 
-## Localization
+## Repo-wide rules
 
-When adding or changing UI copy, update the English locale files only. Do not add or edit non-English locale files such as `fr.json`, `es.json`, or `de.json` unless explicitly requested; those translations are managed through Weblate.
+- Task runner is `just` (root `justfile` dispatches to per-area justfiles): `just lint`, `just test`, `just fix`; `just backend …`, `just frontend …`, `just e2e …`, `just changelog …`.
+- Every user-facing or behavioral change needs a changelog entry (`just changelog add`, see `changelog/AGENTS.md`).
+- Commits use Conventional Commits; never add a `Co-Authored-By` or tooling-attribution trailer. `.pre-commit-config.yaml` gates lint/format.
+- CVE gate: `just audit deps` (every `uv.lock`/`yarn.lock`) and `just audit images <refs>` run the pinned Trivy image and fail on fixable HIGH/CRITICAL findings; CI enforces the same. Fix by upgrading (yarn `resolutions`, uv constraints); a suppression goes in `.trivyignore.yaml` with a `statement` and `expired_at`. Keep the Trivy version identical in the root `justfile`, `ci.yml` and `build-publish-image.yml`.
 
-## Technology Stack
+## Child DOX Index
 
-Backend code uses Django, Django REST Framework, Celery, PostgreSQL, Redis, and pytest/pytest-django. Python dependencies are managed with `uv`.
-
-Frontend code uses Vue 3, Nuxt 3, Vuex, Vite, Vitest, Storybook, SCSS, ESLint, Stylelint, Prettier, and `yarn`. Render functions must use Vue 3 semantics, for example importing `h` from `vue` instead of expecting `render(h)` to receive it. JSX-bearing frontend files must use a `.jsx` or `.tsx` extension so Vite can parse them.
-
-## Testing Guidelines
-
-Backend tests use `pytest` with `pytest-django`; frontend tests use `vitest`; browser flows live in `e2e-tests/`. Add unit tests for backend changes and targeted frontend tests for component or store behavior. 
-
-Examples: `just b test tests/path/`, `just b test-coverage`, `just f test -- --coverage`, `just f yarn test:core path/to/test`.
-
-## Commit & Pull Request Guidelines
-
-Recent history favors short, imperative subjects, often with Conventional Commit prefixes such as `fix:`, `feat:`, and `chore(deps):`. Branch from `develop`, keep PRs focused, and link the related issue or discussion. Include a clear summary, note schema or env changes, attach screenshots for UI work, add a changelog entry when required, and make sure the relevant lint and test commands pass before opening the PR.
-
-## Project Skills
-
-Reusable skills live in `.agents/skills/`. Each subdirectory is a self-contained skill with a `SKILL.md` that describes when and how to apply it. Use these instead of re-deriving the same workflow from scratch.
-
-| Skill directory                   | When to use                                                                                                                                                          |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `add-django-config-env-var`       | Adding a new Django setting backed by an env var and propagating it to `base.py`, docker-compose files, `env-remap.mjs`, and `docs/installation/configuration.md`    |
-| `write-frontend-unit-test`        | Writing or fixing frontend unit tests in `web-frontend`, `premium/web-frontend`, or `enterprise/web-frontend`                                                        |
-| `create-update-service`           | Creating or updating an integration type or service type in `contrib/integrations`                                                                                   |
-| `create-in-app-notification`      | Creating or updating a Baserow in-app notification for an event, including backend and frontend registration, target routing data, and duplicate-prevention behavior |
-| `add-update-builder-element-type` | Adding or updating an Application Builder element type across backend, frontend, migrations, registration, translations, icons, and targeted tests                   |
-| `manage-backend-layers`           | Adding or changing backend model, handler, service, undoable action, and API view layers using the newer automation modules as the preferred pattern                 |
-
-## Security & Configuration Tips
-
-Do not commit secrets or local overrides. Use `.env.local` for development, keep production settings in the documented deploy configs, and report vulnerabilities privately via the contact path in `CONTRIBUTING.md` rather than opening a public issue.
-
-## Good practices
-
-- On a specific branch, always merge backend migrations file instead of creating new ones only if it was created on the very same branch.
-- Django migrations must be executed with zero downtime. This means the new database schema must remain compatible with the previous application version during the deployment.
-  - Every new field must define a `db_default`.
-  - Do not remove fields unless you are certain they are no longer used by the previous application version. Instead, keep the field and add a `# TODO ZDM: remove this field in the next version` comment so it can be safely removed in a subsequent release.
-- CSS classes respect BEM methodology.
-- When working on translations, only update english unless told otherwise. Other languages are handled with Weblate. Don't nest keys too much, just keep one level of nesting.
-
-## Memory
-
-Before starting work, read `MEMORY.md` file at same level of `AGENTS.md` file if it exists for historical context and design decisions.
-Update that memory file to keep track of the decisions.
+- [`backend/AGENTS.md`](backend/AGENTS.md) — Django API, core, contrib domains, workers, migrations, pytest.
+- [`web-frontend/AGENTS.md`](web-frontend/AGENTS.md) — Nuxt/Vue modules, components, i18n, branding, Vitest.
+- [`e2e-tests/AGENTS.md`](e2e-tests/AGENTS.md) — Playwright suite and its Dockerized stack.
+- [`deploy/AGENTS.md`](deploy/AGENTS.md) — all-in-one image, Caddy image, Helm chart, image build rules.
+- [`docs/AGENTS.md`](docs/AGENTS.md) — user/developer docs site and ADRs.
+- [`changelog/AGENTS.md`](changelog/AGENTS.md) — conflict-free changelog generator.
+- [`.agents/skills/AGENTS.md`](.agents/skills/AGENTS.md) — project skills.

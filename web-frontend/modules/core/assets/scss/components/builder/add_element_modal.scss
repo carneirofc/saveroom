@@ -20,7 +20,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-top: 1px solid #ededed;
+    border-top: 1px solid $palette-neutral-200;
     cursor: pointer;
     user-select: none;
     padding-top: 20px;
@@ -40,7 +40,7 @@
   &__category-title {
     font-size: 12px;
     font-weight: 400;
-    color: #6a6b70;
+    color: $palette-neutral-900;
     width: 100%;
     display: inline-block;
 

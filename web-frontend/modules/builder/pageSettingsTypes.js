@@ -60,7 +60,7 @@ export class PageVisibilitySettingsType extends PageSettingType {
   }
 
   get icon() {
-    return 'iconoir-eye-empty'
+    return 'iconoir-eye'
   }
 
   get component() {

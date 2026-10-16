@@ -26,15 +26,15 @@ class SimpleResetPasswordEmail(BaseEmailMessage):
 @pytest.mark.django_db
 def test_base_email_message():
     with pytest.raises(NotImplementedError):
-        WithoutSubjectEmail("test@baserow.io")
+        WithoutSubjectEmail("test@example.com")
 
     with pytest.raises(NotImplementedError):
-        WithoutSubjectEmail("test@baserow.io")
+        WithoutSubjectEmail("test@example.com")
 
     with pytest.raises(TemplateDoesNotExist):
-        WrongTemplateEmail("test@baserow.io")
+        WrongTemplateEmail("test@example.com")
 
-    email = SimpleResetPasswordEmail(["test@baserow.io"])
+    email = SimpleResetPasswordEmail(["test@example.com"])
     context = email.get_context()
     assert "public_backend_url" in context
     assert "public_backend_hostname" in context

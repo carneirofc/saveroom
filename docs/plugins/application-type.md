@@ -1,16 +1,16 @@
 # Application type
 
 An application is an abstraction that a user can add to workspace. More information about 
-this can be found in the [introduction](../technical/introduction.md). This is a
-tutorial about how you can add your own application to Baserow via a plugin. We are 
+this can be found in the [architecture overview](../architecture.md). This is a
+tutorial about how you can add your own application to Saveroom via a plugin. We are 
 going to create a text file application. In the end a user can use the "Create new" 
-button to create a text file and add it to a workspace. We expect that you are using the
-[plugin boilerplate](./boilerplate.md).
+button to create a text file and add it to a workspace. We expect that you have a plugin laid out as described in
+[plugin architecture](./creation.md#plugin-architecture).
 
 ## Backend
 
 We are going to start by creating a new application type instance for our text file and
-add it to the application type registry. By doing this the Baserow backend knows we 
+add it to the application type registry. By doing this the Saveroom backend knows we 
 have an additional application type names `text_file`. Creating the following python 
 classes and modify the plugins config. Every time a user creates a new text file 
 application a TextFile model instance is automatically created. It is also possible to 
@@ -67,7 +67,7 @@ $ baserow migrate
 Lets try to create a new application with the `text_file` type by calling the 
 `create_application` endpoint. More information on how to do this can be found in the
 [api docs](../apis/rest-api.md) and in the 
-[create application api spec](https://api.baserow.io/api/redoc/#operation/create_application).
+create application api spec (`https://YOUR_HOST/api/redoc/#operation/create_application`).
 If that succeeds you are ready to get to the next web-frontend part. You might want to 
 inspect the `backend/src/baserow/core/registries.py::ApplicationType` class for all the
 options.
@@ -104,14 +104,19 @@ export class TextFileApplicationType extends ApplicationType {
 
 plugins/my_baserow_plugin/web-frontend/plugin.js
 ```javascript
+import { defineNuxtPlugin } from '#app'
 import { PluginNamePlugin } from '@my-baserow-plugin/plugins'
 import { TextFileApplicationType } from '@my-baserow-plugin/applicationTypes'
 
-export default (context) => {
-  const { app } = context
-  app.$registry.register('plugin', new PluginNamePlugin(context))
-  app.$registry.register('application', new TextFileApplicationType(context))
-}
+export default defineNuxtPlugin({
+  dependsOn: ['core'],
+  setup(nuxtApp) {
+    const { $registry } = nuxtApp
+    const context = { app: nuxtApp }
+    $registry.register('plugin', new PluginNamePlugin(context))
+    $registry.register('application', new TextFileApplicationType(context))
+  },
+})
 ```
 
 Once you have added this code you should be able to use the "Create new" button in the
@@ -120,5 +125,5 @@ the state right now it does not do anything. There are several methods that can
 be overridden in the `TextFileApplicationType` class. You can for example create a new 
 route and provide that route name in the `getRouteName` method if you want to navigate 
 to that route when the user clicks on the text file in the sidebar. You might want to 
-inspect the `web-frontend/modules/core/applicationTypes.js` file in the Baserow 
+inspect the `web-frontend/modules/core/applicationTypes.js` file in the Saveroom 
 repository for all the options.

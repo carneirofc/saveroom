@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "The product is now called Saveroom, the safe room for your tables. The browser title, the interface texts, email subjects and bodies, the API docs title, the two-factor authenticator issuer, the MCP server name and the default \"Local Saveroom\" integration now use the name, and the marketing paragraph about Baserow at the bottom of every email is gone. The name follows runtime branding: `BASEROW_BRANDING_APP_NAME` (or `appName` in `branding.json` for the web-frontend) renames all of these, and the backend now reads the same variable, so give it to the backend and Celery containers as well. Environment variables, API paths and the data on disk are unchanged.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-09"
+}

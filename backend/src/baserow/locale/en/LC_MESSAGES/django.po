@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-06 19:38+0000\n"
+"POT-Creation-Date: 2026-10-09 13:22+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,11 +18,11 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/baserow/api/authentication.py:27
+#: src/baserow/api/authentication.py:26
 msgid "Token contained no recognizable user identification"
 msgstr ""
 
-#: src/baserow/api/authentication.py:42
+#: src/baserow/api/authentication.py:41
 msgid "User not found"
 msgstr ""
 
@@ -46,12 +46,13 @@ msgid ""
 "(%(automation_id)s)."
 msgstr ""
 
-#: src/baserow/contrib/automation/automation_init_application.py:29
+#: src/baserow/contrib/automation/automation_init_application.py:30
 msgid "Workflow"
 msgstr ""
 
-#: src/baserow/contrib/automation/automation_init_application.py:30
-msgid "Local Baserow"
+#: src/baserow/contrib/automation/automation_init_application.py:31
+#, python-format
+msgid "Local %(app_name)s"
 msgstr ""
 
 #: src/baserow/contrib/automation/nodes/actions.py:25
@@ -110,75 +111,71 @@ msgstr ""
 msgid "Node (%(node_id)s) moved"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:143
-msgid "Local Baserow create row"
+#: src/baserow/contrib/automation/nodes/node_types.py:141
+msgid "Create row"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:160
-msgid "Local Baserow update row"
+#: src/baserow/contrib/automation/nodes/node_types.py:158
+msgid "Update row"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:177
-msgid "Local Baserow delete row"
+#: src/baserow/contrib/automation/nodes/node_types.py:175
+msgid "Delete row"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:185
-msgid "Local Baserow get row"
+#: src/baserow/contrib/automation/nodes/node_types.py:183
+msgid "Get row"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:193
-msgid "Local Baserow list rows"
+#: src/baserow/contrib/automation/nodes/node_types.py:191
+msgid "List rows"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:201
-msgid "Local Baserow aggregate rows"
+#: src/baserow/contrib/automation/nodes/node_types.py:199
+msgid "Aggregate rows"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:209
+#: src/baserow/contrib/automation/nodes/node_types.py:207
 msgid "HTTP request"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:216
+#: src/baserow/contrib/automation/nodes/node_types.py:214
 msgid "Iterator"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:229
+#: src/baserow/contrib/automation/nodes/node_types.py:227
 msgid "Send email"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:242
-msgid "AI agent"
-msgstr ""
-
-#: src/baserow/contrib/automation/nodes/node_types.py:249
+#: src/baserow/contrib/automation/nodes/node_types.py:240
 msgid "Router"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:315
+#: src/baserow/contrib/automation/nodes/node_types.py:306
 msgid "Branch"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:444
-msgid "Local Baserow rows created"
+#: src/baserow/contrib/automation/nodes/node_types.py:435
+msgid "Rows created"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:452
-msgid "Local Baserow rows updated"
+#: src/baserow/contrib/automation/nodes/node_types.py:443
+msgid "Rows updated"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:460
-msgid "Local Baserow rows deleted"
+#: src/baserow/contrib/automation/nodes/node_types.py:451
+msgid "Rows deleted"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:476
+#: src/baserow/contrib/automation/nodes/node_types.py:467
 msgid "Periodic trigger"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:483
+#: src/baserow/contrib/automation/nodes/node_types.py:474
 msgid "HTTP trigger"
 msgstr ""
 
-#: src/baserow/contrib/automation/nodes/node_types.py:496
+#: src/baserow/contrib/automation/nodes/node_types.py:487
 msgid "Slack write message"
 msgstr ""
 

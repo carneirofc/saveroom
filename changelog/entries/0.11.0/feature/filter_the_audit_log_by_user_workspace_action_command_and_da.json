@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Filter the audit log by user, workspace, action, command and date range, and show the command and IP address columns. Exporting to CSV now exports exactly what the filters and search show instead of the whole log.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-16"
+}

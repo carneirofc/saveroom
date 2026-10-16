@@ -16,6 +16,8 @@ from django.urls import include, path
 from django.utils import translation
 from django.utils.translation import gettext as _
 
+from loguru import logger
+
 from baserow.contrib.database.api.serializers import DatabaseSerializer
 from baserow.contrib.database.db.schema import safe_django_schema_editor
 from baserow.contrib.database.fields.field_cache import FieldCache
@@ -26,8 +28,10 @@ from baserow.contrib.database.fields.utils.field_constraint import (
 from baserow.contrib.database.models import Database, Field, View
 from baserow.contrib.database.operations import ListTablesDatabaseTableOperationType
 from baserow.contrib.database.table.handler import TableHandler
+from baserow.contrib.database.views.exceptions import ViewTypeDoesNotExist
 from baserow.contrib.database.views.registries import view_type_registry
 from baserow.core.db import specific_queryset
+from baserow.core.exceptions import InstanceTypeDoesNotExist
 from baserow.core.handler import CoreHandler
 from baserow.core.models import Application, Workspace
 from baserow.core.registries import (
@@ -187,7 +191,9 @@ class DatabaseApplicationType(ApplicationType):
             if hasattr(table, "data_sync"):
                 data_sync = table.data_sync.specific
                 data_sync_type = data_sync_type_registry.get_by_model(data_sync)
-                serialized_data_sync = data_sync_type.export_serialized(data_sync)
+                serialized_data_sync = data_sync_type.export_serialized(
+                    data_sync, import_export_config
+                )
 
             if hasattr(table, "field_rules"):
                 field_rules_handler = FieldRuleHandler(table)
@@ -197,7 +203,8 @@ class DatabaseApplicationType(ApplicationType):
                     rule_type,
                 ) in field_rules_handler.applicable_rules_with_types:
                     exported_field_rule = field_rules_handler.export_rule(rule)
-                    serialized_field_rules.append(exported_field_rule)
+                    if exported_field_rule is not None:
+                        serialized_field_rules.append(exported_field_rule)
 
             structure = DatabaseExportSerializedStructure.table(
                 id=table.id,
@@ -209,6 +216,7 @@ class DatabaseApplicationType(ApplicationType):
                 data_sync=serialized_data_sync,
                 field_rules=serialized_field_rules,
             )
+            structure["require_edit_confirmation"] = table.require_edit_confirmation
 
             for serialized_structure in serialization_processor_registry.get_all():
                 extra_data = serialized_structure.export_serialized(
@@ -393,17 +401,45 @@ class DatabaseApplicationType(ApplicationType):
             )
             return field_instance
 
+        def _expand_implied_import_dependencies(field_deps, fields_by_name):
+            """
+            A dependency of `(name, None)` is a reference by name to a field in the
+            same table. Some field types, like `link_row`, render a value borrowed
+            from another table, so referencing them implies a dependency on that
+            other field instead. Let each referenced field type say so.
+            """
+
+            if not field_deps:
+                return field_deps
+
+            expanded = set()
+            for name, via in field_deps:
+                referenced = fields_by_name.get(name) if via is None else None
+                implied = referenced and field_type_registry.get(
+                    referenced["type"]
+                ).get_import_dependency_when_referenced(
+                    referenced, name, database_fields_map, primary_table_fields_map
+                )
+                expanded.add(implied or (name, via))
+            return expanded
+
         fields_without_dependencies: List[Field] = []
         for serialized_table in serialized_tables:
             table_instance = serialized_table["_object"]
+            serialized_fields_by_name = {
+                f["name"]: f for f in serialized_table["fields"]
+            }
             for serialized_field in serialized_table["fields"]:
                 field_type = field_type_registry.get(serialized_field["type"])
                 field_deps = (
                     field_type.get_field_depdendencies_before_import_serialized(
                         serialized_field,
-                        id_mapping["database_fields_map"],
-                        id_mapping["primary_table_fields_map"],
+                        database_fields_map,
+                        primary_table_fields_map,
                     )
+                )
+                field_deps = _expand_implied_import_dependencies(
+                    field_deps, serialized_fields_by_name
                 )
 
                 # If the field has dependencies, we want to defer the import of the
@@ -614,7 +650,11 @@ class DatabaseApplicationType(ApplicationType):
     def _import_extra_metadata(
         self, serialized_tables, id_mapping, import_export_config
     ):
-        source_workspace = Workspace.objects.get(pk=id_mapping["import_workspace_id"])
+        if "_import_workspace_obj" not in id_mapping:
+            id_mapping["_import_workspace_obj"] = Workspace.objects.get(
+                pk=id_mapping["import_workspace_id"]
+            )
+        source_workspace = id_mapping["_import_workspace_obj"]
         for serialized_table in serialized_tables:
             table = serialized_table["_object"]
             if not import_export_config.reduce_disk_space_usage:
@@ -645,9 +685,27 @@ class DatabaseApplicationType(ApplicationType):
             field_rules_handler = FieldRuleHandler(table)
             serialized_rules = serialized_table["field_rules"]
             for serialized_rule in serialized_rules:
-                field_rules_handler.import_rule(
-                    serialized_rule, id_mapping["database_fields"]
-                )
+                # exports made before #6095 may contain null entries for rules
+                # that were active but invalid at export time.
+                if not serialized_rule:
+                    continue
+                # import_rule pops "type" off the dict, so read it beforehand for
+                # the warning below.
+                rule_type = serialized_rule.get("type")
+                try:
+                    field_rules_handler.import_rule(
+                        serialized_rule, id_mapping["database_fields"]
+                    )
+                except InstanceTypeDoesNotExist:
+                    # The field rule type is provided by a plugin that isn't
+                    # installed. Skip the rule rather than failing the import; the
+                    # table and its data still come through.
+                    logger.warning(
+                        "Skipping a field rule of table '{}' during import because "
+                        "field rule type '{}' is not registered.",
+                        serialized_table["name"],
+                        rule_type,
+                    )
 
     def _import_table_rows(
         self,
@@ -945,7 +1003,23 @@ class DatabaseApplicationType(ApplicationType):
         table_name = serialized_table["name"]
         cache: Dict[str, Any] = {}
         for serialized_view in serialized_table["views"]:
-            view_type = view_type_registry.get(serialized_view["type"])
+            try:
+                view_type = view_type_registry.get(serialized_view["type"])
+            except ViewTypeDoesNotExist:
+                # The view type is provided by a plugin that isn't installed. Skip
+                # the view rather than failing the whole import, so the rest of the
+                # application still comes through.
+                logger.warning(
+                    "Skipping view '{}' of table '{}' during import because view "
+                    "type '{}' is not registered.",
+                    serialized_view.get("name"),
+                    table_name,
+                    serialized_view["type"],
+                )
+                progress.increment(
+                    state=f"{IMPORT_SERIALIZED_IMPORTING_TABLE_STRUCTURE}{table_name}"
+                )
+                continue
             view_type.import_serialized(
                 table,
                 serialized_view,
@@ -984,6 +1058,9 @@ class DatabaseApplicationType(ApplicationType):
                 name=serialized_table["name"],
                 order=serialized_table["order"],
                 last_modified_by_column_added=True,
+                require_edit_confirmation=serialized_table.get(
+                    "require_edit_confirmation", False
+                ),
             )
             id_mapping["database_tables"][serialized_table["id"]] = table_instance.id
             serialized_table["_object"] = table_instance

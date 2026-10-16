@@ -7,7 +7,7 @@ from rest_framework.status import HTTP_200_OK
 @pytest.mark.django_db
 def test_get_automation_application(api_client, data_fixture):
     user, token = data_fixture.create_user_and_token(
-        email="test@baserow.io", password="password", first_name="TestFirstName"
+        email="test@example.com", password="password", first_name="TestFirstName"
     )
     workspace = data_fixture.create_workspace(user=user)
     automation = data_fixture.create_automation_application(
@@ -39,7 +39,6 @@ def test_get_automation_application(api_client, data_fixture):
         "workspace": {
             "id": workspace.id,
             "name": workspace.name,
-            "generative_ai_models_enabled": {},
         },
         "workflows": [
             {
@@ -95,7 +94,6 @@ def test_list_automation_applications(api_client, data_fixture):
             "workspace": {
                 "id": workspace.id,
                 "name": workspace.name,
-                "generative_ai_models_enabled": {},
             },
             "workflows": [
                 {

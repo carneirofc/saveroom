@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "baserow.fullname" . }}-env
+  labels:
+    {{- include "baserow.labels" . | nindent 4 }}
+data:
+  # --- Database (password comes from a Secret via the Deployments) ---
+  DATABASE_HOST: {{ include "baserow.database.host" . | quote }}
+  DATABASE_PORT: {{ include "baserow.database.port" . | quote }}
+  DATABASE_USER: {{ include "baserow.database.user" . | quote }}
+  DATABASE_NAME: {{ include "baserow.database.name" . | quote }}
+  {{- if and (not .Values.postgresql.enabled) .Values.externalDatabase.url }}
+  DATABASE_URL: {{ .Values.externalDatabase.url | quote }}
+  {{- end }}
+
+  # --- Redis (password comes from a Secret via the Deployments) ---
+  REDIS_HOST: {{ include "baserow.redis.host" . | quote }}
+  REDIS_PORT: {{ include "baserow.redis.port" . | quote }}
+  {{- if and (not .Values.redis.enabled) .Values.externalRedis.url }}
+  REDIS_URL: {{ .Values.externalRedis.url | quote }}
+  {{- end }}
+
+  # --- URLs (single-origin: browser hits the Route host for both app + API) ---
+  BASEROW_PUBLIC_URL: {{ .Values.publicURL | quote }}
+  PUBLIC_BACKEND_URL: {{ .Values.publicURL | quote }}
+  PUBLIC_WEB_FRONTEND_URL: {{ .Values.publicURL | quote }}
+  PRIVATE_BACKEND_URL: {{ printf "http://%s-backend:8000" (include "baserow.fullname" .) | quote }}
+  {{- if .Values.extraAllowedHosts }}
+  BASEROW_EXTRA_ALLOWED_HOSTS: {{ .Values.extraAllowedHosts | quote }}
+  {{- end }}
+
+  # --- App behaviour ---
+  MIGRATE_ON_STARTUP: {{ .Values.migrateOnStartup | quote }}
+  # Built-in templates are stripped in this fork; never sync them.
+  SYNC_TEMPLATES_ON_STARTUP: "false"
+  # Defensive HOME for arbitrary-UID (restricted-v2) pods.
+  HOME: "/tmp"
+  {{- with .Values.branding.appName }}
+  # Product name in the backend's emails and API docs.
+  BASEROW_BRANDING_APP_NAME: {{ . | quote }}
+  {{- end }}
+
+  {{- if .Values.objectStorage.enabled }}
+  # --- Media via S3-compatible object storage ---
+  AWS_STORAGE_BUCKET_NAME: {{ .Values.objectStorage.bucketName | quote }}
+  {{- with .Values.objectStorage.endpointURL }}
+  AWS_S3_ENDPOINT_URL: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.objectStorage.region }}
+  AWS_S3_REGION_NAME: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.objectStorage.customDomain }}
+  AWS_S3_CUSTOM_DOMAIN: {{ . | quote }}
+  {{- end }}
+  # Canned ACL for uploads. Empty means "send no ACL", which is required on buckets
+  # with ACLs disabled; the backend would otherwise default to public-read and every
+  # upload would fail with AccessControlListNotSupported.
+  AWS_DEFAULT_ACL: {{ .Values.objectStorage.defaultACL | quote }}
+  AWS_QUERYSTRING_AUTH: {{ .Values.objectStorage.querystringAuth | quote }}
+  {{- else }}
+  # --- Media via a persistent volume ---
+  # Exports and backups are downloaded through /api/, so they work here. User file
+  # attachments are still served from MEDIA_URL, which nothing in this chart serves:
+  # use objectStorage for a deployment that relies on file fields.
+  MEDIA_ROOT: "/baserow/media"
+  {{- end }}
+
+  {{- with .Values.aws.region }}
+  # --- AWS SDK region (used by IRSA/Pod Identity credential resolution too) ---
+  AWS_REGION: {{ . | quote }}
+  AWS_DEFAULT_REGION: {{ . | quote }}
+  AWS_STS_REGIONAL_ENDPOINTS: "regional"
+  {{- end }}
+
+  {{- with .Values.extraEnv }}
+  # --- Operator-supplied environment (e.g. BASEROW_OIDC_PROVIDERS) ---
+  {{- range $key, $value := . }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}

@@ -179,7 +179,7 @@ def test_create_webhook(data_fixture):
     webhook_handler = WebhookHandler()
 
     webhook_data = {
-        "url": "https://baserow.io/endpoint",
+        "url": "https://example.com/endpoint",
         "name": "My Webhook",
         "include_all_events": True,
         "request_method": "POST",
@@ -203,7 +203,7 @@ def test_create_webhook(data_fixture):
     assert len(headers) == 0
 
     # new url
-    webhook_data["url"] = "https://baserow.io/endpoint-2"
+    webhook_data["url"] = "https://example.com/endpoint-2"
 
     # if "include_all_events" is True and we pass in events that are not empty
     # the handler will not create the entry in the events table.
@@ -217,7 +217,7 @@ def test_create_webhook(data_fixture):
     # when we set "include_all_events" to False then we expect that the events will be
     # added
     webhook_data["include_all_events"] = False
-    webhook_data["url"] = "https://baserow.io/endpoint-3"
+    webhook_data["url"] = "https://example.com/endpoint-3"
     headers = {"Baserow-test-1": "Value 1", "Baserow-header-2": "Value 2"}
     webhook = webhook_handler.create_table_webhook(
         user=user, table=table, events=events, headers=headers, **webhook_data
@@ -241,7 +241,7 @@ def test_create_webhook(data_fixture):
 
     # check that we can't create more than "MAX_ALLOWED_WEBHOOKS" per table
     webhook_data["include_all_events"] = True
-    webhook_data["url"] = "https://baserow.io/endpoint-4"
+    webhook_data["url"] = "https://example.com/endpoint-4"
     with pytest.raises(TableWebhookMaxAllowedCountExceeded):
         webhook_handler.create_table_webhook(
             user=user, table=table, events=events, headers={}, **webhook_data
@@ -268,14 +268,14 @@ def test_update_webhook(data_fixture):
         user=user,
         webhook=webhook,
         name="Test",
-        url="https://baserow.io/endpoint",
+        url="https://example.com/endpoint",
         include_all_events=False,
         request_method="GET",
         use_user_field_names=False,
         active=False,
     )
     assert webhook.name == "Test"
-    assert webhook.url == "https://baserow.io/endpoint"
+    assert webhook.url == "https://example.com/endpoint"
     assert webhook.include_all_events is False
     assert webhook.request_method == "GET"
     assert webhook.use_user_field_names is False

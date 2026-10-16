@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Backup and datalake export screens ask for confirmation before deleting, restoring or resetting, reject invalid retention values instead of keeping everything, keep listing schedules whose storage was removed, and no longer show or restore backups of a previously selected storage.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-04"
+}

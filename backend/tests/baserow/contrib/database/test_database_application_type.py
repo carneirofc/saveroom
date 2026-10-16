@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timezone
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.core.files.storage import FileSystemStorage
 
@@ -12,6 +12,7 @@ from baserow.contrib.database.fields.models import FormulaField, TextField
 from baserow.contrib.database.rows.handler import RowHandler
 from baserow.contrib.database.table.handler import TableHandler
 from baserow.contrib.database.table.models import Table
+from baserow.contrib.database.views.exceptions import ViewTypeDoesNotExist
 from baserow.core.action.models import Action
 from baserow.core.action.registries import action_type_registry
 from baserow.core.actions import CreateApplicationActionType
@@ -146,6 +147,70 @@ def test_import_export_database(data_fixture):
 
 
 @pytest.mark.django_db
+def test_import_export_database_keeps_require_edit_confirmation(data_fixture):
+    user = data_fixture.create_user()
+    workspace = data_fixture.create_workspace(user=user)
+    database = data_fixture.create_database_application(workspace=workspace)
+    protected = data_fixture.create_database_table(database=database, order=1)
+    protected.require_edit_confirmation = True
+    protected.save()
+    data_fixture.create_text_field(table=protected, primary=True)
+    unprotected = data_fixture.create_database_table(database=database, order=2)
+    data_fixture.create_text_field(table=unprotected, primary=True)
+
+    database_type = application_type_registry.get("database")
+    config = ImportExportConfig(include_permission_data=False)
+    serialized = database_type.export_serialized(database, config)
+
+    flags = {t["id"]: t["require_edit_confirmation"] for t in serialized["tables"]}
+    assert flags == {protected.id: True, unprotected.id: False}
+
+    imported_workspace = data_fixture.create_workspace(user=user)
+    id_mapping = {}
+    imported_database = database_type.import_serialized(
+        imported_workspace, serialized, config, id_mapping, None, None
+    )
+
+    imported_tables = {
+        t.id: t for t in imported_database.table_set.all().order_by("order")
+    }
+    imported_protected = imported_tables[id_mapping["database_tables"][protected.id]]
+    imported_unprotected = imported_tables[
+        id_mapping["database_tables"][unprotected.id]
+    ]
+    assert imported_protected.require_edit_confirmation is True
+    assert imported_unprotected.require_edit_confirmation is False
+
+
+@pytest.mark.django_db
+def test_import_database_without_require_edit_confirmation_defaults_to_false(
+    data_fixture,
+):
+    user = data_fixture.create_user()
+    workspace = data_fixture.create_workspace(user=user)
+    database = data_fixture.create_database_application(workspace=workspace)
+    table = data_fixture.create_database_table(database=database)
+    table.require_edit_confirmation = True
+    table.save()
+    data_fixture.create_text_field(table=table, primary=True)
+
+    database_type = application_type_registry.get("database")
+    config = ImportExportConfig(include_permission_data=False)
+    serialized = database_type.export_serialized(database, config)
+    # Exports made before protected editing existed don't contain the key.
+    for serialized_table in serialized["tables"]:
+        del serialized_table["require_edit_confirmation"]
+
+    imported_workspace = data_fixture.create_workspace(user=user)
+    imported_database = database_type.import_serialized(
+        imported_workspace, serialized, config, {}, None, None
+    )
+
+    imported_table = imported_database.table_set.get()
+    assert imported_table.require_edit_confirmation is False
+
+
+@pytest.mark.django_db
 def test_create_application_and_init_with_data(data_fixture):
     core_handler = CoreHandler()
     user = data_fixture.create_user()
@@ -264,3 +329,44 @@ def test_perform_restore_interesting_database(data_fixture):
         model = snapshotted_table.get_model()
         assert model.objects.count() == 2
     assert progress.progress == 100
+
+
+def test_import_table_views_skips_unregistered_view_type():
+    """
+    A view type provided by a plugin that isn't installed must not fail the whole
+    import. The view is skipped and the rest of the table still imports.
+    """
+
+    imported = []
+
+    class StubViewType:
+        def import_serialized(self, table, serialized_view, *args, **kwargs):
+            imported.append(serialized_view["type"])
+
+    def get(view_type):
+        if view_type == "grid":
+            return StubViewType()
+        raise ViewTypeDoesNotExist(view_type)
+
+    serialized_table = {
+        "_object": MagicMock(),
+        "name": "Tasks",
+        "views": [
+            {"type": "not_installed", "name": "From a plugin"},
+            {"type": "grid", "name": "Grid"},
+        ],
+    }
+    progress = MagicMock()
+
+    with patch(
+        "baserow.contrib.database.application_types.view_type_registry"
+    ) as registry:
+        registry.get.side_effect = get
+        DatabaseApplicationType()._import_table_views(
+            serialized_table, MagicMock(), {}, None, progress
+        )
+
+    assert imported == ["grid"]
+    # Progress must advance for the skipped view too, otherwise the reported
+    # total no longer matches the number of views.
+    assert progress.increment.call_count == 2

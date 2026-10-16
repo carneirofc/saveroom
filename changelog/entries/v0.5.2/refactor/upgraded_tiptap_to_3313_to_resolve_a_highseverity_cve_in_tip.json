@@ -1,0 +1,9 @@
+{
+    "type": "refactor",
+    "message": "Upgraded TipTap to 3.31.3 to resolve a high-severity CVE in @tiptap/core.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-11"
+}

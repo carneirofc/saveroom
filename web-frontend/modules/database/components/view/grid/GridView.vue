@@ -353,6 +353,10 @@ import {
   groupPathFromRow,
 } from '@baserow/modules/database/utils/gridGroupBy'
 import { pathKey } from '@baserow/modules/database/utils/gridGroupByRender'
+import {
+  confirmDataChange,
+  isProtected,
+} from '@baserow/modules/database/utils/editConfirmation'
 
 export default {
   name: 'GridView',
@@ -646,8 +650,8 @@ export default {
           }
         }
         // `refreshRow` doesn't immediately hide a row not matching filters if a
-        // user open the modal for that row to solve
-        // https://gitlab.com/baserow/baserow/-/issues/1765. This handler ensure
+        // user open the modal for that row to solve upstream Baserow issue
+        // 1765. This handler ensure
         // the row is correctly refreshed if the user open another row using the
         // navigation buttons in the modal.
         const prevRowId = prevRow?.id
@@ -967,6 +971,12 @@ export default {
      * row edit modal or when editing a cell directly in the grid.
      */
     async updateValue({ field, row, value, oldValue }) {
+      // Rows that are still being created don't have a persistent id yet, so they
+      // can't be part of a batch update and follow the regular path.
+      if (isProtected(this.table) && Number.isInteger(row.id)) {
+        this.stageValue({ field, row, value, oldValue })
+        return
+      }
       try {
         await this.$store.dispatch(
           this.storePrefix + 'view/grid/updateRowValue',
@@ -984,6 +994,28 @@ export default {
       } catch (error) {
         notifyIf(error, 'field')
       }
+    },
+    /**
+     * Protected editing: shows the new value in the grid and stages it until the user
+     * saves or discards all pending changes of the table.
+     */
+    stageValue({ field, row, value, oldValue }) {
+      const storeRow = this.$store.getters[
+        this.storePrefix + 'view/grid/getRow'
+      ](row.id)
+      if (storeRow !== undefined) {
+        this.$store.commit(
+          this.storePrefix + 'view/grid/UPDATE_ROW_FIELD_VALUE',
+          { row: storeRow, field, value }
+        )
+      }
+      this.$store.dispatch('pendingRowChanges/stage', {
+        table: this.table,
+        row: storeRow || row,
+        field,
+        value,
+        oldValue,
+      })
     },
     /**
      * Called when a value is edited, but not yet saved. Views that the frontend can
@@ -1119,6 +1151,14 @@ export default {
       return null
     },
     async addRow(before = null, values = {}) {
+      if (
+        !(await confirmDataChange(this.$store, this.table, {
+          title: this.$t('confirmDataChange.createRowTitle'),
+          message: this.$t('confirmDataChange.createRowMessage', { count: 1 }),
+        }))
+      ) {
+        return
+      }
       try {
         const groupInsertion = this.getGroupInsertionForBefore(before)
         if (groupInsertion !== null) {
@@ -1171,6 +1211,16 @@ export default {
       this.$refs.rowsAddContext.hide()
       const groupPath = this.addRowsGroupPath
       this.addRowsGroupPath = null
+      if (
+        !(await confirmDataChange(this.$store, this.table, {
+          title: this.$t('confirmDataChange.createRowTitle'),
+          message: this.$t('confirmDataChange.createRowMessage', {
+            count: rowsAmount,
+          }),
+        }))
+      ) {
+        return
+      }
       // We need a list of all fields including the primary one here.
       const params = {
         view: this.view,
@@ -1228,8 +1278,18 @@ export default {
       this.addRow(nextRow, values)
     },
     async deleteRow(row) {
+      this.$refs.rowContext.hide()
+      if (
+        !(await confirmDataChange(this.$store, this.table, {
+          title: this.$t('confirmDataChange.deleteRowTitle'),
+          message: this.$t('confirmDataChange.deleteRowMessage'),
+          confirmLabel: this.$t('confirmDataChange.delete'),
+          danger: true,
+        }))
+      ) {
+        return
+      }
       try {
-        this.$refs.rowContext.hide()
         // We need a small helper function that calculates the current scrollTop because
         // the delete action will recalculate the visible scroll range and buffer.
         const getScrollTop = () => this.$refs.left.$refs.body.scrollTop
@@ -1243,6 +1303,10 @@ export default {
             getScrollTop,
           }
         )
+        this.$store.dispatch('pendingRowChanges/forgetRow', {
+          tableId: this.table.id,
+          rowId: row.id,
+        })
         await this.$store.dispatch('toast/restore', {
           trash_item_type: 'row',
           parent_trash_item_id: this.table.id,
@@ -1867,6 +1931,17 @@ export default {
         textData = textData.slice(0, pageSizeLimit)
       }
 
+      if (
+        !(await confirmDataChange(this.$store, this.table, {
+          title: this.$t('confirmDataChange.updateCellsTitle'),
+          message: this.$t('confirmDataChange.updateCellsMessage', {
+            count: textData.length * textData[0].length,
+          }),
+        }))
+      ) {
+        return
+      }
+
       this.$store.dispatch('toast/setPasting', true)
       try {
         await this.$store.dispatch(
@@ -1896,6 +1971,26 @@ export default {
      * selected rows and scrolls the view accordingly.
      */
     async deleteRowsFromMultipleCellSelection() {
+      if (
+        !(await confirmDataChange(this.$store, this.table, {
+          title: this.$t('confirmDataChange.deleteRowsTitle'),
+          message: this.$t('confirmDataChange.deleteRowsMessage'),
+          confirmLabel: this.$t('confirmDataChange.delete'),
+          danger: true,
+        }))
+      ) {
+        return true
+      }
+      // Remember which buffered rows are selected, so that their pending changes can
+      // be forgotten once they're deleted.
+      const gridGetters = (name) =>
+        this.$store.getters[this.storePrefix + 'view/grid/' + name] || []
+      const selectedRowIds = [
+        ...gridGetters('getCheckboxSelectedRows'),
+        ...gridGetters('getSelectedRows'),
+      ]
+        .filter((row) => row)
+        .map((row) => row.id)
       this.deletingRow = true
       try {
         await this.$store.dispatch(
@@ -1906,6 +2001,12 @@ export default {
             fields: this.fields,
             getScrollTop: () => this.$refs.left.$refs.body.scrollTop,
           }
+        )
+        selectedRowIds.forEach((rowId) =>
+          this.$store.dispatch('pendingRowChanges/forgetRow', {
+            tableId: this.table.id,
+            rowId,
+          })
         )
         this.$refs.rowContext.hide()
       } catch (error) {
@@ -1919,6 +2020,15 @@ export default {
      * Clears the values of all selected cells by updating them to their null values.
      */
     async clearValuesFromMultipleCellSelection() {
+      if (
+        !(await confirmDataChange(this.$store, this.table, {
+          title: this.$t('confirmDataChange.clearCellsTitle'),
+          message: this.$t('confirmDataChange.clearCellsMessage'),
+          danger: true,
+        }))
+      ) {
+        return
+      }
       try {
         this.$store.dispatch('toast/setClearing', true)
 

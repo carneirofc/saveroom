@@ -18,7 +18,6 @@ from baserow.core.auth_provider.models import (
 from baserow.core.auth_provider.registries import BaseAuthProviderType
 from baserow.core.auth_provider.types import AuthProviderModelSubClass, UserInfo
 from baserow.core.auth_provider.validators import validate_domain
-from baserow.core.handler import CoreHandler
 from baserow.core.user.exceptions import UserNotFound
 
 
@@ -112,7 +111,6 @@ class AuthProviderType(BaseAuthProviderType):
         :return: a user instance.
         """
 
-        from baserow.core.actions import AcceptWorkspaceInvitationActionType
         from baserow.core.user.actions import SignInUserActionType
         from baserow.core.user.handler import UserHandler
 
@@ -128,15 +126,6 @@ class AuthProviderType(BaseAuthProviderType):
             raise DifferentAuthProvider()
 
         action_type_registry.get(SignInUserActionType.type).do(user, auth_provider)
-
-        if user_info.workspace_invitation_token:
-            core_handler = CoreHandler()
-            invitation = core_handler.get_workspace_invitation_by_token(
-                user_info.workspace_invitation_token
-            )
-            action_type_registry.get(AcceptWorkspaceInvitationActionType.type).do(
-                user, invitation
-            )
 
         return user
 
@@ -160,8 +149,10 @@ class AuthProviderType(BaseAuthProviderType):
             email=user_info.email,
             password=None,
             language=user_info.language,
-            workspace_invitation_token=user_info.workspace_invitation_token,
             auth_provider=auth_provider,
+            # SSO providers auto-provision users regardless of the instance
+            # "allow new signups" setting; the password signup path never does.
+            bypass_signup_toggle=True,
         )
 
     def export_serialized(self) -> Dict[str, Any]:
@@ -211,6 +202,10 @@ class PasswordAuthProviderType(AuthProviderType):
     }
 
     def get_login_options(self, **kwargs) -> Optional[Dict[str, Any]]:
+        # In OIDC-only mode the password form is hidden from the login page; a
+        # break-glass admin can still reveal it via the escape hatch.
+        if settings.BASEROW_OIDC_ONLY:
+            return None
         if not PasswordProviderHandler.get().enabled:
             return None
         return {"type": self.type}

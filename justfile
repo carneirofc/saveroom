@@ -34,7 +34,6 @@ help:
     @echo "  Option 1: Local processes (faster hot-reload, requires local Python/Node)"
     @echo "  -------------------------------------------------------------------------"
     @echo "    just init           # First time: install dependencies"
-    @echo "    just b code-runtime # Build local Wasmtime + QuickJS runtime artifacts"
     @echo "    just dev up         # Start all services (Ctrl+C stops everything)"
     @echo "    just dev up -d      # Start in background"
     @echo "    just dev stop       # Stop background services"
@@ -524,7 +523,7 @@ _dc_help:
     @echo "       just dc-dev <cmd> [args]   (development - builds dev images)"
     @echo ""
     @echo "Examples:"
-    @echo "  just dc-dev tabs                 # Open terminal tabs for each service (like dev.sh). Alias: just dct"
+    @echo "  just dc-dev tabs                 # Open terminal tabs for each service. Alias: just dct"
     @echo "  just dc-dev up -d                # Start containers (detached)"
     @echo "  just dc-dev up -d backend db     # Start specific services"
     @echo "  just dc-dev tmux                 # Start tmux session with all services"
@@ -652,7 +651,7 @@ _dc-dev-tmux:
     tmux select-window -t $SESSION:backend
     tmux attach-session -t $SESSION
 
-# Start dev environment with terminal tabs (like dev.sh)
+# Start dev environment with terminal tabs
 [private]
 _dc-dev-tabs *ARGS:
     #!/usr/bin/env bash
@@ -864,9 +863,9 @@ dc-fix-network:
 # Production Images (build & test production Docker images)
 # =============================================================================
 
-# Production compose (builds locally if BASEROW_VERSION is unset/latest, otherwise pulls images)
+# Production compose (pulls the published images for the given BASEROW_VERSION)
 [group('3 - production')]
-[doc("Docker compose (production images): just dc-prod <build|up|down|logs>")]
+[doc("Docker compose (production images): just dc-prod <up|down|logs>")]
 dc-prod *ARGS:
     #!/usr/bin/env bash
     if [ -z "{{ ARGS }}" ]; then
@@ -874,11 +873,8 @@ dc-prod *ARGS:
     else
         export BASEROW_PUBLIC_URL="${BASEROW_PUBLIC_URL:-http://localhost}"
         VERSION="${BASEROW_VERSION:-latest}"
-        if [ "$VERSION" = "latest" ] || [ -z "$BASEROW_VERSION" ]; then
-            # Build locally for latest/unset
-            BASEROW_VERSION="$VERSION" docker compose -f docker-compose.yml -f docker-compose.build.yml {{ ARGS }}
-        else
-            # Pull from registry for specific versions
+        if true; then
+            # Pull from registry (to build locally from source use: docker compose up -d)
             BASEROW_VERSION="$VERSION" docker compose -f docker-compose.yml {{ ARGS }}
         fi
     fi
@@ -887,7 +883,7 @@ alias dcp := dc-prod
 
 # Build deployment images
 [group('3 - production')]
-[doc("Build image: backend, web-frontend, all-in-one, heroku, cloudron, etc.")]
+[doc("Build image: backend, web-frontend, all-in-one, all-in-one-lite")]
 build target="" tag="latest" *ARGS:
     #!/usr/bin/env bash
     set -eo pipefail
@@ -936,7 +932,7 @@ build target="" tag="latest" *ARGS:
             if [[ "{{ tag }}" == "dev" ]]; then
                 UID_GID_ARGS="--build-arg UID=$(id -u) --build-arg GID=$(id -g)"
             fi
-            NAME_ARG="baserow/backend:{{ tag }}"
+            NAME_ARG="saveroom/backend:{{ tag }}"
             $BUILD_CMD "${BUILD_ARGS[@]}" $UID_GID_ARGS -f backend/Dockerfile $TARGET_ARG -t $NAME_ARG .
             ;;
         "web-frontend")
@@ -948,50 +944,30 @@ build target="" tag="latest" *ARGS:
             if [[ "{{ tag }}" == "dev" ]]; then
                 UID_GID_ARGS="--build-arg UID=$(id -u) --build-arg GID=$(id -g)"
             fi
-            NAME_ARG="baserow/web-frontend:{{ tag }}"
+            NAME_ARG="saveroom/web-frontend:{{ tag }}"
             $BUILD_CMD "${BUILD_ARGS[@]}" $UID_GID_ARGS -f web-frontend/Dockerfile $TARGET_ARG -t $NAME_ARG .
             ;;
         "all-in-one")
             echo "Building backend (prod)..."
-            $BUILD_CMD "${BUILD_ARGS[@]}" -f backend/Dockerfile --target prod -t baserow/backend:{{ tag }} .
-            BUILD_ARGS+=("--build-arg" "BACKEND_IMAGE=baserow/backend:{{ tag }}")
+            $BUILD_CMD "${BUILD_ARGS[@]}" -f backend/Dockerfile --target prod -t saveroom/backend:{{ tag }} .
+            BUILD_ARGS+=("--build-arg" "BACKEND_IMAGE=saveroom/backend:{{ tag }}")
             echo "Building web-frontend (prod)..."
-            $BUILD_CMD "${BUILD_ARGS[@]}" -f web-frontend/Dockerfile --target prod -t baserow/web-frontend:{{ tag }} .
-            BUILD_ARGS+=("--build-arg" "WEB_FRONTEND_IMAGE=baserow/web-frontend:{{ tag }}")
+            $BUILD_CMD "${BUILD_ARGS[@]}" -f web-frontend/Dockerfile --target prod -t saveroom/web-frontend:{{ tag }} .
+            BUILD_ARGS+=("--build-arg" "WEBFRONTEND_IMAGE=saveroom/web-frontend:{{ tag }}")
             echo "Building all-in-one..."
-            NAME_ARG="baserow/baserow:{{ tag }}"
+            NAME_ARG="saveroom/all-in-one:{{ tag }}"
             $BUILD_CMD "${BUILD_ARGS[@]}" -f deploy/all-in-one/Dockerfile --target prod -t $NAME_ARG .
             ;;
         "all-in-one-lite")
             echo "Building backend (prod)..."
-            $BUILD_CMD "${BUILD_ARGS[@]}" -f backend/Dockerfile --target prod -t baserow/backend:{{ tag }} .
-            BUILD_ARGS+=("--build-arg" "BACKEND_IMAGE=baserow/backend:{{ tag }}")
+            $BUILD_CMD "${BUILD_ARGS[@]}" -f backend/Dockerfile --target prod -t saveroom/backend:{{ tag }} .
+            BUILD_ARGS+=("--build-arg" "BACKEND_IMAGE=saveroom/backend:{{ tag }}")
             echo "Building web-frontend (prod)..."
-            $BUILD_CMD "${BUILD_ARGS[@]}" -f web-frontend/Dockerfile --target prod -t baserow/web-frontend:{{ tag }} .
-            BUILD_ARGS+=("--build-arg" "WEB_FRONTEND_IMAGE=baserow/web-frontend:{{ tag }}")
+            $BUILD_CMD "${BUILD_ARGS[@]}" -f web-frontend/Dockerfile --target prod -t saveroom/web-frontend:{{ tag }} .
+            BUILD_ARGS+=("--build-arg" "WEBFRONTEND_IMAGE=saveroom/web-frontend:{{ tag }}")
             echo "Building all-in-one-lite (no postgres/redis)..."
-            NAME_ARG="baserow/baserow:lite-{{ tag }}"
+            NAME_ARG="saveroom/all-in-one:lite-{{ tag }}"
             $BUILD_CMD "${BUILD_ARGS[@]}" -f deploy/all-in-one/Dockerfile --target prod-lite -t $NAME_ARG .
-            ;;
-        "heroku")
-            NAME_ARG="baserow/heroku:{{ tag }}"
-            $BUILD_CMD "${BUILD_ARGS[@]}" -f heroku.Dockerfile -t $NAME_ARG .
-            ;;
-        "cloudron")
-            NAME_ARG="baserow/cloudron:{{ tag }}"
-            $BUILD_CMD "${BUILD_ARGS[@]}" -f deploy/cloudron/Dockerfile -t $NAME_ARG .
-            ;;
-        "render")
-            NAME_ARG="baserow/render:{{ tag }}"
-            $BUILD_CMD "${BUILD_ARGS[@]}" -f deploy/render/Dockerfile -t $NAME_ARG .
-            ;;
-        "apache")
-            NAME_ARG="baserow/apache:{{ tag }}"
-            $BUILD_CMD "${BUILD_ARGS[@]}" -f deploy/apache/recommended/Dockerfile -t  $NAME_ARG deploy/apache/recommended/
-            ;;
-        "apache-no-caddy")
-            NAME_ARG="baserow/apache-no-caddy:{{ tag }}"
-            $BUILD_CMD "${BUILD_ARGS[@]}" -f deploy/apache/no-caddy/Dockerfile -t $NAME_ARG deploy/apache/no-caddy/
             ;;
         *)
             echo "Build deployment images"
@@ -1003,11 +979,6 @@ build target="" tag="latest" *ARGS:
             echo "  web-frontend    - Nuxt web frontend"
             echo "  all-in-one      - Single container (production)"
             echo "  all-in-one-lite - Single container without postgres/redis"
-            echo "  heroku          - Heroku platform"
-            echo "  cloudron        - Cloudron marketplace"
-            echo "  render          - Render.com platform"
-            echo "  apache          - Apache reverse proxy"
-            echo "  apache-no-caddy - Apache reverse proxy (no Caddy)"
             echo ""
             echo "Options:"
             echo "  --multi         - Build for linux/amd64 and linux/arm64 (requires --push or --output)"
@@ -1027,9 +998,9 @@ build target="" tag="latest" *ARGS:
         echo "Multi-platform build complete."
     fi
 
-# Run docker compose for specific deployment configurations
+# Run docker compose for the all-in-one deployment image
 [group('3 - production')]
-[doc("Docker compose for different deployments methods (all-in-one, heroku, etc.): just dc-deploy <name> <cmd>")]
+[doc("Docker compose for the all-in-one image: just dc-deploy all-in-one <cmd>")]
 dc-deploy name="" *ARGS:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -1038,42 +1009,17 @@ dc-deploy name="" *ARGS:
         "all-in-one")
             docker compose -f deploy/all-in-one/docker-compose.yml {{ ARGS }}
             ;;
-        "cloudron")
-            docker compose -f deploy/cloudron/docker-compose.yml {{ ARGS }}
-            ;;
-        "heroku")
-            docker compose -f deploy/heroku/docker-compose.yml {{ ARGS }}
-            ;;
-        "traefik")
-            docker compose -f deploy/traefik/docker-compose.yml {{ ARGS }}
-            ;;
-        "nginx")
-            docker compose -f deploy/nginx/recommended/docker-compose.yml {{ ARGS }}
-            ;;
-        "apache")
-            docker compose -f deploy/apache/recommended/docker-compose.yml {{ ARGS }}
-            ;;
-        "local-testing")
-            docker compose -f deploy/local_testing/docker-compose.local.yml {{ ARGS }}
-            ;;
         *)
-            echo "Run docker compose for deployment configurations"
+            echo "Run docker compose for the all-in-one deployment image"
             echo ""
-            echo "Usage: just dc-deploy <name> <cmd> [args]"
-            echo ""
-            echo "Deployments:"
-            echo "  all-in-one      - All-in-one container (production)"
-            echo "  cloudron        - Cloudron deployment"
-            echo "  heroku          - Heroku deployment"
-            echo "  traefik         - Traefik reverse proxy"
-            echo "  nginx           - Nginx reverse proxy"
-            echo "  apache          - Apache reverse proxy"
-            echo "  local-testing   - Local testing setup"
+            echo "Usage: just dc-deploy all-in-one <cmd> [args]"
             echo ""
             echo "Examples:"
-            echo "  just dc-deploy cloudron up -d"
+            echo "  just dc-deploy all-in-one up -d"
             echo "  just dc-deploy all-in-one logs -f"
-            echo "  just dc-deploy heroku build"
+            echo ""
+            echo "For a simple multi-service local stack use: docker compose up -d"
+            echo "For OpenShift use the Helm chart in deploy/helm/saveroom/"
             [[ -n "{{ name }}" ]] && exit 1 || exit 0
             ;;
     esac
@@ -1085,7 +1031,7 @@ dc-deploy name="" *ARGS:
 # Test DB settings
 test_db_name := "baserow-test-db"
 test_db_port := env("TEST_DB_PORT", "5431")
-test_db_image := "pgvector/pgvector:pg${POSTGRES_IMAGE_VERSION:-14}"
+test_db_image := "pgvector/pgvector:pg${POSTGRES_IMAGE_VERSION:-18}"
 
 # Ramdisk PostgreSQL for fast tests (2-5x faster)
 [group('4 - testing')]
@@ -1128,6 +1074,8 @@ _test-db-start:
         echo "Removing existing container to get fresh tmpfs..."
         docker rm -f {{ test_db_name }} > /dev/null
     fi
+    # postgres 18+ moved PGDATA to /var/lib/postgresql/<major>/docker, so the
+    # tmpfs on the old path needs PGDATA pinned back to it.
     echo "Creating test database container with tmpfs (ramdisk)..."
     docker run -d \
         --name {{ test_db_name }} \
@@ -1135,6 +1083,7 @@ _test-db-start:
         -e POSTGRES_PASSWORD=baserow \
         -e POSTGRES_DB=baserow \
         -p {{ test_db_port }}:5432 \
+        -e PGDATA=/var/lib/postgresql/data \
         --tmpfs /var/lib/postgresql/data:size=8G \
         {{ test_db_image }} \
         -c shared_buffers=512MB \
@@ -1230,6 +1179,69 @@ changelog-test *args:
     cd backend && PYTHONPATH="../changelog/src:../changelog:${PYTHONPATH:-}" uv run --group changelog --group dev pytest ../changelog/tests/ {{ args }}
 
 # =============================================================================
+# Security (CVE scanning)
+# =============================================================================
+
+# Trivy runs from its pinned container image so no local install is needed.
+# Keep this version identical to TRIVY_IMAGE in .github/workflows/*.yml.
+trivy_image := "docker.io/aquasec/trivy:0.75.0"
+trivy_cache := env("TRIVY_CACHE_DIR", env("HOME", "/tmp") / ".cache/trivy")
+
+# The gate: HIGH/CRITICAL findings that have a fixed version available.
+# Exceptions live in .trivyignore.yaml, each with a statement and expiry.
+_trivy_gate := "--scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --ignorefile /src/.trivyignore.yaml --exit-code 1"
+
+# Scan dependency lockfiles and/or built images for fixable HIGH/CRITICAL CVEs
+[group('6 - ci')]
+[doc("CVE scan: just audit <deps|images|all> [image refs...]")]
+audit target="all" *IMAGES:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mkdir -p "{{ trivy_cache }}"
+    TRIVY=(docker run --rm -v "$PWD:/src:ro" -v "{{ trivy_cache }}:/root/.cache/trivy" {{ trivy_image }})
+
+    audit_deps() {
+        echo "==> Scanning lockfiles (uv.lock, yarn.lock)..."
+        # Dev deps are included: build/test tooling runs in CI and on developer
+        # machines even though it never ships in the prod images.
+        "${TRIVY[@]}" fs {{ _trivy_gate }} --include-dev-deps --skip-dirs '**/node_modules' /src
+    }
+
+    audit_images() {
+        local images=({{ IMAGES }})
+        if [ ${#images[@]} -eq 0 ]; then
+            images=(saveroom/backend:latest saveroom/web-frontend:latest saveroom/all-in-one:latest)
+        fi
+        for ref in "${images[@]}"; do
+            echo "==> Scanning image $ref..."
+            # The image is exported to a tarball so the scan works with both
+            # Docker and Podman without mounting the engine socket.
+            tmp=$(mktemp -d)
+            docker save -o "$tmp/image.tar" "$ref"
+            docker run --rm -v "$PWD:/src:ro" -v "$tmp:/img:ro" -v "{{ trivy_cache }}:/root/.cache/trivy" \
+                {{ trivy_image }} image {{ _trivy_gate }} --input /img/image.tar || { rm -rf "$tmp"; exit 1; }
+            rm -rf "$tmp"
+        done
+    }
+
+    case "{{ target }}" in
+        deps) audit_deps ;;
+        images) audit_images ;;
+        all) audit_deps; audit_images ;;
+        *)
+            echo "Usage: just audit <deps|images|all> [image refs...]"
+            echo ""
+            echo "  deps    Scan every uv.lock / yarn.lock in the repo"
+            echo "  images  Scan built images (default: baserow/{backend,web-frontend,baserow}:latest)"
+            echo ""
+            echo "Examples:"
+            echo "  just audit deps"
+            echo "  just build web-frontend prod && just audit images saveroom/web-frontend:prod"
+            exit 1
+            ;;
+    esac
+
+# =============================================================================
 # CI Docker Image Testing
 # =============================================================================
 
@@ -1321,7 +1333,7 @@ ci cmd="" target="":
 
         echo "Starting Redis..."
         docker run -d --name ci-test-redis --network "$NETWORK" \
-            redis:7 redis-server --requirepass baserow
+            redis:8 redis-server --requirepass baserow
 
         # Wait for postgres to be ready
         echo "Waiting for PostgreSQL to be ready..."

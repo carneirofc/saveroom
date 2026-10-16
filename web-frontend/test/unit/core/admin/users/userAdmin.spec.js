@@ -2,7 +2,6 @@ import { TestApp } from '@baserow/test/helpers/testApp'
 import UsersAdminTable from '@baserow/modules/core/components/admin/users/UsersAdminTable'
 import UserForm from '@baserow/modules/core/components/admin/users/forms/UserForm'
 import DisableTwoFactorAuthModal from '@baserow/modules/core/components/admin/users/modals/DisableTwoFactorAuthModal'
-import moment from '@baserow/modules/core/moment'
 import flushPromises from 'flush-promises'
 import UserAdminUserHelpers from '@baserow/test/helpers/userAdminHelpers'
 import { MockServer } from '@baserow/test/fixtures/mockServer'
@@ -25,7 +24,7 @@ describe('User Admin Component Tests', () => {
   test('A users attributes will be displayed', async () => {
     const userSetup = {
       id: 1,
-      username: 'user@baserow.io',
+      username: 'user@example.com',
       name: 'user name',
       workspaces: [
         {
@@ -88,8 +87,7 @@ describe('User Admin Component Tests', () => {
       false
     )
 
-    // The last login and signed up dates are correctly formatted to the locale
-    moment.locale('nl')
+    // The last login and signed up dates are correctly formatted
     expect(lastLoginCell.text()).toMatch(/^04\/26\/2021 \d+:50 (AM|PM)$/)
     expect(signedUpCell.text()).toMatch(/^04\/21\/2021 \d+:04 (AM|PM)$/)
 
@@ -238,7 +236,7 @@ describe('User Admin Component Tests', () => {
 
     const cells = ui.findCells()
     const { isActiveCell } = ui.getRow(cells, 0)
-    expect(isActiveCell.find('.iconoir-cancel').exists()).toBe(true)
+    expect(isActiveCell.find('.iconoir-xmark').exists()).toBe(true)
   })
 
   test('A deactivated user can be activated', async () => {
@@ -700,7 +698,7 @@ describe('User Admin Component Tests', () => {
     const { isActiveCell } = ui.getRow(cells, 0)
     expect(
       isActiveCell
-        .find(startingIsActive ? '.iconoir-check' : '.iconoir-cancel')
+        .find(startingIsActive ? '.iconoir-check' : '.iconoir-xmark')
         .exists()
     ).toBe(true)
 
@@ -720,7 +718,7 @@ describe('User Admin Component Tests', () => {
     const { isActiveCell: updatedIsActiveCell } = ui.getRow(cells, 0)
     expect(
       updatedIsActiveCell
-        .find(startingIsActive ? '.iconoir-cancel' : '.iconoir-check')
+        .find(startingIsActive ? '.iconoir-xmark' : '.iconoir-check')
         .exists()
     ).toBe(true)
   }

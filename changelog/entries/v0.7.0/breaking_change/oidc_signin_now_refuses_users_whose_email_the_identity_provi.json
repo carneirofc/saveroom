@@ -1,0 +1,9 @@
+{
+    "type": "breaking_change",
+    "message": "OIDC sign-in now refuses users whose email the identity provider has not verified, and SSO sessions end after 8 hours by default so role changes in Keycloak apply sooner. Configure with require_verified_email and session_lifetime_minutes.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-13"
+}

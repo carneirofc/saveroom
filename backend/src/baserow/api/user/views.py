@@ -39,12 +39,9 @@ from baserow.api.sessions import (
     set_user_session_data_from_request,
 )
 from baserow.api.user.registries import user_data_registry
-from baserow.api.workspaces.invitations.errors import (
-    ERROR_GROUP_INVITATION_DOES_NOT_EXIST,
-    ERROR_GROUP_INVITATION_EMAIL_MISMATCH,
-)
 from baserow.core.action.handler import ActionHandler
 from baserow.core.action.registries import ActionScopeStr, action_type_registry
+from baserow.core.audit_log.handler import AuditLogHandler
 from baserow.core.auth_provider.exceptions import (
     AuthProviderDisabled,
     EmailVerificationRequired,
@@ -55,11 +52,9 @@ from baserow.core.captcha.handler import CaptchaHandler
 from baserow.core.exceptions import (
     BaseURLHostnameNotAllowed,
     LockConflict,
-    WorkspaceInvitationDoesNotExist,
-    WorkspaceInvitationEmailMismatch,
 )
 from baserow.core.handler import CoreHandler
-from baserow.core.models import Settings, Template, WorkspaceInvitation
+from baserow.core.models import Settings, Template
 from baserow.core.user.actions import (
     ChangeEmailActionType,
     ChangeUserPasswordActionType,
@@ -121,13 +116,11 @@ from .serializers import (
     AccountSerializer,
     ChangeEmailSerializer,
     ChangePasswordBodyValidationSerializer,
-    DashboardSerializer,
     RegisterSerializer,
     ResetPasswordBodyValidationSerializer,
     SendChangeEmailConfirmationSerializer,
     SendResetPasswordEmailBodyValidationSerializer,
     SendVerifyEmailAddressSerializer,
-    ShareOnboardingDetailsWithBaserowSerializer,
     TokenBlacklistSerializer,
     TokenObtainPairWithUserSerializer,
     TokenRefreshWithUserSerializer,
@@ -191,7 +184,7 @@ class RefreshJSONWebToken(TokenRefreshView):
         tags=["User"],
         operation_id="token_refresh",
         description=(
-            "Generate a new access_token that can be used to continue operating on Baserow "
+            "Generate a new access_token that can be used to continue operating on Saveroom "
             "starting from a valid refresh token."
         ),
         responses={
@@ -267,8 +260,20 @@ class BlacklistJSONWebToken(TokenBlacklistView):
     @validate_body(TokenBlacklistSerializer)
     def post(self, request, data):
         refresh_token = data["refresh_token"]
-        expires_at = datetime_from_epoch(self.token_class(refresh_token)["exp"])
+        token = self.token_class(refresh_token)
+        expires_at = datetime_from_epoch(token["exp"])
         UserHandler().blacklist_refresh_token(refresh_token, expires_at)
+
+        # `permission_classes`/`authentication_classes` are empty on this view (a
+        # user signing out does not need to still be authenticated), so the user is
+        # resolved from the token's own claim instead of `request.user`.
+        user = get_user_model().objects.filter(id=token.get("user_id")).first()
+        AuditLogHandler().log_auth_event(
+            user=user,
+            event_type="sign_out",
+            ip_address=get_user_remote_ip_address_from_request(request),
+        )
+
         return Response(status=204)
 
 
@@ -289,13 +294,11 @@ class UserView(APIView):
             400: get_error_schema(
                 [
                     "ERROR_ALREADY_EXISTS",
-                    "ERROR_GROUP_INVITATION_DOES_NOT_EXIST",
                     "ERROR_REQUEST_BODY_VALIDATION",
                     "BAD_TOKEN_SIGNATURE",
                     "ERROR_CAPTCHA_VERIFICATION_FAILED",
                 ]
             ),
-            404: get_error_schema(["ERROR_GROUP_INVITATION_DOES_NOT_EXIST"]),
         },
         auth=[],
     )
@@ -305,8 +308,6 @@ class UserView(APIView):
             UserAlreadyExist: ERROR_ALREADY_EXISTS,
             DeactivatedUserException: ERROR_DEACTIVATED_USER,
             BadSignature: BAD_TOKEN_SIGNATURE,
-            WorkspaceInvitationDoesNotExist: ERROR_GROUP_INVITATION_DOES_NOT_EXIST,
-            WorkspaceInvitationEmailMismatch: ERROR_GROUP_INVITATION_EMAIL_MISMATCH,
             DisabledSignupError: ERROR_DISABLED_SIGNUP,
             AuthProviderDisabled: ERROR_AUTH_PROVIDER_DISABLED,
             CaptchaVerificationFailed: ERROR_CAPTCHA_VERIFICATION_FAILED,
@@ -336,7 +337,6 @@ class UserView(APIView):
             email=data["email"],
             password=data["password"],
             language=data["language"],
-            workspace_invitation_token=data.get("workspace_invitation_token"),
             template=template,
         )
 
@@ -658,7 +658,7 @@ class SendVerifyEmailView(APIView):
             handler = UserHandler()
             user = handler.get_active_user(email=data["email"])
             action_type_registry.get(SendVerifyEmailAddressActionType.type).do(user)
-        except (EmailAlreadyVerified, UserNotFound):
+        except EmailAlreadyVerified, UserNotFound:
             # ignore as not to leak existing email addresses
             ...
         return Response(status=204)
@@ -755,32 +755,6 @@ class ScheduleAccountDeletionView(APIView):
         return Response(status=204)
 
 
-class DashboardView(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    @extend_schema(
-        tags=["User"],
-        operation_id="dashboard",
-        description=(
-            "Lists all the relevant user information that for example could be shown "
-            "on a dashboard. It will contain all the pending workspace invitations for "
-            "that user."
-        ),
-        responses={200: DashboardSerializer},
-    )
-    @transaction.atomic
-    def get(self, request):
-        """Lists all the data related to the user dashboard page."""
-
-        workspace_invitations = WorkspaceInvitation.objects.select_related(
-            "workspace", "invited_by"
-        ).filter(email=request.user.username)
-        dashboard_serializer = DashboardSerializer(
-            {"workspace_invitations": workspace_invitations}
-        )
-        return Response(dashboard_serializer.data)
-
-
 UNDO_REDO_EXCEPTIONS_MAP = {
     ClientSessionIdHeaderNotSetException: ERROR_CLIENT_SESSION_ID_HEADER_NOT_SET,
     LockConflict: ERROR_UNDO_REDO_LOCK_CONFLICT,
@@ -869,22 +843,3 @@ class RedoView(APIView):
         redone_actions = ActionHandler.redo(request.user, data, session_id)
         serializer = UndoRedoResponseSerializer({"actions": redone_actions})
         return Response(serializer.data, status=200)
-
-
-class ShareOnboardingDetailsWithBaserowView(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    @extend_schema(exclude=True)
-    @transaction.atomic
-    @validate_body(ShareOnboardingDetailsWithBaserowSerializer)
-    def post(self, request, data):
-        UserHandler().start_share_onboarding_details_with_baserow(
-            request.user,
-            data["team"],
-            data["role"],
-            data["size"],
-            data["country"],
-            data["how"],
-        )
-
-        return Response(status=204)

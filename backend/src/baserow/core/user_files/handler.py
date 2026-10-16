@@ -460,7 +460,7 @@ class UserFileHandler:
                     )
             content_type = response.headers.get("Content-Type", "")
 
-        except (RequestException, UnacceptableAddressException, ConnectionError):
+        except RequestException, UnacceptableAddressException, ConnectionError:
             raise FileURLCouldNotBeReached("The provided URL could not be reached.")
 
         # content-type may contain extra params, like charset: text/plain; charset=utf-8

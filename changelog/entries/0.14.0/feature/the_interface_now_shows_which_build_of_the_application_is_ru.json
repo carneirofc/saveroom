@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "The interface now shows which build of the application is running: the release version and commit appear on the login screen and in the user menu, and the admin settings and health pages list the backend build, its build date and a warning when the backend and web-frontend come from different builds.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-18"
+}

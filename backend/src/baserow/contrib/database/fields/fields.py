@@ -102,7 +102,7 @@ class MultipleSelectManyToManyDescriptor(ManyToManyDescriptor):
                     return self.instance._prefetched_objects_cache[
                         self.prefetch_cache_name
                     ]
-                except (AttributeError, KeyError):
+                except AttributeError, KeyError:
                     queryset = super().get_queryset()
                     queryset = self._apply_rel_ordering(queryset)
                     return queryset

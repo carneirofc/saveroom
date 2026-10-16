@@ -1,6 +1,6 @@
 # Zed Setup
 
-This guide explains how to use [Zed](https://zed.dev) with Baserow, including the
+This guide explains how to use [Zed](https://zed.dev) with Saveroom, including the
 Python/Django debugger configurations that ship with the repo.
 
 ## Prerequisites
@@ -92,8 +92,8 @@ Make sure the test file is the active tab before launching this config.
 
 ### backend: pytest all (with coverage)
 
-Runs the full core + premium + enterprise test suite with coverage, writing an
-XML report to `html_coverage/cov.xml`.
+Runs the full test suite with coverage, writing an XML report to
+`html_coverage/cov.xml`.
 
 > `-n=auto` parallelises execution across all CPU cores, which significantly
 > reduces wall-clock time but **disables Debugpy breakpoints**.  Remove that

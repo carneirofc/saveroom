@@ -108,7 +108,7 @@ def _generate_sampler_from_string_args(
         try:
             rate = float(arg)
             sampler = _KNOWN_SAMPLERS[trace_sampler](rate)
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             logger.warning(
                 "Could not convert arg {} for to float it was {}.", trace_sampler, arg
             )

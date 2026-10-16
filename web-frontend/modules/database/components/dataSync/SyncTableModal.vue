@@ -15,11 +15,13 @@
       </p>
       <Error :error="error"></Error>
       <div class="modal-progress__actions margin-top-2">
-        <ProgressBar
-          v-if="syncLoading || jobIsRunning || jobIsFinished"
-          :value="job?.progress_percentage || 0"
-          :status="jobHumanReadableState"
-        />
+        <template v-if="syncLoading || jobIsRunning || jobIsFinished">
+          <ProgressBar
+            :value="job?.progress_percentage || 0"
+            :status="jobHumanReadableState"
+          />
+          <JobDuration :job="job" />
+        </template>
         <div class="align-right">
           <Button
             v-if="!jobIsFinished"
@@ -43,9 +45,11 @@
 <script>
 import modal from '@baserow/modules/core/mixins/modal'
 import dataSync from '@baserow/modules/database/mixins/dataSync'
+import JobDuration from '@baserow/modules/core/components/job/JobDuration'
 
 export default {
   name: 'SyncTableModal',
+  components: { JobDuration },
   mixins: [modal, dataSync],
   props: {
     table: {

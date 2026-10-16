@@ -40,7 +40,7 @@ export default {
     closeButton: true,
     titleSlot: 'Notification',
     defaultSlot: 'This is a toast message.',
-    icon: 'iconoir-info-empty',
+    icon: 'iconoir-info-circle',
   },
   parameters: {
     design: {

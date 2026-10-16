@@ -20,7 +20,7 @@ def test_user_source_auth_get_header(data_fixture, api_request_factory):
     fake_request = api_request_factory.post(
         reverse(
             "api:builder:domains:get_builder_by_domain_name",
-            kwargs={"domain_name": "test.getbaserow.io"},
+            kwargs={"domain_name": "test.example.com"},
         ),
         HTTP_AUTHORIZATION=f"JWT {token}",
         HTTP_USERSOURCEAUTHORIZATION=f"JWT {token2}",

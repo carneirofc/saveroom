@@ -1081,8 +1081,8 @@ class BaseGraphHandler(ABC):
             return id_mapping[self.instance_id_mapping][int(nid)]
 
         def map_output(uid):
-            if uid == "":
-                return ""
+            if uid == "" or not self.outputs_id_mapping:
+                return uid
             return id_mapping[self.outputs_id_mapping][uid]
 
         for key, info in self.graph.items():

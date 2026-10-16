@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Harden OIDC sign-in with PKCE (S256), callback state verification and a check that the userinfo subject matches the ID token.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-13"
+}

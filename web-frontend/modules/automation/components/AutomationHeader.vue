@@ -39,7 +39,7 @@
           data-highlight="automation-docs"
           class="header__filter-link"
           target="_blank"
-          href="https://baserow.io/user-docs/workflow-automation"
+          :href="$branding.docsUrl"
           ><i class="header__filter-icon iconoir-help-circle"></i>
           <span class="header__filter-name">{{
             $t('automationHeader.docsBtn')
@@ -112,7 +112,7 @@
           </div>
         </ClientOnly>
         <Button
-          :icon="testRunEnabled ? 'iconoir-cancel' : 'iconoir-play'"
+          :icon="testRunEnabled ? 'iconoir-xmark' : 'iconoir-play'"
           type="secondary"
           data-highlight="automation-test-run"
           :disabled="testRunDisabled"

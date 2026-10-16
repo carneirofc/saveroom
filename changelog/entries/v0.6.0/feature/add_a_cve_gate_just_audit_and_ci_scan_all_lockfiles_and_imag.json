@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "Add a CVE gate: `just audit` and CI scan all lockfiles and images with Trivy and fail on fixable HIGH/CRITICAL vulnerabilities.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-09-13"
+}

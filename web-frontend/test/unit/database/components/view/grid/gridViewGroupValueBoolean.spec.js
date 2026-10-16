@@ -24,14 +24,14 @@ describe('GridViewGroupValueBoolean component', () => {
 
     expect(wrapper.classes()).toContain('grid-view__group-value-boolean--true')
     expect(wrapper.find('.iconoir-check').exists()).toBe(true)
-    expect(wrapper.find('.iconoir-cancel').exists()).toBe(false)
+    expect(wrapper.find('.iconoir-xmark').exists()).toBe(false)
   })
 
   test('renders false as a cancel icon', async () => {
     const wrapper = await mountComponent(false)
 
     expect(wrapper.classes()).toContain('grid-view__group-value-boolean--false')
-    expect(wrapper.find('.iconoir-cancel').exists()).toBe(true)
+    expect(wrapper.find('.iconoir-xmark').exists()).toBe(true)
     expect(wrapper.find('.iconoir-check').exists()).toBe(false)
   })
 

@@ -58,7 +58,7 @@ def test_require_first_admin_user_is_false_after_admin_creation(
         reverse("api:user:index"),
         {
             "name": "admin",
-            "email": "admin@baserow.io",
+            "email": "admin@example.com",
             "password": "admin1234",
             "language": "en",
             "authenticate": True,

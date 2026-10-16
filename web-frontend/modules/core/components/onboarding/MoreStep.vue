@@ -64,8 +64,6 @@
         ></DropdownItem>
       </Dropdown>
     </FormGroup>
-
-    <Checkbox v-model="share">{{ $t('moreStep.share') }}</Checkbox>
   </div>
 </template>
 
@@ -85,7 +83,6 @@ export default {
       how: '',
       team: '',
       country: '',
-      share: true,
     }
   },
   computed: {
@@ -148,7 +145,6 @@ export default {
         how: this.how,
         team: this.team,
         country: this.country,
-        share: this.share,
       })
     },
   },

@@ -66,9 +66,18 @@
     </ul>
     <div class="sidebar__user">
       <div class="sidebar__user-info">
-        <span class="sidebar__user-email">
-          {{ email }}
-        </span>
+        <div class="sidebar__user-identity">
+          <span class="sidebar__user-email">
+            {{ email }}
+          </span>
+          <span
+            v-if="versionLabel"
+            class="sidebar__user-version"
+            :title="versionTitle"
+          >
+            {{ versionLabel }}
+          </span>
+        </div>
 
         <component
           :is="component"
@@ -133,6 +142,7 @@ import context from '@baserow/modules/core/mixins/context'
 import SettingsModal from '@baserow/modules/core/components/settings/SettingsModal'
 import CreateWorkspaceModal from '@baserow/modules/core/components/workspace/CreateWorkspaceModal'
 import { escapeRegExp } from '@baserow/modules/core/utils/string'
+import { buildLabel, buildTitle } from '@baserow/modules/core/utils/buildInfo'
 import { pageFinished } from '@baserow/modules/core/utils/routing'
 import { nextTick, useNuxtApp } from '#imports'
 
@@ -162,6 +172,14 @@ export default {
     }
   },
   computed: {
+    // Which build of the interface is open, so a user reporting a problem can
+    // read it off without an admin. Empty on a development build.
+    versionLabel() {
+      return buildLabel(this.$buildInfo)
+    },
+    versionTitle() {
+      return buildTitle(this.$buildInfo)
+    },
     highestLicenceTypeBadge() {
       return Object.values(this.$registry.getAll('plugin'))
         .map((plugin) => plugin.getHighestLicenseTypeBadge())
@@ -220,11 +238,8 @@ export default {
       await this.$nextTick()
 
       this.$emit('toggle-admin', true)
-      const activatedAdminTypes = this.sortedAdminTypes.filter(
-        (adminType) => !adminType.isDeactivated()
-      )
       try {
-        await this.$router.push({ name: activatedAdminTypes[0].routeName })
+        await this.$router.push({ name: this.sortedAdminTypes[0].routeName })
         await pageFinished(this.nuxtApp)
         await nextTick()
       } catch {}

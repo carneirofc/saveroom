@@ -67,7 +67,7 @@ describe('resolveElementUrl tests', () => {
   test('Should return resolvedContext for external custom navigation type.', () => {
     const element = {
       navigation_type: 'custom',
-      navigate_to_url: { formula: "'https://baserow.io'" },
+      navigate_to_url: { formula: "'https://example.com'" },
     }
     const builder = { pages: [] }
 
@@ -78,7 +78,7 @@ describe('resolveElementUrl tests', () => {
       resolveFormula,
       'preview'
     )
-    expect(result).toEqual('https://baserow.io')
+    expect(result).toEqual('https://example.com')
   })
   test('Should return resolvedContext for internal custom navigation type.', () => {
     const element = {

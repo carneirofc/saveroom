@@ -20,8 +20,7 @@
     "phone": "987-654-3210"
   }
 ]
-        </pre
-          >
+        </pre>
         </div>
       </template>
       <div class="control__elements">

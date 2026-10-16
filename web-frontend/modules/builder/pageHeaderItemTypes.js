@@ -60,7 +60,7 @@ export class ElementsPageHeaderItemType extends PageHeaderItemType {
   }
 
   get icon() {
-    return 'iconoir-selection'
+    return 'iconoir-frame-select'
   }
 
   get component() {

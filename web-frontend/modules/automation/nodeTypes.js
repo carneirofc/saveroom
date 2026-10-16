@@ -31,7 +31,6 @@ import {
   CoreManualTriggerServiceType,
   CoreStartWorkflowServiceType,
 } from '@baserow/modules/integrations/core/serviceTypes'
-import { AIAgentServiceType } from '@baserow/modules/integrations/ai/serviceTypes'
 import { uuid } from '@baserow/modules/core/utils/string'
 import { SlackWriteMessageServiceType } from '@baserow/modules/integrations/slack/serviceTypes'
 
@@ -155,9 +154,6 @@ export class NodeType extends Registerable {
    * @returns {boolean} - Whether the properties are in-error.
    */
   isInError({ service, workspace = null }) {
-    if (workspace && this.isDeactivated({ workspace })) {
-      return true
-    }
     return this.serviceType.isInError({ service })
   }
 
@@ -171,11 +167,6 @@ export class NodeType extends Registerable {
    * @returns {string} - The error message.
    */
   getErrorMessage({ service, node, workspace = null }) {
-    const deactivatedReason =
-      workspace && this.isDeactivatedReason({ workspace })
-    if (deactivatedReason) {
-      return deactivatedReason
-    }
     return this.serviceType.getErrorMessage({ service })
   }
 
@@ -277,22 +268,6 @@ export class NodeType extends Registerable {
 
   getEdges({ node }) {
     return [{ uid: '', label: '' }]
-  }
-
-  isDeactivatedReason({ workspace }) {
-    const serviceReason = this.serviceType.isDeactivatedReason({ workspace })
-    if (serviceReason) {
-      return serviceReason
-    }
-    return null
-  }
-
-  isDeactivated({ workspace }) {
-    return !!this.isDeactivatedReason({ workspace })
-  }
-
-  getDeactivatedClickModal({ workspace }) {
-    return this.serviceType.getDeactivatedClickModal({ workspace })
   }
 }
 
@@ -1080,28 +1055,6 @@ export class CoreRouterNodeType extends ActionNodeTypeMixin(
 
   isDuplicable({ workflow, node }) {
     return false
-  }
-}
-
-export class AIAgentActionNodeType extends ActionNodeTypeMixin(NodeType) {
-  static getType() {
-    return 'ai_agent'
-  }
-
-  get name() {
-    return this.app.$i18n.t('nodeType.aiAgent')
-  }
-
-  get iconClass() {
-    return 'iconoir-sparks'
-  }
-
-  get serviceType() {
-    return this.app.$registry.get('service', AIAgentServiceType.getType())
-  }
-
-  getOrder() {
-    return 8
   }
 }
 

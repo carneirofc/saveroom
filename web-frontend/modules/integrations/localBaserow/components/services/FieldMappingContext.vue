@@ -30,7 +30,7 @@ export default {
   emits: ['edit'],
   computed: {
     enabledClass() {
-      return this.fieldMapping.enabled ? 'iconoir-eye-off' : 'iconoir-eye-empty'
+      return this.fieldMapping.enabled ? 'iconoir-eye-closed' : 'iconoir-eye'
     },
     toggleEnabledText() {
       return this.fieldMapping.enabled

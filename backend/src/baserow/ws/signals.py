@@ -6,9 +6,6 @@ from baserow.api.applications.serializers import (
     PolymorphicApplicationResponseSerializer,
 )
 from baserow.api.user.serializers import PublicUserSerializer
-from baserow.api.workspaces.invitations.serializers import (
-    UserWorkspaceInvitationSerializer,
-)
 from baserow.api.workspaces.serializers import (
     WorkspaceSerializer,
     WorkspaceUserSerializer,
@@ -35,6 +32,22 @@ from .tasks import (
     broadcast_to_users,
     force_disconnect_users,
 )
+
+
+@receiver(signals.permissions_updated)
+def permissions_updated(sender, workspace, user_ids, **kwargs):
+    """
+    Tells the affected users their permissions in the workspace changed so the
+    frontend refetches its permission object and visible applications.
+    """
+
+    user_ids = list(user_ids)
+    transaction.on_commit(
+        lambda: broadcast_to_users.delay(
+            user_ids,
+            {"type": "permissions_updated", "workspace_id": workspace.id},
+        )
+    )
 
 
 @receiver(signals.user_updated)
@@ -303,53 +316,6 @@ def applications_reordered(sender, workspace, order, user, **kwargs):
                 "order": order,
             },
             getattr(user, "web_socket_id", None),
-        )
-    )
-
-
-@receiver(signals.workspace_invitation_updated_or_created)
-def notify_workspace_invitation_created(
-    sender, invitation, invited_user=None, **kwargs
-):
-    if invited_user is not None:
-        serialized_data = UserWorkspaceInvitationSerializer(invitation).data
-        transaction.on_commit(
-            lambda: broadcast_to_users.delay(
-                [invited_user.id],
-                {
-                    "type": "workspace_invitation_updated_or_created",
-                    "invitation": serialized_data,
-                },
-            )
-        )
-
-
-@receiver(signals.workspace_invitation_accepted)
-def notify_workspace_invitation_accepted(sender, invitation, user, **kwargs):
-    # invitation will be deleted on commit, so serialize it now to have the id
-    serialized_data = UserWorkspaceInvitationSerializer(invitation).data
-    transaction.on_commit(
-        lambda: broadcast_to_users.delay(
-            [user.id],
-            {
-                "type": "workspace_invitation_accepted",
-                "invitation": serialized_data,
-            },
-        )
-    )
-
-
-@receiver(signals.workspace_invitation_rejected)
-def notify_workspace_invitation_rejected(sender, invitation, user, **kwargs):
-    # invitation will be deleted on commit, so serialize it now to have the id
-    serialized_data = UserWorkspaceInvitationSerializer(invitation).data
-    transaction.on_commit(
-        lambda: broadcast_to_users.delay(
-            [user.id],
-            {
-                "type": "workspace_invitation_rejected",
-                "invitation": serialized_data,
-            },
         )
     )
 

@@ -1,0 +1,80 @@
+.backups__list {
+  border-top: 1px solid $color-neutral-200;
+  padding-top: 20px;
+}
+
+.backups__item {
+  &:not(:last-child) {
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid $color-neutral-200;
+  }
+}
+
+.backups__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.backups__info {
+  min-width: 0;
+  flex: 1 1 260px;
+  overflow-wrap: anywhere;
+}
+
+.backups__title {
+  font-weight: 600;
+  padding-bottom: 4px;
+}
+
+.backups__detail {
+  color: $color-neutral-500;
+}
+
+.backups__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.backups__error {
+  margin-top: 4px;
+  color: $palette-red-600;
+}
+
+.backups__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.data-export__runs {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8px;
+
+  th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 6px 8px 6px 0;
+    color: $color-neutral-600;
+  }
+
+  td {
+    padding: 8px 8px 8px 0;
+    border-top: 1px solid $color-neutral-200;
+    font-size: 12px;
+    vertical-align: middle;
+    overflow-wrap: anywhere;
+  }
+}
+
+.data-export__runs-error {
+  color: $palette-red-600;
+}

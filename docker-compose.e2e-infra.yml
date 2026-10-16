@@ -1,0 +1,76 @@
+# Infrastructure services (PostgreSQL + Redis) for end-to-end and backend tests.
+#
+# This is a standalone stack: it does not extend docker-compose.yml and it does not
+# build or run Baserow itself. It only provides the backing services that the backend
+# needs, so you can run the test suite, migrations or `just e2e test` against it.
+#
+#   docker compose -f docker-compose.e2e-infra.yml up -d
+#   docker compose -f docker-compose.e2e-infra.yml down -v
+#
+# Ports are published on non-default numbers so this can run alongside a dev stack
+# (which uses 5432/6379) without colliding. The `70` suffix matches the e2e app ports
+# used by e2e-tests/justfile (backend 8070, frontend 3070).
+#
+# Point the backend at it with:
+#   DATABASE_HOST=localhost DATABASE_PORT=5470 \
+#   DATABASE_NAME=baserow DATABASE_USER=baserow DATABASE_PASSWORD=baserow \
+#   REDIS_HOST=localhost REDIS_PORT=6470
+#
+# Postgres stores data in tmpfs and runs with durability disabled. This stack is for
+# throwaway test data only: everything is lost when the container stops. Never point
+# it at data you want to keep.
+
+name: baserow-e2e-infra
+
+services:
+  db:
+    # pgvector is required: baserow.core.pgvector expects the extension to be
+    # available. Keep the default major version in sync with docker-compose.yml.
+    image: pgvector/pgvector:pg${POSTGRES_IMAGE_VERSION:-18}
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-baserow}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-baserow}
+      POSTGRES_DB: ${DATABASE_NAME:-baserow}
+      # Speeds up the many small transactions the test suite makes.
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command:
+      - postgres
+      - -c
+      - fsync=off
+      - -c
+      - synchronous_commit=off
+      - -c
+      - full_page_writes=off
+      - -c
+      - max_connections=200
+    ports:
+      - "${BASEROW_HOST_PUBLISH_IP:-127.0.0.1}:${E2E_POSTGRES_PORT:-5470}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      # Without -d/-U pg_isready reports ready before the init scripts have finished
+      # creating the database, which races the first connection.
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DATABASE_USER:-baserow} -d ${DATABASE_NAME:-baserow}",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  redis:
+    image: redis:8
+    ports:
+      - "${BASEROW_HOST_PUBLISH_IP:-127.0.0.1}:${E2E_REDIS_PORT:-6470}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
+networks:
+  default:
+    name: ${E2E_INFRA_NETWORK:-baserow-e2e-infra}

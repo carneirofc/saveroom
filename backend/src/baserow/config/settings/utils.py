@@ -42,7 +42,7 @@ def setup_dev_e2e_users_and_instance_id(User, args, kwargs):
         user_handler = UserHandler()
         from baserow.core.user.exceptions import UserAlreadyExist
 
-        for email in ["dev@baserow.io", "e2e@baserow.io"]:
+        for email in ["dev@example.com", "e2e@example.com"]:
             uname = email.split("@")[0]
             try:
                 user = user_handler.create_user(f"staff-{uname}", email, password)
@@ -126,14 +126,14 @@ def str_to_bool(s: str) -> bool:
 def try_int(s: str | int | None, default: Any = None) -> int | None:
     try:
         return int(s)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return default
 
 
 def try_float(s: str | float | None, default: Any = None) -> float | None:
     try:
         return float(s)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return default
 
 

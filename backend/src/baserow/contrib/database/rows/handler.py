@@ -92,7 +92,6 @@ from baserow.core.types import PermissionCheck
 from baserow.core.utils import Progress, get_non_unique_values, grouper
 
 from .constants import ROW_IMPORT_CREATION, ROW_IMPORT_VALIDATION
-from .error_report import RowErrorReport
 from .exceptions import InvalidRowLength, RowDoesNotExist, RowIdsNotUnique
 from .operations import (
     DeleteDatabaseRowOperationType,
@@ -116,6 +115,7 @@ from .types import (
     FieldsMetadata,
     FileImportConfiguration,
     GeneratedTableModelForUpdate,
+    ImportRowsResult,
     RowId,
     RowsForUpdate,
     UpdatedRowsData,
@@ -126,6 +126,8 @@ if TYPE_CHECKING:
 
     from baserow.contrib.database.fields.models import Field
     from baserow.contrib.database.views.models import View
+
+    from .import_planner import ImportPlan
 
 tracer = trace.get_tracer(__name__)
 
@@ -911,127 +913,15 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
         else:
             prepared_values = values
 
-        before_return = before_rows_create.send(
-            self, user=user, table=table, model=model
-        )
-
-        row_values, manytomany_values = self.extract_manytomany_values(
-            prepared_values, model
-        )
-        row_values["order"] = self.get_unique_orders_before_row(before, model)[0]
-
-        if getattr(model, CREATED_BY_COLUMN_NAME, None):
-            row_values[CREATED_BY_COLUMN_NAME] = user if user and user.id else None
-
-        if getattr(model, LAST_MODIFIED_BY_COLUMN_NAME, None):
-            row_values[LAST_MODIFIED_BY_COLUMN_NAME] = (
-                user if user and user.id else None
-            )
-
-        field_rules_handler = FieldRuleHandler(table, user)
-
-        field_rules_handler.on_rows_create([row_values])
-        instance = model(**row_values)
-        field_rules_handler.validate_row(instance)
-
-        def safe_save_instance():
-            try:
-                with transaction.atomic():
-                    instance.save(force_insert=True)
-                rows_created_counter.add(1)
-            except Exception as exc:
-                if is_unique_violation_error(exc):
-                    raise FieldDataConstraintException()
-                else:
-                    raise exc
-
-        try:
-            safe_save_instance()
-        except Exception as exc:
-            if is_index_row_size_error(exc):
-                from baserow.contrib.database.views.handler import (
-                    ViewIndexingHandler,
-                )
-
-                ViewIndexingHandler.handle_index_row_size_error(model.baserow_table_id)
-                safe_save_instance()
-            else:
-                raise exc
-
-        m2m_change_tracker = RowM2MChangeTracker()
-        for field_name, value in manytomany_values.items():
-            m2m_objects, _ = self._prepare_m2m_field_related_objects(
-                instance, field_name, value
-            )
-            field_object = model.get_field_object(field_name)
-            m2m_change_tracker.track_m2m_created_for_new_row(
-                instance,
-                field_object["field"],
-                value,
-            )
-            getattr(instance, field_name).through.objects.bulk_create(m2m_objects)
-
-        cascade_update = field_rules_handler.collector.get_processed_rows()
-
-        fields, dependant_fields, dependant_rows_updates = (
-            self.update_dependencies_of_rows_created(model, [instance])
-        )
-
-        _, cascade_dependant_rows_updates = self.update_dependencies_of_rows_updated(
-            table=table,
+        return self.force_create_rows(
+            user,
+            table,
+            [prepared_values],
+            before_row=before,
             model=model,
-            updated_rows=cascade_update.updated_rows,
-            updated_field_ids=cascade_update.field_ids,
-        )
-        dependant_rows_updates = merge_dependant_rows_updates(
-            dependant_rows_updates,
-            cascade_dependant_rows_updates,
-            self.cascade_dependant_rows_update(
-                table,
-                cascade_update.row_ids,
-                cascade_update.field_ids,
-                exclude_row_ids=[instance.id],
-            ),
-        )
-
-        if model.fields_requiring_refresh_after_insert():
-            instance.refresh_from_db(
-                fields=model.fields_requiring_refresh_after_insert()
-            )
-
-        from baserow.contrib.database.views.handler import ViewHandler
-
-        ViewHandler().field_value_updated(fields + dependant_fields)
-        SearchHandler.schedule_update_search_data(
-            table, row_ids=[instance.id] + cascade_update.row_ids
-        )
-
-        if cascade_update.row_ids:
-            updated_rows = list(
-                model.objects.all()
-                .enhance_by_fields()
-                .filter(id__in=list(cascade_update.row_ids))
-            )
-            cascade_update.updated_rows = updated_rows
-
-        rows_created.send(
-            self,
-            rows=[instance],
-            before=before,
-            user=user,
-            table=table,
-            model=model,
-            send_realtime_update=True,
             send_webhook_events=send_webhook_events,
-            rows_values_refreshed_from_db=False,
-            m2m_change_tracker=m2m_change_tracker,
-            fields=fields,
-            dependant_fields=dependant_fields,
-            before_return=before_return,
-        )
-        self.send_dependant_rows_updated(user, table, dependant_rows_updates)
-
-        return instance
+            values_already_prepared=True,
+        ).created_rows[0]
 
     # noinspection PyMethodMayBeStatic
     def map_user_field_name_dict_to_internal(
@@ -1153,120 +1043,24 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
         if model is None:
             model = table.get_model()
 
-        updated_fields_by_name = {}
-        updated_fields = []
-        updated_field_ids = set()
-        for field_id, field in model._field_objects.items():
-            if field_id in values or field["name"] in values:
-                updated_field_ids.add(field_id)
-                updated_fields_by_name[field["name"]] = field["field"]
-                updated_fields.append(field["field"])
-
         self._raise_if_values_contain_hidden_fields(user, view, [values])
         self._check_write_fields_values_permissions(user, model, [values])
 
-        rows = [row]
-        before_return = before_rows_update.send(
-            self,
-            rows=rows,
-            user=user,
-            table=table,
-            model=model,
-            updated_field_ids=updated_field_ids,
-        )
-
         if not values_already_prepared:
-            prepared_values = self.prepare_values(model._field_objects, values)
-        else:
-            prepared_values = values
+            values = self.prepare_values(model._field_objects, values)
 
-        row_values, manytomany_values = self.extract_manytomany_values(
-            prepared_values, model
-        )
-        update_row_fields = []
-        for name, value in row_values.items():
-            setattr(row, name, value)
-            update_row_fields.append(name)
-
-        # This update can remove link row connections with other rows. We need to keep
-        # track of these so we can later update any dependant cells in those rows that
-        # we used to link to. This is a dictionary where the key is the id link row
-        # field in this table, and the value is a set of row ids that this row used to
-        # link to via that link row field.
-        m2m_change_tracker = RowM2MChangeTracker()
-
-        for name, value in manytomany_values.items():
-            field = updated_fields_by_name[name]
-            value = [v if not hasattr(v, "id") else v.id for v in value]
-            m2m_change_tracker.track_m2m_update_for_field_and_row(
-                field, name, row, value
-            )
-            getattr(row, name).set(value)
-
-        always_updated_fields = ["updated_on"] + [
-            fo["field"].db_column for fo in model.get_field_objects_to_always_update()
-        ]
-        if getattr(model, LAST_MODIFIED_BY_COLUMN_NAME, None):
-            setattr(row, LAST_MODIFIED_BY_COLUMN_NAME, user if user.id else None)
-            always_updated_fields.append(LAST_MODIFIED_BY_COLUMN_NAME)
-
-        def safe_save_row():
-            try:
-                with transaction.atomic():
-                    row.save(update_fields=update_row_fields + always_updated_fields)
-            except Exception as exc:
-                if is_unique_violation_error(exc):
-                    raise FieldDataConstraintException()
-                else:
-                    raise exc
-
-        try:
-            safe_save_row()
-        except Exception as exc:
-            if is_index_row_size_error(exc):
-                from baserow.contrib.database.views.handler import (
-                    ViewIndexingHandler,
-                )
-
-                ViewIndexingHandler.handle_index_row_size_error(model.baserow_table_id)
-                safe_save_row()
-            else:
-                raise exc
-        rows_updated_counter.add(1)
-
-        dependant_fields, dependant_rows_updates = (
-            self.update_dependencies_of_rows_updated(
-                table, [row], model, updated_field_ids, m2m_change_tracker
-            )
-        )
-        # We need to refresh here as ExpressionFields might have had their values
-        # updated. Django does not support UPDATE .... RETURNING and so we need to
-        # query for the rows updated values instead.
-        row.refresh_from_db(fields=model.fields_requiring_refresh_after_update())
-
-        from baserow.contrib.database.views.handler import ViewHandler
-
-        ViewHandler().field_value_updated(updated_fields + dependant_fields)
-        SearchHandler.schedule_update_search_data(
+        self.force_update_rows(
+            user,
             table,
-            fields=[f for f in updated_fields if f.id in updated_field_ids],
-            row_ids=[row.id],
-        )
-
-        rows_updated.send(
-            self,
-            rows=rows,
-            user=user,
-            table=table,
+            [{**values, "id": row.id}],
             model=model,
-            before_return=before_return,
-            updated_field_ids=updated_field_ids,
-            m2m_change_tracker=m2m_change_tracker,
-            fields=[f for f in updated_fields if f.id in updated_field_ids],
-            dependant_fields=dependant_fields,
+            rows_to_update=cast(RowsForUpdate, [row]),
+            values_already_prepared=True,
         )
-        self.send_dependant_rows_updated(user, table, dependant_rows_updates)
-
+        # Preserve the single-row API's in-place update contract, including refreshed
+        # formula values and invalidation of any prefetched relations.
+        row.refresh_from_db()
+        del row._m2m_values
         return row
 
     def send_dependant_rows_updated(
@@ -1415,6 +1209,7 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
         generate_error_report: bool = False,
         skip_search_update: bool = False,
         signal_params: Optional[Dict] = None,
+        values_already_prepared: bool = False,
     ) -> CreatedRowsData:
         """
         Creates new rows for a given table without checking permissions. It also calls
@@ -1436,6 +1231,8 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
             cells update later on after many create_rows calls then set this to True
             but make sure you trigger it eventually.
         :param signal_params: Additional parameters that are added to the signal.
+        :param values_already_prepared: Whether to use the supplied values directly,
+            skipping defaults and value preparation.
         :return: The created row instances.
 
         """
@@ -1453,15 +1250,18 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
         )
 
         report = {}
-        rows_values_with_defaults = self.prepare_values_with_defaults(
-            model._field_objects, rows_values
-        )
-        prepared_rows_values, errors = self.prepare_rows_in_bulk(
-            model._field_objects,
-            rows_values_with_defaults,
-            generate_error_report=generate_error_report,
-        )
-        report.update({index: err for index, err in errors.items()})
+        if values_already_prepared:
+            prepared_rows_values = [values.copy() for values in rows_values]
+        else:
+            rows_values_with_defaults = self.prepare_values_with_defaults(
+                model._field_objects, rows_values
+            )
+            prepared_rows_values, errors = self.prepare_rows_in_bulk(
+                model._field_objects,
+                rows_values_with_defaults,
+                generate_error_report=generate_error_report,
+            )
+            report.update({index: err for index, err in errors.items()})
 
         before_return = before_rows_create.send(
             self, user=user, table=table, model=model
@@ -1565,6 +1365,21 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
                 collect_dependant_rows=send_realtime_update,
             )
         )
+
+        if cascade_updated.updated_rows:
+            _, cascade_dependant_rows_updates = (
+                self.update_dependencies_of_rows_updated(
+                    table=table,
+                    model=model,
+                    updated_rows=cascade_updated.updated_rows,
+                    updated_field_ids=cascade_updated.field_ids,
+                    skip_search_updates=skip_search_update,
+                    collect_dependant_rows=send_realtime_update,
+                )
+            )
+            dependant_rows_updates = merge_dependant_rows_updates(
+                dependant_rows_updates, cascade_dependant_rows_updates
+            )
 
         from baserow.contrib.database.views.handler import ViewHandler
 
@@ -1967,7 +1782,7 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
         user: AbstractUser,
         table: Table,
         rows_values: List[Dict[str, Any]],
-        progress: Progress,
+        progress: Optional[Progress] = None,
         model: Optional[Type[GeneratedTableModel]] = None,
         signal_params: Optional[Dict] = None,
         skip_search_update: bool = True,
@@ -1993,7 +1808,8 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
         if signal_params is None:
             signal_params = {}
 
-        progress.increment(state=ROW_IMPORT_CREATION)
+        if progress:
+            progress.increment(state=ROW_IMPORT_CREATION)
 
         if model is None:
             model = table.get_model()
@@ -2063,9 +1879,68 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
             signal indicating if a realtime update should be send.
 
         :raises InvalidRowLength:
+        :raises ImportAmbiguousMatches:
 
         :return: The created row instances and the error report.
         """
+
+        result = self.import_rows_with_result(
+            user,
+            table,
+            data,
+            configuration=configuration,
+            validate=validate,
+            progress=progress,
+            send_realtime_update=send_realtime_update,
+        )
+        return result.created_rows, result.error_report
+
+    def check_import_permissions(
+        self, user: AbstractUser, table: Table, plan: "ImportPlan"
+    ):
+        """
+        Checks the user can apply the provided import plan to the table: importing
+        rows, and also updating or deleting rows when the plan does so.
+
+        :raises PermissionDenied: When the user isn't allowed.
+        """
+
+        workspace = table.database.workspace
+        operation_types = [ImportRowsDatabaseTableOperationType.type]
+        if plan.to_update:
+            operation_types.append(UpdateDatabaseRowOperationType.type)
+        if plan.to_delete_ids:
+            operation_types.append(DeleteDatabaseRowOperationType.type)
+
+        for operation_type in operation_types:
+            CoreHandler().check_permissions(
+                user, operation_type, workspace=workspace, context=table
+            )
+
+    def import_rows_with_result(
+        self,
+        user: AbstractUser,
+        table: Table,
+        data: list[list[Any]],
+        configuration: FileImportConfiguration | None = None,
+        validate: bool = True,
+        progress: Optional[Progress] = None,
+        send_realtime_update: bool = True,
+    ) -> "ImportRowsResult":
+        """
+        Applies a file import to an existing table according to the import mode of
+        the configuration: rows are created, updated and trashed as planned by the
+        `ImportPlanner`, which the import preview uses as well. When a row fails to
+        import, it doesn't stop the import, the error is added to the report.
+
+        See `import_rows` for the parameters.
+
+        :raises InvalidRowLength:
+        :raises ImportAmbiguousMatches:
+        :return: The result of the import.
+        """
+
+        from .import_planner import ImportPlanner
 
         workspace = table.database.workspace
         CoreHandler().check_permissions(
@@ -2076,164 +1951,77 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
         )
         model = table.get_model()
 
-        error_report = RowErrorReport(data)
-        configuration = configuration or {}
-        update_handler = UpsertRowsMappingHandler(
-            table=table,
-            upsert_fields=configuration.get("upsert_fields") or [],
-            upsert_values=configuration.get("upsert_values") or [],
-        )
-        # Pre-run upsert configuration validation.
-        # Can raise InvalidRowLength
-        update_handler.validate()
+        plan = ImportPlanner(
+            user,
+            table,
+            data,
+            configuration=configuration,
+            model=model,
+            validate=validate,
+            progress=progress,
+        ).plan()
+        self.check_import_permissions(user, table, plan)
 
-        skipped_field_ids = configuration.get("skipped_fields", []) or []
-        try:
-            skipped_fields = [
-                model.get_field_object_by_id(field_id)["field"]
-                for field_id in skipped_field_ids
-            ]
-        except ValueError:
-            raise FieldNotInTable("The field ID is not found in the table.")
-
-        fields = [
-            field_object["field"]
-            for field_object in model._field_objects.values()
-            if not field_object["type"].read_only
-            and not field_object["field"].read_only
-        ]
-
-        # Sort by primary first (descending), then by order, then by id
-        fields.sort(key=lambda f: (not f.primary, f.order, f.id))
-
-        for index, row in enumerate(data):
-            # Check row length
-            if len(row) > len(fields):
-                error_report.add_error(
-                    index,
-                    {"non_field_errors": ["Too many values in this line."]},
-                )
-            else:
-                new_row = list(row)
-                # Fill incomplete rows with empty values
-                new_row.extend([None] * (len(fields) - len(row)))
-
-                # Reshape data by field as expected by the import
-                error_report.update_row(
-                    index,
-                    {
-                        f"field_{fields[index].id}": value
-                        for index, value in enumerate(new_row)
-                    },
-                )
-
-        # STEP 1: pre-validate data with serializer
-        if validate:
-            (
-                valid_rows,
-                original_row_index_mapping,
-            ) = error_report.get_valid_rows_and_mapping()
-
-            validation_sub_progress = (
-                progress.create_child(50, len(valid_rows)) if progress else None
+        changed_rows = len(plan.to_create) + len(plan.to_update)
+        write_sub_progress = (
+            progress.create_child(
+                50 if validate else 100,
+                changed_rows + len(plan.to_delete_ids),
             )
-
-            validation_report = self.validate_rows(
-                table, valid_rows, progress=validation_sub_progress
-            )
-
-            for index, error in validation_report.items():
-                error_report.add_error(original_row_index_mapping[int(index)], error)
-
-        (
-            valid_rows,
-            original_row_index_mapping,
-        ) = error_report.get_valid_rows_and_mapping()
-
-        # STEP 2: create rows in DB
-        creation_sub_progress = (
-            progress.create_child(50 if validate else 100, len(valid_rows))
             if progress
             else None
         )
-
-        # Make sure to exclude fields that cannot be written by the user.
-        # NOTE: all rows contain the same fields, so we can just check the first one
-        unwritable_fields = self._check_write_fields_values_permissions(
-            user, model, valid_rows[:1], raise_if_not_permitted=False
-        )
-        unwritable_field_names = set(f.db_column for f in unwritable_fields)
-        valid_rows = [
-            {k: v for k, v in row.items() if k not in unwritable_field_names}
-            for row in valid_rows
-        ]
-
-        # split rows to insert and update lists. If there's no upsert field selected,
-        # this will not populate rows_values_to_update.
-        update_map = update_handler.process_map
-
-        rows_values_to_create = []
-        rows_values_to_update = []
-        if update_map:
-            skipped_field_names = set()
-
-            if skipped_fields:
-                skipped_field_names = {field.db_column for field in skipped_fields}
-
-            for current_idx, import_idx in original_row_index_mapping.items():
-                row = valid_rows[current_idx]
-                if update_idx := update_map.get(import_idx):
-                    # For upsert operations, filter out skipped fields that were
-                    # explicitly marked to be ignored during import. This ensures
-                    # that existing values in those fields are preserved in the
-                    # database rather than being overwritten.
-                    filtered_row = {
-                        k: v for k, v in row.items() if k not in skipped_field_names
-                    }
-                    filtered_row["id"] = update_idx
-                    rows_values_to_update.append(filtered_row)
-                else:
-                    rows_values_to_create.append(row)
-        else:
-            rows_values_to_create = valid_rows
-
-        changed_rows = len(rows_values_to_create) + len(rows_values_to_update)
         full_field_search_update = self._should_use_full_field_search_update_for_import(
             changed_rows, model
         )
 
+        trashed_rows_entry_id = None
+        if plan.to_delete_ids:
+            trashed_rows = self.force_delete_rows(
+                user,
+                table,
+                plan.to_delete_ids,
+                model=model,
+                send_realtime_update=False,
+                send_webhook_events=False,
+            )
+            trashed_rows_entry_id = trashed_rows.id
+            if write_sub_progress:
+                write_sub_progress.increment(len(plan.to_delete_ids))
+
         created_rows, creation_report = self.force_create_rows_by_batch(
             user,
             table,
-            rows_values_to_create,
-            progress=creation_sub_progress,
+            [values for _, values in plan.to_create],
+            progress=write_sub_progress,
             model=model,
             skip_search_update=full_field_search_update,
         )
+        for index, error in creation_report.items():
+            plan.error_report.add_error(plan.to_create[int(index)][0], error)
 
-        if rows_values_to_update:
+        updated_rows = []
+        failed_update_indexes = set()
+        if plan.to_update:
             updated_rows, updated_report = self.force_update_rows_by_batch(
                 user,
                 table,
-                rows_values_to_update,
-                progress=creation_sub_progress,
+                [planned.values for planned in plan.to_update],
+                progress=write_sub_progress,
                 model=model,
                 skip_search_update=full_field_search_update,
             )
-
-        # Add errors to global report
-        for index, error in creation_report.items():
-            error_report.add_error(
-                original_row_index_mapping[int(index)],
-                error,
-            )
-
-        if rows_values_to_update:
             for index, error in updated_report.items():
-                error_report.add_error(
-                    original_row_index_mapping[int(index)],
-                    error,
+                failed_update_indexes.add(int(index))
+                plan.error_report.add_error(
+                    plan.to_update[int(index)].import_index, error
                 )
+
+        original_rows_values_by_id = {
+            planned.row_id: planned.original_values
+            for index, planned in enumerate(plan.to_update)
+            if index not in failed_update_indexes
+        }
 
         if send_realtime_update:
             # Just send a single table_updated here as realtime update instead
@@ -2243,7 +2031,21 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
         if full_field_search_update and changed_rows > 0:
             SearchHandler.schedule_update_search_data(table)
 
-        return created_rows, error_report.to_dict()
+        return ImportRowsResult(
+            created_rows=created_rows,
+            updated_row_ids=list(original_rows_values_by_id.keys()),
+            original_rows_values_by_id=original_rows_values_by_id,
+            trashed_row_ids=plan.to_delete_ids,
+            trashed_rows_entry_id=trashed_rows_entry_id,
+            error_report=plan.error_report.to_dict(),
+            summary={
+                "created": len(created_rows),
+                "updated": len(original_rows_values_by_id),
+                "unchanged": len(plan.unchanged),
+                "deleted": len(plan.to_delete_ids),
+                "skipped": len(plan.skipped),
+            },
+        )
 
     def get_fields_metadata_for_row_history(
         self,
@@ -2381,6 +2183,7 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
         skip_search_update: bool = False,
         generate_error_report: bool = False,
         signal_params: Optional[Dict] = None,
+        values_already_prepared: bool = False,
     ) -> UpdatedRowsData:
         """
         Updates field values in batch based on provided rows with the new
@@ -2403,6 +2206,8 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
             but make sure you trigger it eventually.
         :param generate_error_report: Generate error report if set to True.
         :param signal_params: Additional parameters that are added to the signal.
+        :param values_already_prepared: Whether the values are already sanitized and
+            validated and can be used without preparing them again.
         :raises RowIdsNotUnique: When trying to update the same row multiple
             times.
         :raises RowDoesNotExist: When any of the rows don't exist.
@@ -2419,12 +2224,17 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
 
         user_id = user and user.id
 
-        prepared_rows_values, errors = self.prepare_rows_in_bulk(
-            model._field_objects,
-            rows_values,
-            generate_error_report=generate_error_report,
-        )
-        report = {index: err for index, err in errors.items()}
+        if values_already_prepared:
+            # Row IDs are removed below, so do not mutate the caller's dictionaries.
+            prepared_rows_values = [values.copy() for values in rows_values]
+            report = {}
+        else:
+            prepared_rows_values, errors = self.prepare_rows_in_bulk(
+                model._field_objects,
+                rows_values,
+                generate_error_report=generate_error_report,
+            )
+            report = {index: err for index, err in errors.items()}
         row_ids = [r["id"] for r in prepared_rows_values]
 
         non_unique_ids = get_non_unique_values(row_ids)
@@ -2547,15 +2357,15 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
                 # rows which previously were connected to an updated row, but no
                 # longer are.
                 field_obj = field_name_to_field[field_name]
+                # Prepared values can contain model instances. Track and compare IDs.
+                value_ids = [v.id if hasattr(v, "id") else v for v in value]
                 m2m_change_tracker.track_m2m_update_for_field_and_row(
-                    field_obj, field_name, row, value
+                    field_obj, field_name, row, value_ids
                 )
 
                 original_set_of_values = set(
                     original_row_values_by_id[row.id].get(field_name) or []
                 )
-                # if a list of models is provided as value, make sure to compare the ids
-                value_ids = [v.id if hasattr(v, "id") else v for v in value]
                 new_set_of_values = set(value_ids)
                 to_add = new_set_of_values - original_set_of_values
                 to_delete = original_set_of_values - new_set_of_values
@@ -2593,7 +2403,9 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
         for field_name, m2m_to_add in m2m_values_to_add.items():
             through = getattr(model, field_name).through
             row_column_name = row_column_names[field_name]
-            through.objects.bulk_create(m2m_to_add)
+            # Related managers hide trashed rows even though their through rows
+            # still exist. Match Django's set() when inserting those links again.
+            through.objects.bulk_create(m2m_to_add, ignore_conflicts=True)
 
         bulk_update_fields = ["updated_on"]
         if field_rules_handler.has_field_rules():
@@ -2723,6 +2535,9 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
             # replace updated rows with fresh versions with formula values
             cascade_updated.updated_rows = cascade_updated_rows
 
+        # rows_before_update is serialized in full so the frontend can
+        # reconstruct the pre-update state for filter/sort/search transitions.
+        # rows can be partial because the frontend merges it onto the existing row.
         rows_updated.send(
             self,
             rows=updated_rows_to_return,
@@ -2731,6 +2546,7 @@ class RowHandler(metaclass=baserow_trace_methods(tracer)):
             model=model,
             before_return=before_return,
             updated_field_ids=updated_field_ids,
+            serialize_only_updated_fields=True,
             m2m_change_tracker=m2m_change_tracker,
             send_realtime_update=send_realtime_update,
             send_webhook_events=send_webhook_events,
@@ -3602,8 +3418,14 @@ class UpsertRowsMappingHandler:
         if not self.import_fields:
             return {}
 
+        # The connection can be reused between requests (e.g. an import preview
+        # followed by another one), so temp objects of a previous run may still exist.
         script_template = sql.SQL(
             """
+        DROP VIEW IF EXISTS table_import_indexes;
+        DROP TABLE IF EXISTS table_upsert_indexes;
+        DROP TABLE IF EXISTS table_import;
+
         CREATE TEMP TABLE table_upsert_indexes (id INT, upsert_value TEXT, group_index INT);
 
         CREATE TEMP TABLE table_import (id INT, upsert_value TEXT);
@@ -3705,3 +3527,66 @@ class UpsertRowsMappingHandler:
         """
         )
         return self.execute(q).fetchall()
+
+    def ambiguous_keys(self, limit: int = 100) -> list[dict[str, Any]]:
+        """
+        Returns the match keys that can't be paired unambiguously: keys that occur
+        more than once in the imported data or in the table while also occurring on
+        the other side. Unmatched duplicates are not ambiguous, they are simply
+        inserted or left untouched.
+
+        :param limit: The maximum number of keys to return.
+        :return: A list of dicts with the key `values` and how often the key occurs
+            in the imported data (`file_count`) and in the table (`table_count`).
+        """
+
+        if not self.import_fields:
+            return []
+
+        # Make sure the temp tables are populated.
+        self.process_map  # noqa: B018
+
+        q = sql.SQL(
+            """
+        WITH f AS (SELECT upsert_value, COUNT(*) AS c
+                   FROM table_import GROUP BY upsert_value),
+             t AS (SELECT upsert_value, COUNT(*) AS c
+                   FROM table_upsert_indexes GROUP BY upsert_value)
+        SELECT f.upsert_value, f.c, t.c
+            FROM f JOIN t ON f.upsert_value = t.upsert_value
+            WHERE f.c > 1 OR t.c > 1
+            ORDER BY f.upsert_value
+            LIMIT {};
+        """
+        ).format(sql.Placeholder())
+        separator = "__-__"
+        return [
+            {
+                "values": [
+                    None if part == "<NULL>" else part
+                    for part in value.split(separator)
+                ],
+                "file_count": file_count,
+                "table_count": table_count,
+            }
+            for value, file_count, table_count in self.execute(q, [limit]).fetchall()
+        ]
+
+    def cleanup(self):
+        """
+        Drops the temp objects created to calculate the map, so that the same
+        connection can safely run another import.
+        """
+
+        if "process_map" not in self.__dict__:
+            return
+
+        self.execute(
+            sql.SQL(
+                """
+            DROP VIEW IF EXISTS table_import_indexes;
+            DROP TABLE IF EXISTS table_upsert_indexes;
+            DROP TABLE IF EXISTS table_import;
+            """
+            )
+        )

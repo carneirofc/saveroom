@@ -25,7 +25,7 @@ class CaptchaHandler:
         """
         Returns True if captcha is enabled for the given context.
 
-        :param context: The context to check, e.g. "signup" or "invitations".
+        :param context: The context to check, e.g. "signup".
         :return: True if captcha should be required for this context.
         """
 

@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "S3 data destinations accept `server_side_encryption` (`AES256` or `aws:kms`) and `sse_kms_key_id` to have every uploaded backup and datalake file encrypted at rest.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-04"
+}

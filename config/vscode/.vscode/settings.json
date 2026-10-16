@@ -1,11 +1,9 @@
 {
-  "python.linting.flake8Args": ["--config=backend/.flake8"],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "python.testing.pytestArgs": ["backend"],
-  "jest.autoRun": "off",
-  "jest.rootPath": "web-frontend",
-  "jest.jestCommandLine": "node_modules/.bin/jest --config jest.config.js --runInBand --watchAll=false",
+  "vitest.rootConfig": "web-frontend/vitest.config.ts",
+  "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" },
   "coverage-gutters.coverageBaseDir": "**/*coverage",
   "coverage-gutters.showLineCoverage": true,
   "sqltools.connections": [
@@ -34,26 +32,20 @@
     "**/.nuxt/": true
   },
   "mypy.targets": [
-    "backend/src/",
-    "premium/backend/src/",
-    "enterprise/backend/src/"
+    "backend/src/"
   ],
   "python.analysis.typeCheckingMode": "off",
   "mypy.configFile": "backend/mypy.ini",
   "mypy.dmypyExecutable": "",
   "mypy.runUsingActiveInterpreter": true,
   "python.autoComplete.extraPaths": [
-    "${workspaceFolder}/backend/src",
-    "${workspaceFolder}/premium/backend/src",
-    "${workspaceFolder}/enterprise/backend/src"
+    "${workspaceFolder}/backend/src"
   ],
   "python.analysis.extraPaths": [
-    "${workspaceFolder}/backend/src",
-    "${workspaceFolder}/premium/backend/src",
-    "${workspaceFolder}/enterprise/backend/src"
+    "${workspaceFolder}/backend/src"
   ],
   "python.envFile": "${workspaceFolder}/.vscode/env",
-  "stylelint.configFile": "${workspaceFolder}/web-frontend/.stylelintrc",
+  "stylelint.configFile": "${workspaceFolder}/web-frontend/stylelint.config.mjs",
   "stylelint.validate": ["css", "less", "postcss", "scss"],
   "stylelint.snippet": ["css", "less", "postcss", "scss"],
 

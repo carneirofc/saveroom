@@ -34,7 +34,7 @@
             </template>
           </div>
           <a class="file-field-modal__close" @click="hide()">
-            <i class="iconoir-cancel"></i>
+            <i class="iconoir-xmark"></i>
           </a>
         </div>
         <div class="file-field-modal__body">

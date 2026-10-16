@@ -42,7 +42,7 @@ class Command(BaseCommand):
         elif options.get("only", None):
             try:
                 templates = options["only"][0]
-            except (KeyError, IndexError):
+            except KeyError, IndexError:
                 from loguru import logger
 
                 logger.exception("Error while importing template")

@@ -6,7 +6,7 @@
       'grid-view__group-value-boolean--false': !value,
     }"
   >
-    <i :class="value ? 'iconoir-check' : 'iconoir-cancel'"></i>
+    <i :class="value ? 'iconoir-check' : 'iconoir-xmark'"></i>
   </span>
 </template>
 

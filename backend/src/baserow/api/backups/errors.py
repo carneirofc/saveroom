@@ -1,0 +1,41 @@
+from rest_framework.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+)
+
+ERROR_BACKUP_SCHEDULE_DOES_NOT_EXIST = (
+    "ERROR_BACKUP_SCHEDULE_DOES_NOT_EXIST",
+    HTTP_404_NOT_FOUND,
+    "The requested backup schedule does not exist.",
+)
+ERROR_INVALID_BACKUP_SCHEDULE_CRON = (
+    "ERROR_INVALID_BACKUP_SCHEDULE_CRON",
+    HTTP_400_BAD_REQUEST,
+    "{e}",
+)
+ERROR_REMOTE_BACKUP_DOES_NOT_EXIST = (
+    "ERROR_REMOTE_BACKUP_DOES_NOT_EXIST",
+    HTTP_404_NOT_FOUND,
+    "The requested backup is not available on the data destination.",
+)
+ERROR_REMOTE_BACKUP_CORRUPTED = (
+    "ERROR_REMOTE_BACKUP_CORRUPTED",
+    HTTP_400_BAD_REQUEST,
+    "{e}",
+)
+ERROR_REMOTE_BACKUP_TRUST_NOT_ALLOWED = (
+    "ERROR_REMOTE_BACKUP_TRUST_NOT_ALLOWED",
+    HTTP_403_FORBIDDEN,
+    "{e}",
+)
+ERROR_REMOTE_BACKUP_RESTORE_NOT_ALLOWED = (
+    "ERROR_REMOTE_BACKUP_RESTORE_NOT_ALLOWED",
+    HTTP_403_FORBIDDEN,
+    "{e}",
+)
+ERROR_BACKUP_SCHEDULE_NOT_OWNED = (
+    "ERROR_BACKUP_SCHEDULE_NOT_OWNED",
+    HTTP_403_FORBIDDEN,
+    "Only the owner of a backup schedule or a workspace admin can do this.",
+)

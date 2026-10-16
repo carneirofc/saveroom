@@ -1,0 +1,294 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Baserow (FOSS fork) Helm chart values",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "nameOverride": { "type": "string" },
+    "fullnameOverride": { "type": "string" },
+
+    "replicaCount": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "backend": { "type": "integer", "minimum": 0 },
+        "webFrontend": { "type": "integer", "minimum": 0 },
+        "celery": { "type": "integer", "minimum": 0 },
+        "celeryExport": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "image": {
+      "type": "object",
+      "required": ["registry", "backend", "webFrontend"],
+      "properties": {
+        "registry": { "type": "string", "minLength": 1 },
+        "backend": { "$ref": "#/definitions/imageRef" },
+        "webFrontend": { "$ref": "#/definitions/imageRef" }
+      }
+    },
+    "imagePullSecrets": { "type": "array", "items": { "type": "object" } },
+
+    "publicURL": { "type": "string", "pattern": "^https?://" },
+    "extraAllowedHosts": { "type": "string" },
+
+    "openshift": {
+      "type": "object",
+      "properties": {
+        "route": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "host": { "type": "string" },
+            "tls": {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "termination": { "enum": ["edge", "passthrough", "reencrypt"] },
+                "insecureEdgeTerminationPolicy": { "enum": ["None", "Allow", "Redirect", ""] }
+              }
+            },
+            "backendPaths": { "$ref": "#/definitions/pathList" },
+            "annotations": { "$ref": "#/definitions/stringMap" }
+          }
+        }
+      }
+    },
+
+    "ingress": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "mode": {
+          "enum": ["single", "albGroup"],
+          "description": "single: one Ingress. albGroup: two Ingresses merged onto one AWS ALB so each target group keeps its own health check."
+        },
+        "className": { "type": "string" },
+        "host": { "type": "string" },
+        "tls": { "type": "array", "items": { "type": "object" } },
+        "annotations": { "$ref": "#/definitions/stringMap" },
+        "backendAnnotations": { "$ref": "#/definitions/stringMap" },
+        "webFrontendAnnotations": { "$ref": "#/definitions/stringMap" },
+        "group": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "backendOrder": { "type": "integer", "minimum": 1, "maximum": 1000 },
+            "webFrontendOrder": { "type": "integer", "minimum": 1, "maximum": 1000 }
+          }
+        },
+        "backendPaths": { "$ref": "#/definitions/pathList" }
+      }
+    },
+
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "backend": { "$ref": "#/definitions/annotated" },
+        "webFrontend": { "$ref": "#/definitions/annotated" }
+      }
+    },
+
+    "secrets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "secretKey": { "type": "string" },
+        "jwtSigningKey": { "type": "string" },
+        "existingSecret": { "type": "string" }
+      }
+    },
+
+    "postgresql": { "type": "object", "additionalProperties": true },
+    "redis": { "type": "object", "additionalProperties": true },
+    "externalDatabase": { "$ref": "#/definitions/externalService" },
+    "externalRedis": { "$ref": "#/definitions/externalService" },
+
+    "aws": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "region": { "type": "string" },
+        "irsa": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "roleArn": {
+              "type": "string",
+              "pattern": "^(|arn:aws[a-zA-Z-]*:iam::[0-9]{12}:role/.+)$",
+              "description": "Empty, or an IAM role ARN such as arn:aws:iam::123456789012:role/baserow"
+            }
+          }
+        },
+        "podIdentity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "enabled": { "type": "boolean" } }
+        }
+      }
+    },
+
+    "objectStorage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "auth": {
+          "enum": ["staticKeys", "irsa", "podIdentity"],
+          "description": "irsa/podIdentity render no AWS credential env vars, so boto3 falls through to the pod web identity."
+        },
+        "bucketName": { "type": "string" },
+        "endpointURL": { "type": "string" },
+        "region": { "type": "string" },
+        "customDomain": { "type": "string" },
+        "defaultACL": {
+          "enum": [
+            "",
+            "private",
+            "public-read",
+            "public-read-write",
+            "authenticated-read",
+            "bucket-owner-read",
+            "bucket-owner-full-control"
+          ],
+          "description": "Empty sends no ACL, which is required on buckets with ACLs disabled."
+        },
+        "querystringAuth": { "type": "boolean" },
+        "accessKeyId": { "type": "string" },
+        "secretAccessKey": { "type": "string" },
+        "existingSecret": { "type": "string" }
+      }
+    },
+
+    "mediaPersistence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "size": { "type": "string" },
+        "storageClassName": { "type": "string" },
+        "accessMode": { "enum": ["ReadWriteOnce", "ReadWriteMany", "ReadWriteOncePod"] }
+      }
+    },
+
+    "migrateOnStartup": { "type": "boolean" },
+    "extraEnv": {
+      "type": "object",
+      "additionalProperties": { "type": ["string", "number", "boolean"] }
+    },
+    "extraVolumes": { "type": "array", "items": { "type": "object" } },
+    "extraVolumeMounts": { "type": "array", "items": { "type": "object" } },
+
+    "branding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "appName": { "type": "string" },
+        "colors": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "fontFamily": { "type": "string" },
+        "messages": { "type": "object" },
+        "siteUrl": { "type": "string" },
+        "docsUrl": { "type": "string" },
+        "siteTitle": { "type": "string" },
+        "showAttribution": { "type": "boolean" },
+        "themeCss": { "type": "string" },
+        "files": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "existingClaim": { "type": "string" },
+        "faviconBase64": { "type": "string" },
+        "logo": {
+          "type": "string",
+          "description": "Deprecated and ignored: use files[\"img/logo.svg\"]."
+        },
+        "palette": {
+          "type": "object",
+          "description": "Deprecated and ignored: use colors."
+        }
+      }
+    },
+
+    "podSecurityContext": { "type": "object" },
+    "containerSecurityContext": { "type": "object" },
+
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "backend": { "$ref": "#/definitions/resourceBlock" },
+        "webFrontend": { "$ref": "#/definitions/resourceBlock" },
+        "celery": { "$ref": "#/definitions/resourceBlock" },
+        "celeryExport": { "$ref": "#/definitions/resourceBlock" },
+        "celeryBeat": { "$ref": "#/definitions/resourceBlock" }
+      }
+    },
+
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create": { "type": "boolean" },
+        "name": { "type": "string" },
+        "annotations": { "$ref": "#/definitions/stringMap" }
+      }
+    },
+
+    "podAnnotations": { "$ref": "#/definitions/stringMap" },
+    "nodeSelector": { "$ref": "#/definitions/stringMap" },
+    "tolerations": { "type": "array", "items": { "type": "object" } },
+    "affinity": { "type": "object" }
+  },
+
+  "definitions": {
+    "imageRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "tag": { "type": "string" },
+        "pullPolicy": { "enum": ["Always", "IfNotPresent", "Never"] }
+      }
+    },
+    "stringMap": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "pathList": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^/" }
+    },
+    "annotated": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "annotations": { "$ref": "#/definitions/stringMap" } }
+    },
+    "externalService": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "host": { "type": "string" },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "user": { "type": "string" },
+        "database": { "type": "string" },
+        "password": { "type": "string" },
+        "existingSecret": { "type": "string" },
+        "existingSecretPasswordKey": { "type": "string" },
+        "url": { "type": "string" }
+      }
+    },
+    "resourceBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requests": { "type": "object" },
+        "limits": { "type": "object" }
+      }
+    }
+  }
+}

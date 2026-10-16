@@ -42,7 +42,7 @@ class TablePageType(PageType):
                 workspace=table.database.workspace,
                 context=table,
             )
-        except (UserNotInWorkspace, TableDoesNotExist, PermissionDenied):
+        except UserNotInWorkspace, TableDoesNotExist, PermissionDenied:
             return False
 
         return True
@@ -104,7 +104,7 @@ class PublicViewPageType(PageType):
             view = handler.get_public_view_by_slug(
                 user, slug, authorization_token=token
             )
-        except (ViewDoesNotExist, NoAuthorizationToPubliclySharedView):
+        except ViewDoesNotExist, NoAuthorizationToPubliclySharedView:
             return False
 
         view_type = view_type_registry.get_by_model(view.specific_class)

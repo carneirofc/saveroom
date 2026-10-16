@@ -1,0 +1,11 @@
+{
+    "type": "feature",
+    "message": "State the retention and expiry limits where the affected data is shown.",
+    "issue_number": null,
+    "bullet_points": [
+        "Exported files now say how long they stay downloadable.",
+        "Snapshots now show how long they have left before they are deleted.",
+        "The audit log and the row history now state how far back they reach."
+    ],
+    "created_at": "2026-09-17"
+}

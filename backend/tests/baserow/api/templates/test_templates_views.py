@@ -22,6 +22,7 @@ TEST_TEMPLATES_DIR = os.path.join(settings.BASE_DIR, "../../../tests/templates")
 
 
 @pytest.mark.django_db
+@override_settings(DEFAULT_APPLICATION_TEMPLATES=["project-tracker"])
 def test_list_templates(api_client, data_fixture):
     category_1 = data_fixture.create_template_category(name="Cat 1")
     category_3 = data_fixture.create_template_category(name="Cat 3")

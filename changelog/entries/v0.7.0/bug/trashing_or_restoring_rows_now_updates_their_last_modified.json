@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Trashing or restoring rows now updates their last modified time, so incremental consumers of a table, such as datalake exports, see rows disappear and come back.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "database",
+    "bullet_points": [],
+    "created_at": "2026-09-13"
+}

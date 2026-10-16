@@ -107,6 +107,7 @@
               :value="job?.progress_percentage || 0"
               :status="jobHumanReadableState"
             />
+            <JobDuration :job="job" />
           </div>
           <Button
             v-if="currentStage !== STAGES.DONE"
@@ -141,6 +142,7 @@ import {
   IMPORT_SERIALIZED_IMPORTING_TABLE_DATA,
 } from '@baserow/modules/core/constants'
 import ImportApplicationSelector from '@baserow/modules/core/components/import/ImportApplicationSelector.vue'
+import JobDuration from '@baserow/modules/core/components/job/JobDuration'
 import {
   convertManifestToApplicationGroups,
   extractManifestFromZip,
@@ -159,6 +161,7 @@ export default {
     UploadFileDropzone,
     SelectedFileDetails,
     ImportApplicationSelector,
+    JobDuration,
   },
   mixins: [modal, error, job],
   props: {

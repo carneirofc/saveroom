@@ -11,6 +11,7 @@ from rest_framework.status import (
     HTTP_202_ACCEPTED,
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
+    HTTP_401_UNAUTHORIZED,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
@@ -60,6 +61,7 @@ def test_list_all_tables_access_to_one_specific_table(api_client, data_fixture):
             "database_id": table_1.database_id,
             "name": table_1.name,
             "order": table_1.order,
+            "require_edit_confirmation": False,
         }
     ]
     assert response_json[0]["id"] == table_1.id
@@ -686,6 +688,143 @@ def test_update_table(api_client, data_fixture):
 
 
 @pytest.mark.django_db
+def test_update_table_require_edit_confirmation(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user, name="Original")
+    url = reverse("api:database:tables:item", kwargs={"table_id": table.id})
+
+    response = api_client.get(url, HTTP_AUTHORIZATION=f"JWT {token}")
+    assert response.json()["require_edit_confirmation"] is False
+
+    response = api_client.patch(
+        url,
+        {"require_edit_confirmation": True},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_200_OK
+    response_json = response.json()
+    assert response_json["require_edit_confirmation"] is True
+    # Only the provided value changes.
+    assert response_json["name"] == "Original"
+
+    table.refresh_from_db()
+    assert table.require_edit_confirmation is True
+    assert table.name == "Original"
+
+    response = api_client.patch(
+        url,
+        {"name": "Renamed", "require_edit_confirmation": False},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_200_OK
+    table.refresh_from_db()
+    assert table.name == "Renamed"
+    assert table.require_edit_confirmation is False
+
+
+@pytest.mark.django_db
+def test_update_table_without_known_fields_is_refused(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user, name="Original")
+    url = reverse("api:database:tables:item", kwargs={"table_id": table.id})
+
+    for body in [{}, {"not_a_name": "New name"}]:
+        response = api_client.patch(
+            url, body, format="json", HTTP_AUTHORIZATION=f"JWT {token}"
+        )
+        assert response.status_code == HTTP_400_BAD_REQUEST
+        assert response.json()["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+
+    table.refresh_from_db()
+    assert table.name == "Original"
+    assert table.require_edit_confirmation is False
+
+
+@pytest.mark.django_db
+def test_update_table_require_edit_confirmation_invalid_value(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    url = reverse("api:database:tables:item", kwargs={"table_id": table.id})
+
+    response = api_client.patch(
+        url,
+        {"require_edit_confirmation": "not-a-boolean"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    response_json = response.json()
+    assert response_json["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+    assert "require_edit_confirmation" in response_json["detail"]
+
+    table.refresh_from_db()
+    assert table.require_edit_confirmation is False
+
+
+@pytest.mark.django_db
+def test_update_table_require_edit_confirmation_of_other_workspace(
+    api_client, data_fixture
+):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table()
+    url = reverse("api:database:tables:item", kwargs={"table_id": table.id})
+
+    response = api_client.patch(
+        url,
+        {"require_edit_confirmation": True},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response.json()["error"] == "ERROR_USER_NOT_IN_GROUP"
+
+    table.refresh_from_db()
+    assert table.require_edit_confirmation is False
+
+
+@pytest.mark.django_db
+def test_list_tables_exposes_require_edit_confirmation(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token()
+    database = data_fixture.create_database_application(user=user)
+    protected = data_fixture.create_database_table(database=database, order=1)
+    protected.require_edit_confirmation = True
+    protected.save()
+    data_fixture.create_database_table(database=database, order=2)
+
+    response = api_client.get(
+        reverse("api:database:tables:list", kwargs={"database_id": database.id}),
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_200_OK
+    assert [t["require_edit_confirmation"] for t in response.json()] == [
+        True,
+        False,
+    ]
+
+
+@pytest.mark.django_db
+def test_update_table_require_edit_confirmation_is_not_enforced_on_rows(
+    api_client, data_fixture
+):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    field = data_fixture.create_text_field(table=table, primary=True)
+    table.require_edit_confirmation = True
+    table.save()
+
+    # Protected editing is a UI safeguard only: API writes still go through.
+    response = api_client.post(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {f"field_{field.id}": "value"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_200_OK
+
+
+@pytest.mark.django_db
 def test_order_tables(api_client, data_fixture):
     user, token = data_fixture.create_user_and_token(
         email="test@test.nl", password="password", first_name="Test1"
@@ -1093,3 +1232,128 @@ def test_import_table_with_invalid_data_shape(api_client, data_fixture, invalid_
 
     assert response.status_code == HTTP_400_BAD_REQUEST
     assert response.json()["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+
+
+@pytest.mark.django_db(transaction=True)
+@patch("baserow.core.jobs.handler.run_async_job")
+def test_create_table_with_data_larger_than_django_default_body_limit(
+    mock_run_async_job, api_client, data_fixture, patch_filefield_storage
+):
+    # DRF reads JSON bodies through `request.body`, which Django caps at
+    # DATA_UPLOAD_MAX_MEMORY_SIZE (2.5MB unless configured). Imports send the
+    # parsed file as JSON, so a few MB of rows must still be accepted.
+    user, token = data_fixture.create_user_and_token()
+    database = data_fixture.create_database_application(user=user)
+    url = reverse(
+        "api:database:tables:async_create", kwargs={"database_id": database.id}
+    )
+    row = ["x" * 100, "y" * 100]
+    data = [["A", "B"]] + [row] * 20000  # ~4MB once encoded
+
+    with patch_filefield_storage():
+        response = api_client.post(
+            url,
+            {"name": "Large", "data": data, "first_row_header": True},
+            format="json",
+            HTTP_AUTHORIZATION=f"JWT {token}",
+        )
+
+    assert response.status_code == HTTP_200_OK, response.content[:200]
+    mock_run_async_job.delay.assert_called_with(response.json()["id"])
+
+
+@pytest.mark.django_db
+@override_settings(DATA_UPLOAD_MAX_MEMORY_SIZE=1024)
+def test_request_body_limit_is_configurable(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token()
+    database = data_fixture.create_database_application(user=user)
+    url = reverse(
+        "api:database:tables:async_create", kwargs={"database_id": database.id}
+    )
+
+    response = api_client.post(
+        url,
+        {"name": "Too big", "data": [["x" * 2048]]},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+
+    assert response.status_code == HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+def test_import_table_upsert_checks_update_permission(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token()
+    database = data_fixture.create_database_application(user=user)
+    table = data_fixture.create_database_table(database=database)
+    name_field = data_fixture.create_text_field(table=table, user=user)
+
+    url = reverse("api:database:tables:import_async", kwargs={"table_id": table.id})
+
+    from baserow.contrib.database.rows.operations import (
+        UpdateDatabaseRowOperationType,
+    )
+    from baserow.core.exceptions import PermissionDenied
+
+    def deny_update(actor, operation_name, **kwargs):
+        if operation_name == UpdateDatabaseRowOperationType.type:
+            raise PermissionDenied(actor)
+        return True
+
+    with patch(
+        "baserow.contrib.database.api.tables.views.CoreHandler.check_permissions",
+        side_effect=deny_update,
+    ):
+        response = api_client.post(
+            url,
+            HTTP_AUTHORIZATION=f"JWT {token}",
+            data={
+                "data": [["Alice"]],
+                "configuration": {
+                    "upsert_fields": [name_field.id],
+                    "upsert_values": [["Alice"]],
+                },
+            },
+            format="json",
+        )
+
+    assert response.status_code == HTTP_401_UNAUTHORIZED
+    assert response.json()["error"] == "PERMISSION_DENIED"
+    assert Job.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_import_table_without_upsert_ignores_update_permission(
+    api_client, data_fixture
+):
+    user, token = data_fixture.create_user_and_token()
+    database = data_fixture.create_database_application(user=user)
+    table = data_fixture.create_database_table(database=database)
+    data_fixture.create_text_field(table=table, user=user)
+
+    url = reverse("api:database:tables:import_async", kwargs={"table_id": table.id})
+
+    from baserow.contrib.database.rows.operations import (
+        UpdateDatabaseRowOperationType,
+    )
+    from baserow.core.exceptions import PermissionDenied
+
+    def deny_update(actor, operation_name, **kwargs):
+        if operation_name == UpdateDatabaseRowOperationType.type:
+            raise PermissionDenied(actor)
+        return True
+
+    with patch(
+        "baserow.contrib.database.api.tables.views.CoreHandler.check_permissions",
+        side_effect=deny_update,
+    ):
+        response = api_client.post(
+            url,
+            HTTP_AUTHORIZATION=f"JWT {token}",
+            data={"data": [["Alice"]]},
+            format="json",
+        )
+
+    assert response.status_code == HTTP_200_OK
+    assert Job.objects.count() == 1
+    Job.objects.all().delete()

@@ -21,7 +21,10 @@
         </div>
         <h1 class="auth__head-title">{{ $t('login.title') }}</h1>
         <div class="auth__head">
-          <span v-if="settings.allow_new_signups" class="auth__head-text">
+          <span
+            v-if="settings.allow_new_signups && !settings.oidc_only"
+            class="auth__head-text"
+          >
             {{ $t('login.signUpText') }}
             <NuxtLink :to="{ name: 'signup' }">
               {{ $t('login.signUp') }}
@@ -30,14 +33,16 @@
           <LangPicker class="margin-left-auto" />
         </div>
       </div>
-      <div v-if="redirectByDefault && defaultRedirectUrl">
+      <Alert v-if="ssoErrorMessage" type="error">
+        {{ ssoErrorMessage }}
+      </Alert>
+      <div v-if="redirectByDefault && !ssoError && defaultRedirectUrl">
         {{ $t('login.redirecting') }}
       </div>
       <div v-else>
         <template v-if="!passwordLoginHidden && loginButtons.length">
           <LoginButtons
             :hide-if-no-buttons="loginButtonsCompact"
-            :invitation="invitation"
             :original="original"
           />
 
@@ -48,17 +53,15 @@
 
         <PasswordLogin
           v-if="!passwordLoginHidden"
-          :invitation="invitation"
           :display-forgot-password="
             settings.allow_reset_password && !passwordLoginHidden
           "
           @success="success"
-          @invitation-accepted="invitationAccepted"
           @two-factor-auth="setTwoFactorRequired"
           @email-not-verified="emailNotVerified"
         />
 
-        <LoginActions :invitation="invitation" :original="original">
+        <LoginActions :original="original">
           <li v-if="passwordLoginHidden" class="auth__action-link">
             <a @click="passwordLoginHiddenIfDisabled = false">
               {{ $t('login.displayPasswordLogin') }}
@@ -110,11 +113,6 @@ export default {
       required: false,
       default: true,
     },
-    invitation: {
-      required: false,
-      validator: (prop) => typeof prop === 'object' || prop === null,
-      default: null,
-    },
     loginButtonsCompact: {
       type: Boolean,
       required: false,
@@ -124,6 +122,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    ssoError: {
+      type: String,
+      required: false,
+      default: null,
     },
   },
   emits: ['success'],
@@ -162,14 +165,21 @@ export default {
     defaultRedirectUrl() {
       return this.$store.getters['authProvider/getDefaultRedirectUrl']
     },
+    ssoErrorMessage() {
+      if (!this.ssoError) {
+        return null
+      }
+      const key = `loginError.${this.ssoError}`
+      return this.$te(key)
+        ? this.$t(key)
+        : this.$t('loginError.errorAuthFlowError')
+    },
   },
   mounted() {
-    if (this.redirectByDefault) {
+    if (this.redirectByDefault && !this.ssoError) {
       if (this.defaultRedirectUrl !== null) {
-        const { workspaceInvitationToken } = this.$route.query
         const url = addQueryParamsToRedirectUrl(this.defaultRedirectUrl, {
           original: this.computedOriginal,
-          workspaceInvitationToken,
         })
         window.location = url
       }
@@ -184,21 +194,6 @@ export default {
         } else {
           await this.$router.push({ name: 'dashboard' })
         }
-        await pageFinished(this.nuxtApp)
-        await nextTick()
-      }
-      this.$emit('success')
-    },
-    async invitationAccepted(workspace) {
-      if (this.redirectOnSuccess) {
-        // Clear workspace loaded state so it gets refetched on next page
-        this.$store.commit('workspace/SET_LOADED', false)
-        this.$store.commit('application/SET_LOADED', false)
-        // Redirect to the specific workspace
-        await this.$router.push({
-          name: 'workspace',
-          params: { workspaceId: workspace.id },
-        })
         await pageFinished(this.nuxtApp)
         await nextTick()
       }

@@ -21,6 +21,7 @@ import { mapGetters } from 'vuex'
 
 import { notifyIf } from '@baserow/modules/core/utils/error'
 import gridViewHelpers from '@baserow/modules/database/mixins/gridViewHelpers'
+import { confirmDataChange } from '@baserow/modules/database/utils/editConfirmation'
 
 export default {
   name: 'GridViewRowDragging',
@@ -251,6 +252,15 @@ export default {
         if (after && this.row.id === after.id) {
           return
         }
+      }
+
+      if (
+        !(await confirmDataChange(this.$store, this.table, {
+          title: this.$t('confirmDataChange.moveRowTitle'),
+          message: this.$t('confirmDataChange.moveRowMessage'),
+        }))
+      ) {
+        return
       }
 
       const element = this.getScrollElement()

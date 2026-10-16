@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "API client keys are now restricted to their own workspace, backup schedules can only be changed or run by their owner or a workspace admin, members only see and restore the remote backups they made, schedules of deactivated owners are disabled, staff backups of a workspace they are not in include its applications, and API clients can poll their backup jobs.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-04"
+}

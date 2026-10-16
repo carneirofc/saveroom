@@ -25,9 +25,9 @@
 <!-- TOC -->
 
 This document is a technical overview documentation to describe main concepts,
-components and workflows behind job subsystem in Baserow, and shows possible extension
+components and workflows behind job subsystem in Saveroom, and shows possible extension
 points. It's intended for developers who want to work with jobs and need to comprehend
-the main concepts and how they interact in Baserow.
+the main concepts and how they interact in Saveroom.
 
 Job subsystem allows to move costly user-triggered operations, like duplicating
 objects or exporting data, to an outside backend process. When a user requests such
@@ -35,7 +35,7 @@ operation, a job is created in the backend and is scheduled on a task queue, eve
 is executed in a Celery worker. UI can show job's progress and, in some cases, allows to
 cancel a specific job.
 
-The job subsystem is an internal framework in Baserow that defines specific job types
+The job subsystem is an internal framework in Saveroom that defines specific job types
 and orchestrates the execution. It follows several common patterns used in the backend.
 See [backend notes](#backend) for details.
 
@@ -50,7 +50,7 @@ Job subsystem contains three main workflows:
 Additionally, there's an independent job cleanup task, which should be considered as
 supplementary to the job system. See [job cleanup](#job-cleanup) for details.
 
-Note that Baserow deployment contains several different components (backend, frontend,
+Note that Saveroom deployment contains several different components (backend, frontend,
 celery workers) that communicate internally. They use different communication
 channels and styles to pass messages/data. While specific paths of communication can be
 synchronous, overall process is asynchronous in the context of the whole system.
@@ -88,7 +88,7 @@ The workflow consists of the following steps:
 * If a job has been completed, it will be marked as `finished`. In case of an error, the
   job will be marked as `failed` or `cancelled` if it was requested to cancel.
 
-Celery task queue receives a task to execute a specific job (`run_async_task` with job
+Celery task queue receives a task to execute a specific job (`run_async_job` with job
 id). Job tasks are scheduled for `export` workers. A worker will attempt to execute the
 task, however:
 
@@ -212,7 +212,7 @@ Job cancellation workflow is shown on the diagram below:
   the backend.
 * If a job is picked by a Celery worker, sanity checks will be performed:
     * if a job has not been started yet but the job is not in `pending` state,
-      `run_asyc_job` won't start this job.
+      `run_async_job` won't start this job.
     * If a job is running, it will check the state in the cache every time just before
       updating the progress percentage. If the job has been canceled, a `JobCancelled`
       exception is raised, stopping the job execution. If the canceled state is not set,
@@ -237,7 +237,7 @@ This is a hook that allows to do any job-type cleanup.
 ## Backend
 
 Most of the functionality resides in the backend's code. The code follows common
-patterns used in Baserow codebase.
+patterns used in Saveroom codebase.
 
 ### `JobHandler`
 

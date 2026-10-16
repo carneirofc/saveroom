@@ -2,7 +2,7 @@
 
 ## Creating a new email template
 
-Baserow uses [MJML](https://mjml.io/) framework to define email templates. These templates have to be compiled into their HTML versions so that they can be used by Django.
+Saveroom uses [MJML](https://mjml.io/) framework to define email templates. These templates have to be compiled into their HTML versions so that they can be used by Django.
 
 Start by creating a new template (`*.mjml.eta`) in the core email template folder (`backend/src/baserow/core/templates/baserow`) or in the template folder of the contrib module that the template belongs to.
 
@@ -28,13 +28,13 @@ The template will look something like this:
 </mj-section>
 ```
 
-If you are using the Baserow Docker Compose development environment (`just dc-dev up -d`), the new template should be automatically compiled into its HTML version, resulting in a new file. If that's not the case, follow the instructions in `backend/email_compiler` to compile the template manually.
+If you are using the Saveroom Docker Compose development environment (`just dc-dev up -d`), the new template should be automatically compiled into its HTML version, resulting in a new file. If that's not the case, follow the instructions in `backend/email_compiler` to compile the template manually.
 
 ### Do
 
 - Make sure the received email has both HTML and plain text version.
 - Make sure the whole content of the email template is translatable.
-- Make sure the links lead correctly to Baserow instance without hard-coding the URL.
+- Make sure the links lead correctly to Saveroom instance without hard-coding the URL.
 
 ### Don't
 
@@ -51,7 +51,7 @@ Subclass `BaseEmailMessage` to define an email message with the correct template
 
 ## Testing
 
-The Baserow dev environment automatically starts an instance of [MailHog](https://github.com/mailhog/MailHog) at [http://localhost:8025/](http://localhost:8025/). You can verify that the emails are formatted and sent correctly there.
+The Saveroom dev environment automatically starts an instance of [MailHog](https://github.com/mailhog/MailHog) at [http://localhost:8025/](http://localhost:8025/). You can verify that the emails are formatted and sent correctly there.
 
 **Docker development:**
 ```bash

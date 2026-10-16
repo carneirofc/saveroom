@@ -8,7 +8,6 @@
       <component
         :is="getLoginActionComponent(loginAction)"
         :options="loginAction"
-        :invitation="invitation"
         :original="computedOriginal"
       >
       </component>
@@ -22,11 +21,6 @@ import { mapGetters } from 'vuex'
 
 export default {
   props: {
-    invitation: {
-      required: false,
-      validator: (prop) => typeof prop === 'object' || prop === null,
-      default: null,
-    },
     original: {
       type: String,
       required: false,

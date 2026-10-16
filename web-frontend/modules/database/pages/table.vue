@@ -28,7 +28,12 @@
 
 <script setup>
 import { computed, onMounted, onBeforeUnmount } from 'vue'
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
+import {
+  onBeforeRouteLeave,
+  onBeforeRouteUpdate,
+  useRoute,
+  useRouter,
+} from 'vue-router'
 import { useHead } from '#imports'
 import { useAsyncData } from '#app'
 
@@ -104,11 +109,6 @@ const { data, error } = await useAsyncData(
         const { view } = await $store.dispatch('view/selectById', viewId)
         const type = $registry.get('view', view.type)
         result.view = view
-
-        if (type.isDeactivated(currentDatabase.workspace.id)) {
-          result.error = { statusCode: 400, message: type.getDeactivatedText() }
-          return result
-        }
 
         await type.fetch(
           { store: $store, app: nuxtApp },
@@ -188,11 +188,69 @@ onBeforeUnmount(() => {
   realtimePage = null
 })
 
+function pendingChangesCount() {
+  return table.value
+    ? $store.getters['pendingRowChanges/count'](table.value.id)
+    : 0
+}
+
+/**
+ * Protected editing: staged row changes only live in this page's view buffers, so
+ * leaving the table or switching views asks the user to discard them first.
+ */
+async function confirmDiscardPendingChanges() {
+  const count = pendingChangesCount()
+  if (count === 0) {
+    return true
+  }
+  const confirmed = await $store.dispatch('pendingRowChanges/confirm', {
+    title: $t('confirmDataChange.discardTitle'),
+    message: $t('confirmDataChange.discardMessage', { count }),
+    confirmLabel: $t('confirmDataChange.discardConfirm'),
+    danger: true,
+  })
+  if (confirmed) {
+    // The next view or table fetches its rows from the backend, so the staged
+    // values don't have to be reverted in the current buffers.
+    $store.commit('pendingRowChanges/CLEAR_TABLE', table.value.id)
+  }
+  return confirmed
+}
+
+function beforeUnload(event) {
+  if (pendingChangesCount() > 0) {
+    event.preventDefault()
+    event.returnValue = $t('confirmDataChange.leaveMessage')
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('beforeunload', beforeUnload)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', beforeUnload)
+})
+
+onBeforeRouteUpdate(async (to, from) => {
+  // Opening or closing the row modal keeps the view, and its staged changes, intact.
+  if (
+    to.params.tableId === from.params.tableId &&
+    to.params.viewId === from.params.viewId
+  ) {
+    return true
+  }
+  return await confirmDiscardPendingChanges()
+})
+
 /**
  * When the user leaves to another page we want to unselect the selected table. This
  * way it will not be highlighted the left sidebar.
  */
-onBeforeRouteLeave((to, from) => {
+onBeforeRouteLeave(async (to, from) => {
+  if (!(await confirmDiscardPendingChanges())) {
+    return false
+  }
   $store.dispatch('view/unselect')
   $store.dispatch('table/unselect')
 })

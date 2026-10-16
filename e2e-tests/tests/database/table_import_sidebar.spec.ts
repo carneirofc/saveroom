@@ -67,6 +67,16 @@ test.describe("Import into existing table from the sidebar context menu", () => 
 
     await modal.getByRole("button", { name: "Import" }).click();
 
+    // Imports into an existing table ask for confirmation of the previewed
+    // changes before the job is started.
+    const confirmModal = page
+      .locator(".modal__box", {
+        has: page.getByRole("heading", { name: "Apply this import?" }),
+      })
+      .last();
+    await expect(confirmModal).toBeVisible({ timeout: 30000 });
+    await confirmModal.getByRole("button", { name: "Import" }).click();
+
     // The import must actually add the rows: 1 existing + 3 imported = 4.
     await expect
       .poll(

@@ -12,13 +12,13 @@ working with the most recent data without reloading the page.
 In order to connect to the web socket you first need to authenticate via the REST API
 and obtain a [JSON Web Token](https://jwt.io/). After that you can connect to the
 following URL providing your JWT as query parameter: 
-`wss://api.baserow.io/ws/core/?jwt_token=YOUR_JWT_TOKEN`. If you self host
-you need to replace `api.baserow.io` with your own backend URL. The web socket
+`wss://YOUR_HOST/ws/core/?jwt_token=YOUR_JWT_TOKEN`, where `YOUR_HOST` is
+the address of your own backend. The web socket
 connection only receives messages targeted at the workspaces that the authenticated user
 belongs to. Below is an example of how to connect to the web socket in JavaScript.
 
 ```javascript
-const socket = new WebSocket('wss://api.baserow.io/ws/core/?jwt_token=YOUR_JWT_TOKEN')
+const socket = new WebSocket('wss://YOUR_HOST/ws/core/?jwt_token=YOUR_JWT_TOKEN')
 socket.onopen = () => {
     console.log('The connection is made')
 }
@@ -75,7 +75,7 @@ and an example HTTP request containing the `WebSocketId` header.
 
 ```
 PATCH /api/applications/1/
-Host: api.baserow.io
+Host: YOUR_HOST
 Content-Type: application/json
 WebSocketId: 934254ab-0c87-4dbc-9d71-7eeab029296c
 
@@ -93,7 +93,7 @@ successful you will receive messages related to that page. You will need to manu
 
 ### Table page
 
-Subscribing to a table page will request updates related to a Baserow table that will
+Subscribing to a table page will request updates related to a Saveroom table that will
 give you information about new rows, row updates, and other relevant information. 
 
 A table page expects the`table_id` parameter. Below you will find an example how to subscribe to that page.
@@ -120,7 +120,7 @@ are subscribed to the page.
 
 ### Row page
 
-Subscribing to a Row page will request additional updates related to a Baserow row of a particular table that will give you information like row history updates. Please note that to get updates such as row deletions and similar, you should use the table page described above.
+Subscribing to a Row page will request additional updates related to a Saveroom row of a particular table that will give you information like row history updates. Please note that to get updates such as row deletions and similar, you should use the table page described above.
 
 A Row page expects the`table_id` and `row_id` parameters. Below you will find an example how to subscribe to that page.
 
@@ -163,7 +163,6 @@ To stop receiving updates related to a page you are subscribed to, you will need
 * `authentication`
 * `page_add`
 * `page_discard`
-* `before_group_deleted`
 * `user_updated`
 * `user_deleted`
 * `user_restored`
@@ -172,6 +171,7 @@ To stop receiving updates related to a page you are subscribed to, you will need
 * `group_updated`
 * `group_deleted`
 * `group_restored`
+* `groups_reordered`
 * `group_user_added`
 * `group_user_updated`
 * `group_user_deleted`
@@ -185,7 +185,7 @@ To stop receiving updates related to a page you are subscribed to, you will need
 * `table_created`
 * `table_updated`
 * `table_deleted`
-* `tables_re_ordered`
+* `tables_reordered`
 * `field_created`
 * `field_updated`
 * `field_deleted`
@@ -214,8 +214,3 @@ To stop receiving updates related to a page you are subscribed to, you will need
 * `view_field_options_updated`
 * `views_reordered`
 
-### Premium message types
-
-* `row_comment_created`
-* `row_comment_updated`
-* `row_comment_deleted`

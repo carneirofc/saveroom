@@ -15,7 +15,7 @@
       ></Editable>
       <i
         v-if="page.visibility === visibilityLoggedIn"
-        class="iconoir-eye-off"
+        class="iconoir-eye-closed"
       ></i>
     </a>
 

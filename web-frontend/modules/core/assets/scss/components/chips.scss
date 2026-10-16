@@ -17,7 +17,7 @@
 
   &:hover:not(.chips--disabled) {
     border: 1px solid $palette-blue-300;
-    background: rgba($palette-blue-1000, 0.06);
+    background: alpha($palette-blue-1000, 0.06);
 
     &.chips--active {
       border-color: transparent;
@@ -27,14 +27,14 @@
 
   &:active:not(.chips--disabled) {
     border: 1px solid $palette-blue-500;
-    background: rgba($palette-blue-1000, 0.1);
+    background: alpha($palette-blue-1000, 0.1);
   }
 }
 
 .chips--active:not(.chips--disabled) {
   border-color: transparent;
   box-shadow: 0 0 0 1.5px $palette-blue-300;
-  background: rgba($palette-blue-1000, 0.08);
+  background: alpha($palette-blue-1000, 0.08);
 }
 
 .chips__icon {
@@ -42,11 +42,11 @@
   font-size: 18px;
 
   .chips--active:not(.chips--disabled) & {
-    color: #4653e5;
+    color: $color-primary-500;
   }
 
   .chips:hover:not(.chips--disabled) & {
-    color: #4653e5;
+    color: $color-primary-500;
   }
 }
 

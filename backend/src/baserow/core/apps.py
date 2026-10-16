@@ -6,7 +6,6 @@ from django.db.models.signals import post_migrate, pre_migrate
 from health_check.storage.backends import DefaultFileStorageHealthCheck
 
 from baserow.cachalot_patch import clear_cachalot_cache
-from baserow.core.sentry import patch_user_model_str
 
 
 class CoreConfig(AppConfig):
@@ -153,8 +152,10 @@ class CoreConfig(AppConfig):
 
         from baserow.core.permission_manager import (
             AllowIfTemplatePermissionManagerType,
+            ApplicationTypeEnabledPermissionManagerType,
             BasicPermissionManagerType,
             CorePermissionManagerType,
+            StaffBypassPermissionManagerType,
             StaffOnlyPermissionManagerType,
             StaffOnlySettingOperationPermissionManagerType,
             WorkspaceMemberOnlyPermissionManagerType,
@@ -170,8 +171,12 @@ class CoreConfig(AppConfig):
 
         email_context_registry.register(CoreEmailContextType())
 
+        permission_manager_type_registry.register(
+            ApplicationTypeEnabledPermissionManagerType()
+        )
         permission_manager_type_registry.register(CorePermissionManagerType())
         permission_manager_type_registry.register(StaffOnlyPermissionManagerType())
+        permission_manager_type_registry.register(StaffBypassPermissionManagerType())
         permission_manager_type_registry.register(BasicPermissionManagerType())
         permission_manager_type_registry.register(
             WorkspaceMemberOnlyPermissionManagerType()
@@ -186,7 +191,6 @@ class CoreConfig(AppConfig):
         from .object_scopes import (
             ApplicationObjectScopeType,
             CoreObjectScopeType,
-            WorkspaceInvitationObjectScopeType,
             WorkspaceObjectScopeType,
             WorkspaceUserObjectScopeType,
         )
@@ -195,7 +199,6 @@ class CoreConfig(AppConfig):
         object_scope_type_registry.register(CoreObjectScopeType())
         object_scope_type_registry.register(ApplicationObjectScopeType())
         object_scope_type_registry.register(WorkspaceObjectScopeType())
-        object_scope_type_registry.register(WorkspaceInvitationObjectScopeType())
         object_scope_type_registry.register(SnapshotObjectScopeType())
         object_scope_type_registry.register(WorkspaceUserObjectScopeType())
 
@@ -214,28 +217,24 @@ class CoreConfig(AppConfig):
             MarkNotificationAsReadOperationType,
         )
         from .operations import (
+            AddWorkspaceUsersWorkspaceOperationType,
             CreateApplicationsWorkspaceOperationType,
-            CreateInvitationsWorkspaceOperationType,
             CreateWorkspaceOperationType,
             DeleteApplicationOperationType,
-            DeleteWorkspaceInvitationOperationType,
             DeleteWorkspaceOperationType,
             DeleteWorkspaceUserOperationType,
             DuplicateApplicationOperationType,
             ExportWorkspaceOperationType,
             ListApplicationsWorkspaceOperationType,
-            ListInvitationsWorkspaceOperationType,
             ListWorkspacesOperationType,
             ListWorkspaceUsersWorkspaceOperationType,
             OrderApplicationsOperationType,
             ReadApplicationOperationType,
-            ReadInvitationWorkspaceOperationType,
             ReadWorkspaceOperationType,
             RestoreApplicationOperationType,
             RestoreWorkspaceOperationType,
             UpdateApplicationOperationType,
             UpdateSettingsOperationType,
-            UpdateWorkspaceInvitationType,
             UpdateWorkspaceOperationType,
             UpdateWorkspaceUserOperationType,
         )
@@ -257,15 +256,20 @@ class CoreConfig(AppConfig):
         operation_type_registry.register(MarkNotificationAsReadOperationType())
         operation_type_registry.register(CreateApplicationsWorkspaceOperationType())
         operation_type_registry.register(CreateWorkspaceOperationType())
-        operation_type_registry.register(CreateInvitationsWorkspaceOperationType())
-        operation_type_registry.register(DeleteWorkspaceInvitationOperationType())
         operation_type_registry.register(DeleteWorkspaceOperationType())
         operation_type_registry.register(ListApplicationsWorkspaceOperationType())
-        operation_type_registry.register(ListInvitationsWorkspaceOperationType())
-        operation_type_registry.register(ReadInvitationWorkspaceOperationType())
         operation_type_registry.register(ListWorkspacesOperationType())
-        operation_type_registry.register(UpdateWorkspaceInvitationType())
         operation_type_registry.register(ReadWorkspaceOperationType())
+
+        operation_type_registry.register(AddWorkspaceUsersWorkspaceOperationType())
+
+        from .teams.operations import TEAM_OPERATION_TYPES
+
+        for team_operation_type in TEAM_OPERATION_TYPES:
+            operation_type_registry.register(team_operation_type())
+
+        import baserow.core.teams.receivers  # noqa: F401
+
         operation_type_registry.register(ExportWorkspaceOperationType())
         operation_type_registry.register(UpdateWorkspaceOperationType())
         operation_type_registry.register(ListWorkspaceUsersWorkspaceOperationType())
@@ -289,14 +293,11 @@ class CoreConfig(AppConfig):
         operation_type_registry.register(ReadApplicationOperationType())
 
         from baserow.core.actions import (
-            AcceptWorkspaceInvitationActionType,
             CreateApplicationActionType,
             CreateInitialWorkspaceActionType,
             CreateWorkspaceActionType,
-            CreateWorkspaceInvitationActionType,
             DeleteApplicationActionType,
             DeleteWorkspaceActionType,
-            DeleteWorkspaceInvitationActionType,
             DuplicateApplicationActionType,
             ExportApplicationsActionType,
             ImportApplicationsActionType,
@@ -304,10 +305,8 @@ class CoreConfig(AppConfig):
             LeaveWorkspaceActionType,
             OrderApplicationsActionType,
             OrderWorkspacesActionType,
-            RejectWorkspaceInvitationActionType,
             UpdateApplicationActionType,
             UpdateWorkspaceActionType,
-            UpdateWorkspaceInvitationActionType,
         )
 
         action_type_registry.register(CreateWorkspaceActionType())
@@ -320,11 +319,6 @@ class CoreConfig(AppConfig):
         action_type_registry.register(OrderApplicationsActionType())
         action_type_registry.register(DuplicateApplicationActionType())
         action_type_registry.register(InstallTemplateActionType())
-        action_type_registry.register(CreateWorkspaceInvitationActionType())
-        action_type_registry.register(DeleteWorkspaceInvitationActionType())
-        action_type_registry.register(AcceptWorkspaceInvitationActionType())
-        action_type_registry.register(RejectWorkspaceInvitationActionType())
-        action_type_registry.register(UpdateWorkspaceInvitationActionType())
         action_type_registry.register(LeaveWorkspaceActionType())
         action_type_registry.register(CreateInitialWorkspaceActionType())
         action_type_registry.register(ExportApplicationsActionType())
@@ -354,16 +348,6 @@ class CoreConfig(AppConfig):
         )
 
         trash_operation_type_registry.register(DefaultTrashOperationType())
-
-        from baserow.core.mcp.actions import (
-            CreateMCPEndpointActionType,
-            DeleteMCPEndpointActionType,
-            UpdateMCPEndpointActionType,
-        )
-
-        action_type_registry.register(CreateMCPEndpointActionType())
-        action_type_registry.register(UpdateMCPEndpointActionType())
-        action_type_registry.register(DeleteMCPEndpointActionType())
 
         from baserow.core.user.actions import (
             CancelUserDeletionActionType,
@@ -432,6 +416,10 @@ class CoreConfig(AppConfig):
         job_type_registry.register(ExportApplicationsJobType())
         job_type_registry.register(ImportApplicationsJobType())
 
+        from .backups.job_types import ExportApplicationsToDestinationJobType
+
+        job_type_registry.register(ExportApplicationsToDestinationJobType())
+
         from baserow.api.notifications.user_data_types import (
             UnreadUserNotificationsCountPermissionsDataType,
         )
@@ -441,12 +429,19 @@ class CoreConfig(AppConfig):
         user_data_registry.register(GlobalPermissionsDataType())
         user_data_registry.register(UnreadUserNotificationsCountPermissionsDataType())
 
+        from baserow.api.user.registries import member_data_registry
+        from baserow.core.teams.member_data_types import TeamsMemberDataType
+
+        member_data_registry.register(TeamsMemberDataType())
+
         from baserow.core.auth_provider.auth_provider_types import (
             PasswordAuthProviderType,
         )
         from baserow.core.registries import auth_provider_type_registry
+        from baserow.core.sso.oidc.provider import OIDCAuthProviderType
 
         auth_provider_type_registry.register(PasswordAuthProviderType())
+        auth_provider_type_registry.register(OIDCAuthProviderType())
 
         from baserow.core.two_factor_auth.registries import (
             TOTPAuthProviderType,
@@ -471,42 +466,10 @@ class CoreConfig(AppConfig):
         import baserow.core.notifications.tasks  # noqa: F401
         from baserow.core.notification_types import (
             BaserowVersionUpgradeNotificationType,
-            WorkspaceInvitationAcceptedNotificationType,
-            WorkspaceInvitationCreatedNotificationType,
-            WorkspaceInvitationRejectedNotificationType,
         )
         from baserow.core.notifications.registries import notification_type_registry
 
-        notification_type_registry.register(
-            WorkspaceInvitationAcceptedNotificationType()
-        )
-        notification_type_registry.register(
-            WorkspaceInvitationCreatedNotificationType()
-        )
-        notification_type_registry.register(
-            WorkspaceInvitationRejectedNotificationType()
-        )
         notification_type_registry.register(BaserowVersionUpgradeNotificationType())
-
-        from baserow.core.generative_ai.generative_ai_model_types import (
-            AnthropicGenerativeAIModelType,
-            MistralGenerativeAIModelType,
-            OllamaGenerativeAIModelType,
-            OpenAIGenerativeAIModelType,
-            OpenRouterGenerativeAIModelType,
-        )
-        from baserow.core.generative_ai.registries import (
-            generative_ai_model_type_registry,
-        )
-
-        generative_ai_model_type_registry.register(OpenAIGenerativeAIModelType())
-        generative_ai_model_type_registry.register(AnthropicGenerativeAIModelType())
-        generative_ai_model_type_registry.register(MistralGenerativeAIModelType())
-        generative_ai_model_type_registry.register(OllamaGenerativeAIModelType())
-        generative_ai_model_type_registry.register(OpenRouterGenerativeAIModelType())
-
-        # Must import the Posthog signal, otherwise it won't work.
-        import baserow.core.posthog  # noqa: F403, F401
 
         self._setup_health_checks()
 
@@ -518,9 +481,7 @@ class CoreConfig(AppConfig):
         if settings.CACHALOT_ENABLED:
             pre_migrate.connect(lambda *a, **kw: clear_cachalot_cache(), sender=self)
 
-        if settings.SENTRY_DSN:
-            patch_user_model_str()
-
+        import baserow.core.audit_log.receivers  # noqa: F401
         import baserow.core.receivers  # noqa: F401
         from baserow.core.telemetry.telemetry import setup_logging
 
@@ -538,6 +499,7 @@ class CoreConfig(AppConfig):
         from .health.custom_health_checks import (
             DebugModeHealthCheck,
             HerokuExternalFileStorageConfiguredHealthCheck,
+            SharedFileStorageHealthCheck,
         )
 
         object_scope_type_registry.register(IntegrationObjectScopeType())
@@ -582,39 +544,58 @@ class CoreConfig(AppConfig):
         operation_type_registry.register(AuthenticateUserSourceOperationType())
         operation_type_registry.register(LoginUserSourceOperationType())
 
-        from baserow.core.mcp.operations import (
-            CreateMCPEndpointOperationType,
-            DeleteMCPEndpointOperationType,
-            ReadMCPEndpointOperationType,
-            UpdateMCPEndpointOperationType,
+        from baserow.core.api_clients.operations import (
+            CreateApiClientOperationType,
+            DeleteApiClientOperationType,
+            ListApiClientsOperationType,
+            ReadApiClientOperationType,
+            UpdateApiClientOperationType,
         )
 
-        operation_type_registry.register(CreateMCPEndpointOperationType())
-        operation_type_registry.register(ReadMCPEndpointOperationType())
-        operation_type_registry.register(UpdateMCPEndpointOperationType())
-        operation_type_registry.register(DeleteMCPEndpointOperationType())
+        operation_type_registry.register(ListApiClientsOperationType())
+        operation_type_registry.register(CreateApiClientOperationType())
+        operation_type_registry.register(ReadApiClientOperationType())
+        operation_type_registry.register(UpdateApiClientOperationType())
+        operation_type_registry.register(DeleteApiClientOperationType())
 
-        from baserow.core.mcp.object_scopes import MCPEndpointObjectScopeType
+        from baserow.core.api_clients.object_scopes import ApiClientObjectScopeType
 
-        object_scope_type_registry.register(MCPEndpointObjectScopeType())
+        object_scope_type_registry.register(ApiClientObjectScopeType())
+
+        from baserow.core.backups.operations import (
+            CreateBackupScheduleOperationType,
+            DeleteBackupScheduleOperationType,
+            ListBackupSchedulesOperationType,
+            ReadBackupScheduleOperationType,
+            UpdateBackupScheduleOperationType,
+        )
+
+        operation_type_registry.register(ListBackupSchedulesOperationType())
+        operation_type_registry.register(CreateBackupScheduleOperationType())
+        operation_type_registry.register(ReadBackupScheduleOperationType())
+        operation_type_registry.register(UpdateBackupScheduleOperationType())
+        operation_type_registry.register(DeleteBackupScheduleOperationType())
+
+        from baserow.core.backups.object_scopes import BackupScheduleObjectScopeType
+
+        object_scope_type_registry.register(BackupScheduleObjectScopeType())
 
         plugin_dir.register(DebugModeHealthCheck)
         if getattr(settings, "HEROKU_ENABLED", False):
             plugin_dir.register(HerokuExternalFileStorageConfiguredHealthCheck)
         plugin_dir.register(DefaultFileStorageHealthCheck)
 
+        from .health.tasks import is_shared_storage_probe_relevant
+
+        # Object storage is shared by construction, so only a filesystem storage can
+        # end up split between the web process and the workers.
+        if is_shared_storage_probe_relevant():
+            plugin_dir.register(SharedFileStorageHealthCheck)
+
+        import baserow.core.backups.tasks  # noqa: F403, F401
+        import baserow.core.health.tasks  # noqa: F403, F401
         import baserow.core.import_export.tasks  # noqa: F403, F401
         import baserow.core.integrations.receivers  # noqa: F403, F401
-
-        # pgvector extension setup. Because the extension is optional, we must
-        # dynamically check if it's available and adjust the models accordingly.
-        from baserow.core.pgvector import try_migrate_vector_fields
-
-        post_migrate.connect(
-            try_migrate_vector_fields,
-            sender=self,
-            dispatch_uid="baserow_core_pgvector_post_migrate",
-        )
 
 
 # noinspection PyPep8Naming

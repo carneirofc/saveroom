@@ -1,0 +1,46 @@
+apiVersion: v2
+name: saveroom
+description: >-
+  Saveroom (a FOSS fork of Baserow) for Kubernetes, OpenShift and Amazon EKS. Deploys the
+  backend, web-frontend and Celery workers as separate hardened pods that run
+  unmodified under OpenShift's restricted-v2 SCC (arbitrary UID, non-root, no
+  privileged ports). Routing is via Ingress, an AWS ALB IngressGroup, or
+  OpenShift Routes. S3 media can authenticate with static keys, EKS IRSA or EKS
+  Pod Identity. PostgreSQL and Redis are optional, toggleable subcharts; point
+  at an external managed database instead by disabling them.
+type: application
+keywords:
+  - saveroom
+  - baserow
+  - no-code
+  - database
+  - openshift
+  - eks
+version: 0.10.0
+# Tracks the application version shipped by this fork's images.
+appVersion: "0.15.0"
+home: https://github.com/carneirofc/baserow
+sources:
+  - https://github.com/carneirofc/baserow
+maintainers:
+  - name: carneirofc
+    email: claudiofcarneiro@gmail.com
+
+annotations:
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: >-
+        Added a celery-export Deployment (replicaCount.celeryExport,
+        resources.celeryExport) consuming the export queue. Without it jobs,
+        exports, backups, webhooks, search indexing and notification emails
+        stayed pending.
+
+dependencies:
+  - name: postgresql
+    version: "~18.12.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: "~28.3.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled

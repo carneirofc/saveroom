@@ -609,12 +609,12 @@ def test_trigger_test_call(api_client, data_fixture):
     user_2, jwt_token_2 = data_fixture.create_user_and_token()
     table = data_fixture.create_database_table(user=user)
 
-    responses.add(responses.POST, "http://baserow.io", json={}, status=200)
+    responses.add(responses.POST, "http://example.com", json={}, status=200)
 
     response = api_client.post(
         reverse("api:database:webhooks:test", kwargs={"table_id": 0}),
         {
-            "url": "http://baserow.io",
+            "url": "http://example.com",
             "event_type": "rows.created",
         },
         format="json",
@@ -626,7 +626,7 @@ def test_trigger_test_call(api_client, data_fixture):
     response = api_client.post(
         reverse("api:database:webhooks:test", kwargs={"table_id": table.id}),
         {
-            "url": "http://baserow.io",
+            "url": "http://example.com",
             "event_type": "rows.created",
         },
         format="json",
@@ -638,7 +638,7 @@ def test_trigger_test_call(api_client, data_fixture):
     response = api_client.post(
         reverse("api:database:webhooks:test", kwargs={"table_id": table.id}),
         {
-            "url": "http://baserow.io",
+            "url": "http://example.com",
             "event_type": "rows.created",
         },
         format="json",
@@ -654,7 +654,7 @@ def test_trigger_test_call(api_client, data_fixture):
     response = api_client.post(
         reverse("api:database:webhooks:test", kwargs={"table_id": table.id}),
         {
-            "url": "http://baserow.io/invalid",
+            "url": "http://example.com/invalid",
             "event_type": "rows.created",
         },
         format="json",

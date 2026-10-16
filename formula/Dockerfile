@@ -1,4 +1,4 @@
-FROM openjdk:17.0.2
+FROM eclipse-temurin:17-jdk
 
 ARG UID
 ENV UID=${UID:-1000}

@@ -25,7 +25,7 @@
         class="field-file__action upload-files__state-failed"
         @click="$emit('delete')"
       >
-        <i class="iconoir-cancel"></i>
+        <i class="iconoir-xmark"></i>
       </a>
     </div>
   </div>

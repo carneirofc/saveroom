@@ -1,5 +1,5 @@
 <template>
-  <div class="sidebar__section" ph-autocapture="sidebar" data-highlight="menu">
+  <div class="sidebar__section" data-highlight="menu">
     <ul class="tree">
       <SidebarSearch
         :selected-workspace="selectedWorkspace"
@@ -97,33 +97,6 @@
         </li>
       </nuxt-link>
 
-      <li
-        v-if="
-          $hasPermission(
-            'workspace.create_invitation',
-            selectedWorkspace,
-            selectedWorkspace.id
-          )
-        "
-        class="tree__item"
-      >
-        <div class="tree__action sidebar__action">
-          <a class="tree__link" @click="$refs.inviteModal.show()">
-            <i class="tree__icon iconoir-add-user"></i>
-            <span class="tree__link-text">
-              <span class="sidebar__item-name">{{
-                $t('sidebar.inviteOthers')
-              }}</span>
-            </span>
-          </a>
-        </div>
-
-        <WorkspaceMemberInviteModal
-          ref="inviteModal"
-          :workspace="selectedWorkspace"
-          @invite-submitted="handleInvite"
-        />
-      </li>
       <component
         :is="component"
         v-for="(component, index) in sidebarWorkspaceComponents"
@@ -154,7 +127,6 @@ import { mapGetters } from 'vuex'
 
 import TrashModal from '@baserow/modules/core/components/trash/TrashModal'
 import NotificationPanel from '@baserow/modules/core/components/NotificationPanel'
-import WorkspaceMemberInviteModal from '@baserow/modules/core/components/workspace/WorkspaceMemberInviteModal'
 import BadgeCounter from '@baserow/modules/core/components/BadgeCounter'
 import SidebarSearch from '@baserow/modules/core/components/sidebar/SidebarSearch'
 
@@ -163,7 +135,6 @@ export default {
   components: {
     TrashModal,
     NotificationPanel,
-    WorkspaceMemberInviteModal,
     BadgeCounter,
     SidebarSearch,
   },
@@ -194,17 +165,6 @@ export default {
   methods: {
     openWorkspaceSearch() {
       this.$emit('open-workspace-search')
-    },
-
-    handleInvite(event) {
-      if (this.$route.name !== 'settings-invites') {
-        this.$router.push({
-          name: 'settings-invites',
-          params: {
-            workspaceId: this.selectedWorkspace.id,
-          },
-        })
-      }
     },
   },
 }

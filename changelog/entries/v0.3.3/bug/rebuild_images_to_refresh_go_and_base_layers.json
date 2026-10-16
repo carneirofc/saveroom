@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Rebuilt and republished all container images with `pull: true` on the release build, so the published images carry the Caddy binary compiled from source against Go 1.26.7 and re-resolve the `ubuntu:26.04` base instead of serving a stale build-cache hit. Images published before v0.3.1 (all-in-one) and v0.3.2 (split-services Caddy) still carried the official `caddy:2.11.4` binary with its Go 1.26.5 standard library, which SCA scanners flag for CVE-2026-39821 and the related Go standard library advisories.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-08-28"
+}

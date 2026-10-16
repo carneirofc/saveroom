@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Remote backup uploads no longer leave an archive behind when its sidecar cannot be written, and abandoned archives older than 24 hours are swept by retention. Restoring a remote backup downloads it outside a database transaction, checks the import job limit first and cleans up when the job cannot start, listing skips malformed sidecars and tolerates missing fields, and restoring an archive streams its files to storage instead of reading them into memory.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-04"
+}

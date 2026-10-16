@@ -27,7 +27,7 @@ class Command(BaseCommand):
         if not SearchHandler.full_text_enabled():
             self.stdout.write(
                 self.style.ERROR(
-                    "Your Baserow installation has Postgres full-text"
+                    "Your Saveroom installation has Postgres full-text"
                     "search disabled. To use full-text, ensure that"
                     "BASEROW_USE_PG_FULLTEXT_SEARCH=true."
                 )

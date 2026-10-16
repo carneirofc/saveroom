@@ -76,7 +76,7 @@
           <FormInput
             v-model="input"
             placeholder="Right icon"
-            icon-right="iconoir-db"
+            icon-right="iconoir-database"
             class="margin-bottom-2"
           />
 
@@ -84,7 +84,7 @@
             v-model="input"
             size="small"
             placeholder="Small input"
-            icon-right="iconoir-db"
+            icon-right="iconoir-database"
             class="margin-bottom-2"
           />
 
@@ -92,7 +92,7 @@
             v-model="input"
             size="large"
             placeholder="Large input"
-            icon-right="iconoir-db"
+            icon-right="iconoir-database"
             class="margin-bottom-2"
           />
 
@@ -224,12 +224,12 @@
                 <DropdownItem
                   name="Choice 3"
                   value="choice-3"
-                  icon="iconoir-db"
+                  icon="iconoir-database"
                 ></DropdownItem>
                 <DropdownItem
                   name="Choice 4"
                   value="choice-4"
-                  icon="iconoir-cancel"
+                  icon="iconoir-xmark"
                   :disabled="true"
                 ></DropdownItem>
                 <DropdownItem
@@ -261,12 +261,12 @@
                 <DropdownItem
                   name="Choice 3"
                   value="choice-3"
-                  icon="iconoir-db"
+                  icon="iconoir-database"
                 ></DropdownItem>
                 <DropdownItem
                   name="Choice 4"
                   value="choice-4"
-                  icon="iconoir-cancel"
+                  icon="iconoir-xmark"
                   :disabled="true"
                 ></DropdownItem>
                 <DropdownItem
@@ -298,12 +298,12 @@
                 <DropdownItem
                   name="Choice 3"
                   value="choice-3"
-                  icon="iconoir-db"
+                  icon="iconoir-database"
                 ></DropdownItem>
                 <DropdownItem
                   name="Choice 4"
                   value="choice-4"
-                  icon="iconoir-cancel"
+                  icon="iconoir-xmark"
                   :disabled="true"
                 ></DropdownItem>
                 <DropdownItem
@@ -378,12 +378,12 @@
                 <DropdownItem
                   name="Choice 3"
                   value="choice-3"
-                  icon="iconoir-db"
+                  icon="iconoir-database"
                 ></DropdownItem>
                 <DropdownItem
                   name="Choice 4"
                   value="choice-4"
-                  icon="iconoir-cancel"
+                  icon="iconoir-xmark"
                   :disabled="true"
                 ></DropdownItem>
                 <template #footer>
@@ -416,12 +416,12 @@
                 <DropdownItem
                   name="Choice 3"
                   value="choice-3"
-                  icon="iconoir-db"
+                  icon="iconoir-database"
                 ></DropdownItem>
                 <DropdownItem
                   name="Choice 4"
                   value="choice-4"
-                  icon="iconoir-cancel"
+                  icon="iconoir-xmark"
                   :disabled="true"
                 ></DropdownItem>
               </Dropdown>
@@ -440,12 +440,12 @@
                 <DropdownItem
                   name="Choice 3"
                   value="choice-3"
-                  icon="iconoir-db"
+                  icon="iconoir-database"
                 ></DropdownItem>
                 <DropdownItem
                   name="Choice 4"
                   value="choice-4"
-                  icon="iconoir-cancel"
+                  icon="iconoir-xmark"
                   :disabled="true"
                 ></DropdownItem>
               </Dropdown>
@@ -465,12 +465,12 @@
                 <DropdownItem
                   name="Choice 3"
                   value="choice-3"
-                  icon="iconoir-db"
+                  icon="iconoir-database"
                 ></DropdownItem>
                 <DropdownItem
                   name="Choice 4"
                   value="choice-4"
-                  icon="iconoir-cancel"
+                  icon="iconoir-xmark"
                   :disabled="true"
                 ></DropdownItem>
                 <DropdownItem
@@ -1380,7 +1380,7 @@
           <div class="modal__box">
             <div class="modal__actions">
               <a class="modal__close">
-                <i class="iconoir-cancel"></i>
+                <i class="iconoir-xmark"></i>
               </a>
             </div>
             <h2 class="box__title">An example modal</h2>
@@ -1412,12 +1412,12 @@
               </p>
               <ul class="delete-section__list">
                 <li>
-                  <i class="delete-section__list-icon iconoir-db"></i>
+                  <i class="delete-section__list-icon iconoir-database"></i>
                   Vehicles
                   <small>including 12 tables</small>
                 </li>
                 <li>
-                  <i class="delete-section__list-icon iconoir-db"></i>
+                  <i class="delete-section__list-icon iconoir-database"></i>
                   Webshop
                   <small>including 12 tables</small>
                 </li>
@@ -1430,7 +1430,7 @@
           <div class="modal__box modal__box--with-sidebar">
             <div class="modal__actions">
               <a class="modal__close">
-                <i class="iconoir-cancel"></i>
+                <i class="iconoir-xmark"></i>
               </a>
             </div>
             <div
@@ -1455,13 +1455,13 @@
                 </li>
                 <li>
                   <a class="modal-sidebar__nav-link"
-                    ><i class="modal-sidebar__nav-icon iconoir-key-alt"></i>
+                    ><i class="modal-sidebar__nav-icon iconoir-key"></i>
                     API Tokens
                   </a>
                 </li>
                 <li>
                   <a class="modal-sidebar__nav-link"
-                    ><i class="modal-sidebar__nav-icon iconoir-eye-off"></i>
+                    ><i class="modal-sidebar__nav-icon iconoir-eye-closed"></i>
                     Delete account
                   </a>
                 </li>
@@ -1576,7 +1576,7 @@
                 <div class="card__field-name">URL</div>
                 <div class="card__field-value">
                   <div class="card-text">
-                    <a href="#">http://baserow.io</a>
+                    <a href="#">https://github.com/carneirofc/baserow</a>
                   </div>
                 </div>
               </div>
@@ -1584,7 +1584,7 @@
                 <div class="card__field-name">Email</div>
                 <div class="card__field-value">
                   <div class="card-text">
-                    <a href="#">bram@baserow.io</a>
+                    <a href="#">claudiofcarneiro@gmail.com</a>
                   </div>
                 </div>
               </div>
@@ -1606,7 +1606,7 @@
                         />
                       </li>
                       <li class="card-file__item">
-                        <i class="card-file__icon iconoir-page-empty"></i>
+                        <i class="card-file__icon iconoir-page"></i>
                       </li>
                     </ul>
                   </div>
@@ -1683,7 +1683,7 @@
                   placeholder="Find member..."
                 ></FormInput>
                 <Button href="#" size="large" class="margin-left-2">
-                  Invite member
+                  Add members
                 </Button>
               </div>
             </div>
@@ -1897,7 +1897,7 @@
           <Presentation
             title="My baserow integration"
             subtitle="Local baserow integration"
-            icon="iconoir-db"
+            icon="iconoir-database"
             class="margin-bottom-2"
           />
           <Presentation
@@ -2061,7 +2061,6 @@
 
 <script>
 import Toasts from '@baserow/modules/core/components/toasts/Toasts'
-import BaserowIcon from '@baserow/modules/core/static/img/logoOnly.svg?url'
 import ColorPickerContext from '@baserow/modules/core/components/ColorPickerContext.vue'
 import ColorPicker from '@baserow/modules/core/components/ColorPicker.vue'
 import Paginator from '@baserow/modules/core/components/Paginator.vue'
@@ -2087,7 +2086,7 @@ export default {
       longDropdown: '0',
       date: '',
       formula: 'concat(field("Text"), field("Text"))',
-      image: BaserowIcon,
+      image: '/_branding/assets/img/logoOnly.svg',
       input: '',
       color: 'primary',
       colorVariables: [

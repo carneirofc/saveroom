@@ -1,0 +1,9 @@
+{
+    "type": "bug",
+    "message": "Backup screens only offer restoring to users who may create applications in the workspace, reset the trusted signing key option when switching storage, and report failures to load schedule names instead of hiding them.",
+    "issue_origin": "github",
+    "issue_number": null,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-10-05"
+}

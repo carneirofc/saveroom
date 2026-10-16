@@ -1,0 +1,9 @@
+{
+    "type": "feature",
+    "message": "OIDC workspace mappings can opt into strict membership reconciliation with a per-provider strict_membership flag. When enabled, memberships the sync granted are recorded and revoked once the user loses the mapped group on their next login; memberships added outside SSO are never revoked. With the flag off, behaviour stays additive.",
+    "issue_origin": "github",
+    "issue_number": 6,
+    "domain": "core",
+    "bullet_points": [],
+    "created_at": "2026-07-16"
+}

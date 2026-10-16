@@ -11,33 +11,35 @@ Replace the first part of your `docker-compose.dev.yml` with the following:
 ```
 services:
   db:
-    image: pgvector/pgvector:pg14
+    image: pgvector/pgvector:pg18
     ports:
       - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: ${DATABASE_USER:-baserow}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?}
       POSTGRES_DB: ${DATABASE_NAME:-baserow}
+      PGDATA: /var/lib/postgresql/data
     volumes:
       - pgdata-primary:/var/lib/postgresql/data
       - ./docs/development/init/primary-init.sh:/docker-entrypoint-initdb.d/primary-init.sh:ro
     command: >
       postgres -c wal_level=replica
                -c max_wal_senders=10
-               -c wal_keep_segments=64
+               -c wal_keep_size=1GB
                -c hot_standby=on
                -c listen_addresses='*'
     networks:
       - local
 
   db-replica-1:
-    image: pgvector/pgvector:pg14
+    image: pgvector/pgvector:pg18
     ports:
       - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_USER: ${DATABASE_USER:-baserow}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?}
       REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:-replicatorpass}
+      PGDATA: /var/lib/postgresql/data
     volumes:
       - pgdata-replica-1:/var/lib/postgresql/data
       - ./docs/development/init/replica-entrypoint.sh:/scripts/replica-entrypoint.sh:ro
@@ -49,13 +51,14 @@ services:
       - local
 
   db-replica-2:
-    image: pgvector/pgvector:pg14
+    image: pgvector/pgvector:pg18
     ports:
       - "127.0.0.1:5434:5432"
     environment:
       POSTGRES_USER: ${DATABASE_USER:-baserow}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?}
       REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:-replicatorpass}
+      PGDATA: /var/lib/postgresql/data
     volumes:
       - pgdata-replica-2:/var/lib/postgresql/data
       - ./docs/development/init/replica-entrypoint.sh:/scripts/replica-entrypoint.sh:ro
@@ -87,10 +90,15 @@ Restart your dev environment and observe that the read-only replications are acc
 They're available on port `5433` and `5434` with the same password you're using the
 same username and password as the writer `db`.
 
-## Baserow configuration
+## Saveroom configuration
 
-Add the following to your `.env` file and restart your dev server. This will configure
-Baserow to use the above read-only replications for read queries.
+Add the following to `.env.docker-dev` (when running with `just dc-dev`) and restart the
+dev environment. This configures Saveroom to use the read-only replicas for read queries.
+When the backend runs on the host (`just dev`, `.env.local`), use `localhost` with ports
+`5433` and `5434` instead of the container host names.
+
+`PGDATA` is pinned because PostgreSQL 18 images default to a versioned data directory and
+the replica entrypoint expects `/var/lib/postgresql/data`.
 
 ```
 DATABASE_READ_1_NAME="baserow"

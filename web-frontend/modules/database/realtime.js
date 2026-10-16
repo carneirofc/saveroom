@@ -190,14 +190,13 @@ export const registerRealtimeEvents = (realtime) => {
 
   realtime.registerEvent('rows_updated', async (context, data) => {
     const { app, store } = context
+    const beforeById = Object.fromEntries(
+      (data.rows_before_update || []).map((r) => [r.id, r])
+    )
     for (const viewType of Object.values(app.$registry.getAll('view'))) {
       for (let i = 0; i < data.rows.length; i++) {
         const row = data.rows[i]
-
-        // A row may be updated by the backend, while it wasn't requested by the user,
-        // causing rows before update and rows updated sets asymmetry. In that case,
-        // we just want a skeleton of a row.
-        const rowBeforeUpdate = data.rows_before_update[i] || { id: row.id }
+        const rowBeforeUpdate = beforeById[row.id] || { id: row.id }
 
         await viewType.rowUpdated(
           context,
@@ -239,6 +238,13 @@ export const registerRealtimeEvents = (realtime) => {
 
   realtime.registerEvent('rows_deleted', (context, data) => {
     const { app, store } = context
+    // Staged changes of deleted rows can't be saved anymore.
+    data.rows.forEach((row) =>
+      store.dispatch('pendingRowChanges/forgetRow', {
+        tableId: data.table_id,
+        rowId: row.id,
+      })
+    )
     for (const viewType of Object.values(app.$registry.getAll('view'))) {
       for (let i = 0; i < data.rows.length; i++) {
         const row = data.rows[i]

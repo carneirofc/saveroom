@@ -48,7 +48,7 @@
             class="group-bys__remove"
             @click="deleteGroupBy(groupBy)"
           >
-            <i class="iconoir-cancel"></i>
+            <i class="iconoir-xmark"></i>
           </a>
           <div class="group-bys__description">
             <template v-if="index === 0">{{

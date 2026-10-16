@@ -76,9 +76,7 @@ export default defineComponent({
     const displaySelectedSettingForm = ref(false)
 
     const registeredSettings = computed(() => {
-      return app.$registry
-        .getOrderedList('automationSettings')
-        .filter((setting) => !setting.isDeactivated())
+      return app.$registry.getOrderedList('automationSettings')
     })
 
     // Watch for changes in the selected setting

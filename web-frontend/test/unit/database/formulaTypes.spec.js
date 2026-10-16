@@ -23,24 +23,24 @@ describe('formula URL types toHumanReadableString', () => {
       expect(
         formulaType.toHumanReadableString(field, {
           label: 'Baserow',
-          url: 'https://baserow.io',
+          url: 'https://example.com',
         })
-      ).toBe('Baserow (https://baserow.io)')
+      ).toBe('Baserow (https://example.com)')
     })
 
     test('returns the url when there is no label', () => {
       expect(
         formulaType.toHumanReadableString(field, {
-          url: 'https://baserow.io',
+          url: 'https://example.com',
         })
-      ).toBe('https://baserow.io')
+      ).toBe('https://example.com')
     })
   })
 
   test('BaserowFormulaURLType returns a plain string value as-is', () => {
     const formulaType = new BaserowFormulaURLType({ app })
-    expect(formulaType.toHumanReadableString(field, 'https://baserow.io')).toBe(
-      'https://baserow.io'
-    )
+    expect(
+      formulaType.toHumanReadableString(field, 'https://example.com')
+    ).toBe('https://example.com')
   })
 })
